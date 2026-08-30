@@ -33,21 +33,40 @@ if [ -f /tmp/geminux-build/branding/os-release ]; then
     cp /tmp/geminux-build/branding/os-release /usr/lib/os-release
 fi
 
-# 3. Wallpapers & Icons
+# 3. Wallpapers, Pixmaps & System Branding (GNOME Settings About Page)
 mkdir -p /usr/share/backgrounds/geminux
 mkdir -p /usr/share/backgrounds
+mkdir -p /usr/share/pixmaps
 mkdir -p /usr/share/icons/hicolor/scalable/apps
 mkdir -p /usr/share/icons/hicolor/256x256/apps
 mkdir -p /usr/share/icons/hicolor/128x128/apps
+mkdir -p /usr/share/icons/Yaru/scalable/places
+mkdir -p /usr/share/icons/Yaru/256x256/places
 
 if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/geminux/geminux-default.png
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png || true
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png || true
+
+    # System App Icons
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/hicolor/256x256/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/icons/hicolor/128x128/apps/
+
+    # GNOME Settings (About Page) Pixmaps & Logos
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text.svg || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text-dark.svg || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text-dark.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text.svg || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text-dark.svg || true
+
+    # Distributor Logo (Yaru Theme)
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/Yaru/scalable/places/distributor-logo-symbolic.svg || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/Yaru/256x256/places/distributor-logo.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/Yaru/256x256@2x/places/distributor-logo.png || true
 fi
 
 # 4. Install Prius Terminal & Geminux Terminal
