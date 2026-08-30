@@ -48,3 +48,13 @@ polkitd
 pkexec
 qml6-module-qtquick
 qml6-module-qtquick-controls
+
+# Installer & Filesystem Tools
+rsync
+squashfs-tools
+dosfstools
+mtools
+btrfs-progs
+xfsprogs
+e2fsprogs
+efibootmgr
