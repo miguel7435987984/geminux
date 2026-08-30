@@ -233,7 +233,6 @@ xorriso -as mkisofs \
     -eltorito-boot boot/grub/bios.img \
     -eltorito-catalog boot/grub/boot.cat \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
-    --eltorito-next \
     -eltorito-alt-boot \
     -e boot/grub/efi.img \
     -no-emul-boot \
