@@ -92,6 +92,43 @@ if [ -d /tmp/geminux-build/installer/calamares ]; then
     cp -r /tmp/geminux-build/installer/calamares/branding/geminux/* /etc/calamares/branding/geminux/ || true
 fi
 
+# Ensure Calamares has root permissions in Live session without password prompt
+cat <<'EOF' > /usr/share/polkit-1/actions/com.github.calamares.calamares.policy
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="com.github.calamares.calamares">
+    <description>Run Calamares Installer</description>
+    <message>Authentication is required to install Geminux</message>
+    <defaults>
+      <allow_any>yes</allow_any>
+      <allow_inactive>yes</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/calamares</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>
+EOF
+
+# Launcher for Calamares on Desktop
+cat <<'EOF' > /usr/share/applications/calamares.desktop
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install Geminux OS
+GenericName=Live Installer
+Comment=Install the operating system to disk
+Exec=sudo -E calamares -d
+Icon=calamares
+Terminal=false
+Categories=System;Qt;
+StartupNotify=true
+EOF
+chmod 644 /usr/share/applications/calamares.desktop
+
 # 10. User Skel Configuration
 if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc
