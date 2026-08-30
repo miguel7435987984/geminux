@@ -268,6 +268,142 @@
             line-height: 1.6;
         }
 
+        /* Showcase Section */
+        .showcase {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto 100px;
+            padding: 0 20px;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 28px;
+        }
+
+        .showcase-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .showcase-header {
+            background: #141d2b;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .window-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .window-title {
+            margin-left: 10px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .showcase-body {
+            padding: 24px;
+            flex: 1;
+        }
+
+        .terminal-screen {
+            background: #080c14;
+            border-radius: 8px;
+            padding: 18px;
+            font-family: 'Ubuntu Mono', 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #d1e8ff;
+            line-height: 1.45;
+            overflow-x: auto;
+            border: 1px solid #142033;
+        }
+
+        .terminal-screen .ascii-logo {
+            color: var(--cyan);
+            font-weight: bold;
+            float: left;
+            margin-right: 20px;
+            line-height: 1.15;
+            white-space: pre;
+            text-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .terminal-screen .info-field {
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        .terminal-screen .info-val {
+            color: #f0f4f8;
+        }
+
+        .context-menu-demo {
+            background: #16202e;
+            border: 1px solid #23354d;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            width: 220px;
+            padding: 6px 0;
+            margin: 10px auto;
+        }
+
+        .menu-entry {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            color: #e2e8f0;
+        }
+
+        .menu-entry.highlight {
+            background: rgba(0, 210, 255, 0.15);
+            color: var(--cyan);
+        }
+
+        .menu-shortcut {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .menu-divider {
+            height: 1px;
+            background: #23354d;
+            margin: 4px 0;
+        }
+
+        .showcase-desc {
+            margin-top: 18px;
+        }
+
+        .showcase-desc h4 {
+            color: var(--text-main);
+            font-size: 1.15rem;
+            margin-bottom: 6px;
+        }
+
+        .showcase-desc p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
         /* Specs section */
         .specs {
             background: #0b1018;
@@ -335,7 +471,7 @@
         </a>
         <ul class="nav-links">
             <li><a href="#features">Recursos</a></li>
-            <li><a href="#terminal">Prius Terminal</a></li>
+            <li><a href="#showcase">Demonstração</a></li>
             <li><a href="#specs">Especificações</a></li>
             <li><a href="#download">Download</a></li>
         </ul>
@@ -380,6 +516,129 @@
             <div class="spec-item">
                 <div class="num">Calamares</div>
                 <div class="label">Instalador Gráfico</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="showcase" id="showcase">
+        <div class="section-header">
+            <h2>Demonstração & Experiência de Uso</h2>
+            <p>Veja como é a experiência visual e prática do Geminux OS em ação.</p>
+        </div>
+
+        <div class="showcase-grid">
+            <!-- Fastfetch Showcase -->
+            <div class="showcase-card">
+                <div class="showcase-header">
+                    <span class="window-dot dot-red"></span>
+                    <span class="window-dot dot-yellow"></span>
+                    <span class="window-dot dot-green"></span>
+                    <span class="window-title">miguel@geminux: ~ (Fastfetch)</span>
+                </div>
+                <div class="showcase-body">
+                    <div class="terminal-screen">
+                        <pre class="ascii-logo">
+      .---.
+     /     \
+.---/  .-.  \---.
+/   /  /   \  \   \
+|   |  /  / \  \  |
+|   | \  \   /  / |
+ \   \  \  '  /  /
+  '---\  '-'  /---'
+       \     /
+        '---'</pre>
+                        <div>
+                            <div><strong style="color: #00d2ff;">miguel</strong>@<strong style="color: #00d2ff;">geminux</strong></div>
+                            <div>-------------------------</div>
+                            <div><span class="info-field">OS:</span> <span class="info-val">Geminux OS 1.0 LTS x86_64</span></div>
+                            <div><span class="info-field">Host:</span> <span class="info-val">PC / Virtual Machine</span></div>
+                            <div><span class="info-field">Kernel:</span> <span class="info-val">Linux 7.0.0-30-generic</span></div>
+                            <div><span class="info-field">Uptime:</span> <span class="info-val">42 mins</span></div>
+                            <div><span class="info-field">Packages:</span> <span class="info-val">1420 (dpkg)</span></div>
+                            <div><span class="info-field">Shell:</span> <span class="info-val">bash 5.2.21</span></div>
+                            <div><span class="info-field">DE:</span> <span class="info-val">GNOME 46 (Adwaita-dark)</span></div>
+                            <div><span class="info-field">Terminal:</span> <span class="info-val">Prius Terminal (VTE)</span></div>
+                            <div><span class="info-field">Timezone:</span> <span class="info-val">America/Sao_Paulo (UTC-3)</span></div>
+                        </div>
+                        <div style="clear:both;"></div>
+                    </div>
+                    <div class="showcase-desc">
+                        <h4>Branding Fastfetch Exclusivo</h4>
+                        <p>Ao abrir o terminal, receba um sumário instantâneo com a arte ASCII oficial e paleta de cores ciano neon.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prius Terminal Context Menu -->
+            <div class="showcase-card">
+                <div class="showcase-header">
+                    <span class="window-dot dot-red"></span>
+                    <span class="window-dot dot-yellow"></span>
+                    <span class="window-dot dot-green"></span>
+                    <span class="window-title">Prius Terminal - Menu de Contexto</span>
+                </div>
+                <div class="showcase-body">
+                    <div class="terminal-screen" style="display: flex; flex-direction: column; justify-content: center; min-height: 220px;">
+                        <div class="context-menu-demo">
+                            <div class="menu-entry highlight">
+                                <span>📋 Copiar</span>
+                                <span class="menu-shortcut">Ctrl+Shift+C</span>
+                            </div>
+                            <div class="menu-entry">
+                                <span>📄 Colar</span>
+                                <span class="menu-shortcut">Ctrl+Shift+V</span>
+                            </div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-entry">
+                                <span>✨ Selecionar Tudo</span>
+                            </div>
+                            <div class="menu-entry">
+                                <span>🧹 Limpar Terminal</span>
+                            </div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-entry">
+                                <span>📑 Nova Aba</span>
+                                <span class="menu-shortcut">Ctrl+Shift+T</span>
+                            </div>
+                            <div class="menu-entry">
+                                <span>❌ Fechar Aba</span>
+                                <span class="menu-shortcut">Ctrl+Shift+W</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="showcase-desc">
+                        <h4>Prius Terminal com Botão Direito</h4>
+                        <p>Menu de contexto nativo GTK3 com copiar, colar, seleção rápida e gerenciamento completo de múltiplas abas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GNOME Settings About & GDM Login -->
+            <div class="showcase-card">
+                <div class="showcase-header">
+                    <span class="window-dot dot-red"></span>
+                    <span class="window-dot dot-yellow"></span>
+                    <span class="window-dot dot-green"></span>
+                    <span class="window-title">GNOME Configurações - Sobre o Sistema</span>
+                </div>
+                <div class="showcase-body">
+                    <div class="terminal-screen" style="text-align: center; padding: 20px;">
+                        <img src="assets/geminux-logo.svg" alt="Geminux Logo" style="width: 54px; height: 54px; margin-bottom: 8px; filter: drop-shadow(0 0 12px rgba(0,210,255,0.5));">
+                        <h3 style="color: #fff; font-size: 1.15rem; margin-bottom: 2px;">Geminux OS 1.0 LTS</h3>
+                        <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 12px;">Resolute (64-bit)</p>
+                        <div style="text-align: left; background: #0f1622; padding: 10px 14px; border-radius: 6px; font-size: 0.8rem; border: 1px solid #1a2638;">
+                            <div style="margin-bottom: 4px;"><strong style="color: #94a3b8;">Nome do Dispositivo:</strong> <span style="color: #fff;">geminux</span></div>
+                            <div style="margin-bottom: 4px;"><strong style="color: #94a3b8;">Memória RAM:</strong> <span style="color: #fff;">4,0 GB</span></div>
+                            <div style="margin-bottom: 4px;"><strong style="color: #94a3b8;">Sistema de Janelas:</strong> <span style="color: #fff;">Wayland / X11</span></div>
+                            <div><strong style="color: #94a3b8;">Versão do GNOME:</strong> <span style="color: #fff;">46</span></div>
+                        </div>
+                    </div>
+                    <div class="showcase-desc">
+                        <h4>Identidade Visual 100% Geminux</h4>
+                        <p>Logotipos oficiais aplicados na tela de login GDM, nas informações do sistema (Sobre) e em toda a suíte de aplicativos.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
