@@ -72,7 +72,28 @@ if [ -d /tmp/geminux-build/branding/grub/geminux-grub ]; then
     echo 'GRUB_THEME="/boot/grub/themes/geminux-grub/theme.txt"' >> /etc/default/grub
 fi
 
-# 7. Firefox Enterprise Policy & Defaults
+# 7. Native Mozilla Firefox Installation & Enterprise Policies
+echo "==> Installing Native Mozilla Firefox (.deb)..."
+install -d -m 0755 /etc/apt/keyrings
+wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+
+cat << 'SOURCES' > /etc/apt/sources.list.d/mozilla.sources
+Types: deb
+URIs: https://packages.mozilla.org/apt
+Suites: mozilla
+Components: main
+Signed-By: /etc/apt/keyrings/packages.mozilla.org.asc
+SOURCES
+
+cat << 'PREF' > /etc/apt/preferences.d/mozilla
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+PREF
+
+apt-get update
+apt-get install -y firefox firefox-l10n-pt-br
+
 mkdir -p /etc/firefox/policies
 if [ -f /tmp/geminux-build/config/firefox/policies.json ]; then
     cp /tmp/geminux-build/config/firefox/policies.json /etc/firefox/policies/policies.json

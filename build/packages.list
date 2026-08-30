@@ -30,7 +30,6 @@ gdm3
 x11-xserver-utils
 
 # Default Apps & Tools
-firefox
 python3-gi
 gir1.2-vte-2.91
 gir1.2-gtk-3.0
