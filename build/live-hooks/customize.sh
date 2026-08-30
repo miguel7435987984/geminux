@@ -87,12 +87,19 @@ fi
 
 # 9. Calamares Installer Branding & Configuration
 mkdir -p /etc/calamares/branding/geminux
+mkdir -p /etc/calamares/modules
 if [ -d /tmp/geminux-build/installer/calamares ]; then
     cp /tmp/geminux-build/installer/calamares/settings.conf /etc/calamares/settings.conf || true
     cp -r /tmp/geminux-build/installer/calamares/branding/geminux/* /etc/calamares/branding/geminux/ || true
+    if [ -d /tmp/geminux-build/installer/calamares/modules ]; then
+        cp -r /tmp/geminux-build/installer/calamares/modules/* /etc/calamares/modules/ || true
+    fi
+    if [ -f /tmp/geminux-build/installer/calamares/geminux-installer ]; then
+        install -m 755 /tmp/geminux-build/installer/calamares/geminux-installer /usr/local/bin/geminux-installer
+    fi
 fi
 
-# Ensure Calamares has root permissions in Live session without password prompt
+# Ensure Calamares and wrapper have Polkit execution without password
 cat <<'EOF' > /usr/share/polkit-1/actions/com.github.calamares.calamares.policy
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE policyconfig PUBLIC
@@ -113,6 +120,31 @@ cat <<'EOF' > /usr/share/polkit-1/actions/com.github.calamares.calamares.policy
 </policyconfig>
 EOF
 
+cat <<'EOF' > /usr/share/polkit-1/actions/org.geminux.installer.policy
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="org.geminux.installer">
+    <description>Run Geminux Installer</description>
+    <message>Authentication is required to run installer</message>
+    <defaults>
+      <allow_any>yes</allow_any>
+      <allow_inactive>yes</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/geminux-installer</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>
+EOF
+
+# Sudoers rule for live user to run calamares without password
+mkdir -p /etc/sudoers.d
+echo "ALL ALL=(ALL) NOPASSWD: /usr/bin/calamares, /usr/local/bin/geminux-installer" > /etc/sudoers.d/99-geminux-installer
+chmod 440 /etc/sudoers.d/99-geminux-installer
+
 # Launcher for Calamares on Desktop
 cat <<'EOF' > /usr/share/applications/calamares.desktop
 [Desktop Entry]
@@ -121,7 +153,7 @@ Version=1.0
 Name=Install Geminux OS
 GenericName=Live Installer
 Comment=Install the operating system to disk
-Exec=sudo -E calamares -d
+Exec=/usr/local/bin/geminux-installer
 Icon=calamares
 Terminal=false
 Categories=System;Qt;

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Geminux Installer Launch Wrapper
+set -e
+
+# Grant root access to current display server (Wayland and X11)
+xhost +local:root 2>/dev/null || true
+xhost +SI:localuser:root 2>/dev/null || true
+
+# Force Qt to X11/XWayland for maximum compatibility across VMs and hardware
+export QT_QPA_PLATFORM="xcb;wayland"
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
+export BROWSER=firefox
+
+# Execute Calamares with debug logs saved to /var/log/calamares.log
+if command -v pkexec >/dev/null 2>&1; then
+    pkexec env DISPLAY="${DISPLAY}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" XAUTHORITY="${XAUTHORITY}" calamares -d "$@" 2>&1 | tee /var/log/calamares.log
+else
+    sudo -E calamares -d "$@" 2>&1 | tee /var/log/calamares.log
+fi
