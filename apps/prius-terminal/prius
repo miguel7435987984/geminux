@@ -54,6 +54,7 @@ class PriusTab(Gtk.Box):
         # Connect signals
         self.terminal.connect("child-exited", self.on_child_exited)
         self.terminal.connect("window-title-changed", self.on_title_changed)
+        self.terminal.connect("button-press-event", self.on_button_press)
 
         # Scrolled window
         scrolled = Gtk.ScrolledWindow()
@@ -83,6 +84,50 @@ class PriusTab(Gtk.Box):
     def on_title_changed(self, terminal):
         title = terminal.get_window_title() or "prius"
         self.parent_window.update_tab_title(self, title)
+
+    def on_button_press(self, terminal, event):
+        if event.button == 3:  # Right click
+            menu = Gtk.Menu()
+
+            # Copy
+            copy_item = Gtk.MenuItem(label="Copiar (Ctrl+Shift+C)")
+            copy_item.connect("activate", lambda m: self.terminal.copy_clipboard_format(Vte.Format.TEXT))
+            copy_item.set_sensitive(self.terminal.get_has_selection())
+            menu.append(copy_item)
+
+            # Paste
+            paste_item = Gtk.MenuItem(label="Colar (Ctrl+Shift+V)")
+            paste_item.connect("activate", lambda m: self.terminal.paste_clipboard())
+            menu.append(paste_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            # Select All
+            select_all_item = Gtk.MenuItem(label="Selecionar Tudo")
+            select_all_item.connect("activate", lambda m: self.terminal.select_all())
+            menu.append(select_all_item)
+
+            # Clear Scrollback
+            clear_item = Gtk.MenuItem(label="Limpar Terminal")
+            clear_item.connect("activate", lambda m: self.terminal.reset(True, True))
+            menu.append(clear_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            # New Tab
+            new_tab_item = Gtk.MenuItem(label="Nova Aba (Ctrl+Shift+T)")
+            new_tab_item.connect("activate", lambda m: self.parent_window.add_new_tab())
+            menu.append(new_tab_item)
+
+            # Close Tab
+            close_tab_item = Gtk.MenuItem(label="Fechar Aba (Ctrl+Shift+W)")
+            close_tab_item.connect("activate", lambda m: self.parent_window.close_tab(self))
+            menu.append(close_tab_item)
+
+            menu.show_all()
+            menu.popup_at_pointer(event)
+            return True
+        return False
 
 
 class PriusWindow(Gtk.Window):
