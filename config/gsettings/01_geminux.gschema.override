@@ -21,6 +21,9 @@ picture-uri='file:///usr/share/backgrounds/geminux/geminux-default.png'
 [org.gnome.shell]
 favorite-apps=['firefox.desktop', 'prius-terminal.desktop', 'org.gnome.Nautilus.desktop', 'calamares.desktop']
 
+[org.gnome.shell.ubuntu]
+color-scheme='prefer-dark'
+
 [org.gnome.desktop.wm.preferences]
 button-layout='appmenu:minimize,maximize,close'
 theme='Adwaita-dark'

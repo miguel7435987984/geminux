@@ -25,12 +25,15 @@ fi
 
 # 3. Wallpapers & Icons
 mkdir -p /usr/share/backgrounds/geminux
+mkdir -p /usr/share/backgrounds
 mkdir -p /usr/share/icons/hicolor/scalable/apps
 mkdir -p /usr/share/icons/hicolor/256x256/apps
 mkdir -p /usr/share/icons/hicolor/128x128/apps
 
 if [ -d /tmp/geminux-build/branding ]; then
-    cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/geminux/
+    cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/geminux/geminux-default.png
+    cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png || true
+    cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/hicolor/256x256/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/
