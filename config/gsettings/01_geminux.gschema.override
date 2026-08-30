@@ -1,0 +1,26 @@
+# Geminux GNOME Default Settings
+[org.gnome.desktop.interface]
+gtk-theme='Adwaita-dark'
+icon-theme='Yaru-blue'
+cursor-theme='Yaru'
+font-name='Ubuntu 11'
+document-font-name='Ubuntu 11'
+monospace-font-name='Monospace 11'
+color-scheme='prefer-dark'
+
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/geminux/geminux-default.png'
+picture-uri-dark='file:///usr/share/backgrounds/geminux/geminux-default.png'
+picture-options='zoom'
+primary-color='#0f141c'
+secondary-color='#000000'
+
+[org.gnome.desktop.screensaver]
+picture-uri='file:///usr/share/backgrounds/geminux/geminux-default.png'
+
+[org.gnome.shell]
+favorite-apps=['firefox.desktop', 'prius-terminal.desktop', 'org.gnome.Nautilus.desktop', 'calamares.desktop']
+
+[org.gnome.desktop.wm.preferences]
+button-layout='appmenu:minimize,maximize,close'
+theme='Adwaita-dark'

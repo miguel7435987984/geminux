@@ -1,0 +1,33 @@
+{
+  "policies": {
+    "DisableAppUpdate": true,
+    "Homepage": {
+      "URL": "https://geminux.org",
+      "Locked": false,
+      "StartPage": "homepage"
+    },
+    "Bookmarks": [
+      {
+        "Title": "Geminux OS",
+        "URL": "https://geminux.org",
+        "Favicon": "https://geminux.org/favicon.ico",
+        "Placement": "toolbar"
+      },
+      {
+        "Title": "Ubuntu Packages",
+        "URL": "https://packages.ubuntu.com",
+        "Placement": "toolbar"
+      }
+    ],
+    "SearchEngines": {
+      "Default": "DuckDuckGo",
+      "PreventInstalls": false
+    },
+    "ExtensionSettings": {
+      "uBlock0@raymondhill.net": {
+        "installation_mode": "normal_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      }
+    }
+  }
+}

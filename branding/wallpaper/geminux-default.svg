@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#0b1b33"/>
+      <stop offset="50%" stop-color="#060c17"/>
+      <stop offset="100%" stop-color="#020408"/>
+    </radialGradient>
+    <linearGradient id="neonBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+    <linearGradient id="neonDeep" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+    <filter id="ultraGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur1"/>
+      <feGaussianBlur stdDeviation="28" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Cosmic Background -->
+  <rect width="1920" height="1080" fill="url(#bgGlow)"/>
+
+  <!-- Geometric Grid Accent Lines -->
+  <g opacity="0.1" stroke="#00d2ff" stroke-width="1">
+    <line x1="0" y1="540" x2="1920" y2="540"/>
+    <line x1="960" y1="0" x2="960" y2="1080"/>
+    <circle cx="960" cy="500" r="350" fill="none"/>
+    <circle cx="960" cy="500" r="550" fill="none"/>
+  </g>
+
+  <!-- Ambient glowing rings -->
+  <g transform="translate(960, 480)">
+    <ellipse cx="0" cy="0" rx="420" ry="200" fill="none" stroke="#00d2ff" stroke-width="2.5" stroke-opacity="0.35" transform="rotate(-25)"/>
+    <ellipse cx="0" cy="0" rx="420" ry="200" fill="none" stroke="#4facfe" stroke-width="2" stroke-opacity="0.25" transform="rotate(35)"/>
+
+    <!-- Left Crystal -->
+    <polygon points="-80,-140 0,-40 -80,180 -160,20" fill="url(#neonBlue)" opacity="0.88" filter="url(#ultraGlow)"/>
+
+    <!-- Right Crystal -->
+    <polygon points="80,-140 160,20 80,180 0,-40" fill="url(#neonDeep)" opacity="0.88" filter="url(#ultraGlow)"/>
+
+    <!-- Center Core Star -->
+    <polygon points="0,-40 40,20 0,80 -40,20" fill="#ffffff" filter="url(#ultraGlow)"/>
+
+    <!-- Energy Nodes -->
+    <circle cx="-280" cy="-60" r="4" fill="#00f2fe" filter="url(#ultraGlow)"/>
+    <circle cx="280" cy="80" r="5" fill="#00c6ff" filter="url(#ultraGlow)"/>
+  </g>
+
+  <!-- Typography -->
+  <text x="960" y="800" font-family="'Ubuntu', 'Inter', 'Cantarell', sans-serif" font-size="52" font-weight="700" fill="#ffffff" letter-spacing="14" text-anchor="middle">
+    GEMINUX
+  </text>
+  <text x="960" y="845" font-family="'Ubuntu', 'Inter', 'Cantarell', sans-serif" font-size="18" font-weight="300" fill="#00d2ff" letter-spacing="8" text-anchor="middle">
+    SYSTEM LINUX
+  </text>
+</svg>

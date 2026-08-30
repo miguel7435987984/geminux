@@ -1,0 +1,67 @@
+name: Build Geminux OS ISO
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    name: Build Geminux Live ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout Geminux Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space on Runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debootstrap xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools dosfstools
+
+      - name: Fix and Optimize Build Script
+        run: |
+          chmod +x build/build-iso.sh
+          chmod +x apps/prius-terminal/prius
+          chmod +x apps/prius-terminal/install.sh
+          chmod +x build/live-hooks/customize.sh
+
+      - name: Build Geminux ISO Image
+        run: |
+          sudo ./build/build-iso.sh
+
+      - name: Upload Geminux ISO as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geminux-1.0-amd64-iso
+          path: geminux-1.0-amd64.iso
+          retention-days: 14
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          files: geminux-1.0-amd64.iso
+          tag_name: v1.0
+          name: Geminux OS 1.0 LTS (Resolute)
+          body: |
+            ## 🚀 Geminux OS 1.0 LTS Release
+            Official Live ISO Image for Geminux OS.
+
+            - **Base:** Ubuntu 26.04 LTS (Resolute)
+            - **Default Browser:** Mozilla Firefox with uBlock Origin
+            - **Default Terminal:** Prius Terminal (Python 3 + GTK3/VTE)
+            - **Desktop Environment:** GNOME Minimal Dark
+            - **Installer:** Calamares
+            - **Boot:** Plymouth + GRUB UEFI/BIOS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

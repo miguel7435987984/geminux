@@ -1,0 +1,44 @@
+# Base System & Kernel
+linux-generic
+linux-headers-generic
+initramfs-tools
+systemd-sysv
+grub-efi-amd64-signed
+grub-pc-bin
+shim-signed
+plymouth
+plymouth-themes
+
+# Live Boot Essentials
+casper
+discover
+laptop-detect
+os-prober
+sudo
+network-manager
+net-tools
+iw
+wpasupplicant
+
+# GNOME Desktop Minimal
+ubuntu-desktop-minimal
+gnome-shell
+gnome-control-center
+gnome-terminal
+nautilus
+gdm3
+
+# Default Apps & Tools
+firefox
+python3-gi
+gir1.2-vte-2.91
+gir1.2-gtk-3.0
+calamares
+gparted
+curl
+wget
+git
+fastfetch
+htop
+nano
+vim

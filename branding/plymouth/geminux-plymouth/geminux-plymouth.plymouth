@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Geminux Boot Splash
+Description=Futuristic boot splash for Geminux System Linux
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/geminux-plymouth
+ScriptFile=/usr/share/plymouth/themes/geminux-plymouth/geminux.script

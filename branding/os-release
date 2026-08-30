@@ -1,0 +1,13 @@
+# Geminux OS Release Info
+NAME="Geminux OS"
+VERSION="1.0 LTS (Resolute)"
+ID=geminux
+ID_LIKE="ubuntu debian"
+PRETTY_NAME="Geminux OS 1.0 LTS"
+VERSION_ID="1.0"
+HOME_URL="https://geminux.org/"
+SUPPORT_URL="https://geminux.org/support"
+BUG_REPORT_URL="https://geminux.org/issues"
+PRIVACY_POLICY_URL="https://geminux.org/privacy"
+UBUNTU_CODENAME=resolute
+LOGO=geminux-logo

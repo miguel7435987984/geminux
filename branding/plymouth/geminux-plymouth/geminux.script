@@ -1,0 +1,57 @@
+# Geminux Plymouth Boot Splash Script
+
+# Screen dimensions
+screen.w = Window.GetWidth();
+screen.h = Window.GetHeight();
+
+# Background
+bg_image = Image("background.png");
+if (bg_image) {
+    resized_bg = bg_image.Scale(screen.w, screen.h);
+    bg_sprite = Sprite(resized_bg);
+    bg_sprite.SetZ(-100);
+} else {
+    Window.SetBackgroundTopColor(0.02, 0.04, 0.08);
+    Window.SetBackgroundBottomColor(0.01, 0.02, 0.04);
+}
+
+# Logo Sprite
+logo_image = Image("logo.png");
+if (logo_image) {
+    logo_sprite = Sprite(logo_image);
+    logo_sprite.SetX(screen.w / 2 - logo_image.GetWidth() / 2);
+    logo_sprite.SetY(screen.h / 2 - logo_image.GetHeight() / 2 - 40);
+    logo_sprite.SetOpacity(1.0);
+}
+
+# Glow / Pulse animation variables
+pulse_val = 0.0;
+pulse_dir = 0.03;
+
+fun refresh_callback() {
+    pulse_val += pulse_dir;
+    if (pulse_val > 1.0) {
+        pulse_val = 1.0;
+        pulse_dir = -0.03;
+    }
+    if (pulse_val < 0.2) {
+        pulse_val = 0.2;
+        pulse_dir = 0.03;
+    }
+    if (logo_sprite) {
+        logo_sprite.SetOpacity(0.7 + (pulse_val * 0.3));
+    }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Status / Message display
+message_sprite = Sprite();
+message_sprite.SetPosition(screen.w / 2 - 150, screen.h / 2 + 120, 10000);
+
+fun message_callback(text) {
+    my_image = Image.Text(text, 0.0, 0.82, 1.0);
+    message_sprite.SetImage(my_image);
+}
+
+Plymouth.SetMessageFunction(message_callback);
