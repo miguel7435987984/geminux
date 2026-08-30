@@ -334,16 +334,19 @@
             line-height: 1.45;
             overflow-x: auto;
             border: 1px solid #142033;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .terminal-screen .ascii-logo {
             color: var(--cyan);
             font-weight: bold;
-            float: left;
-            margin-right: 20px;
-            line-height: 1.15;
+            line-height: 1.2;
             white-space: pre;
             text-shadow: 0 0 10px var(--cyan-glow);
+            margin: 0;
+            font-size: 0.8rem;
         }
 
         .terminal-screen .info-field {
@@ -537,20 +540,23 @@
                 </div>
                 <div class="showcase-body">
                     <div class="terminal-screen">
-                        <pre class="ascii-logo">
-      .---.
-     /     \
-.---/  .-.  \---.
-/   /  /   \  \   \
-|   |  /  / \  \  |
-|   | \  \   /  / |
- \   \  \  '  /  /
-  '---\  '-'  /---'
-       \     /
-        '---'</pre>
+                        <pre class="ascii-logo">             .---.
+            /     \
+       .---/  .-.  \---.
+      /   /  /   \  \   \
+     /   /  /  .  \  \   \
+    |   |  /  / \  \  |   |
+    |   | /  /   \  \ |   |
+    |   | \  \   /  / |   |
+    |   |  \  \ /  /  |   |
+     \   \  \  '  /  /   /
+      \   \  \   /  /   /
+       '---\  '-'  /---'
+            \     /
+             '---'</pre>
                         <div>
                             <div><strong style="color: #00d2ff;">miguel</strong>@<strong style="color: #00d2ff;">geminux</strong></div>
-                            <div>-------------------------</div>
+                            <div style="color: #64748b;">-------------------------</div>
                             <div><span class="info-field">OS:</span> <span class="info-val">Geminux OS 1.0 LTS x86_64</span></div>
                             <div><span class="info-field">Host:</span> <span class="info-val">PC / Virtual Machine</span></div>
                             <div><span class="info-field">Kernel:</span> <span class="info-val">Linux 7.0.0-30-generic</span></div>
@@ -561,7 +567,6 @@
                             <div><span class="info-field">Terminal:</span> <span class="info-val">Prius Terminal (VTE)</span></div>
                             <div><span class="info-field">Timezone:</span> <span class="info-val">America/Sao_Paulo (UTC-3)</span></div>
                         </div>
-                        <div style="clear:both;"></div>
                     </div>
                     <div class="showcase-desc">
                         <h4>Branding Fastfetch Exclusivo</h4>
