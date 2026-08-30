@@ -217,13 +217,12 @@ mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI
 mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI/BOOT
 mcopy -i "${IMAGE_DIR}/boot/grub/efi.img" "${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" ::EFI/BOOT/
 
-# Build BIOS i386-pc core image for Universal Boot (Hybrid BIOS + UEFI)
-grub-mkstandalone \
-    --format=i386-pc \
+# Build BIOS i386-pc core image with standard cdboot for El Torito
+grub-mkimage \
+    --format=i386-pc-eltorito \
     --output="${IMAGE_DIR}/boot/grub/bios.img" \
-    --locales="" \
-    --fonts="" \
-    "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
+    --prefix=/boot/grub \
+    iso9660 biosdisk search search_fs_file
 
 # Step 9: Generate Universal Hybrid ISO with xorriso
 log "Step 9: Creating Bootable ISO: ${OUT_ISO}..."
