@@ -158,6 +158,7 @@ printf $(du -sx --block-size=1 "${ROOTFS_DIR}" | cut -f1) > "${IMAGE_DIR}/casper
 # Step 7: Configure GRUB Bootloader for ISO
 log "Step 7: Generating GRUB boot configurations..."
 cat <<EOF > "${IMAGE_DIR}/boot/grub/grub.cfg"
+search --set=root --file /casper/vmlinuz
 set default="0"
 set timeout=5
 
@@ -193,14 +194,21 @@ menuentry "Boot from next volume" {
 }
 EOF
 
-# Step 8: Build EFI Boot image
-log "Step 8: Setting up EFI boot loader..."
+# Embedded early grub config for EFI to locate CD-ROM root
+cat <<EOF > "${WORK_DIR}/early-grub.cfg"
+search --set=root --file /casper/vmlinuz
+set prefix=(\$root)/boot/grub
+configfile \$prefix/grub.cfg
+EOF
+
+# Step 8: Build EFI Boot image & Hybrid BIOS Boot
+log "Step 8: Setting up EFI boot loader and BIOS boot..."
 grub-mkstandalone \
     --format=x86_64-efi \
     --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
     --locales="" \
     --fonts="" \
-    "boot/grub/grub.cfg=${IMAGE_DIR}/boot/grub/grub.cfg"
+    "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
 
 # Create FAT image for EFI
 dd if=/dev/zero of="${IMAGE_DIR}/boot/grub/efi.img" bs=1M count=10
@@ -209,7 +217,15 @@ mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI
 mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI/BOOT
 mcopy -i "${IMAGE_DIR}/boot/grub/efi.img" "${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" ::EFI/BOOT/
 
-# Step 9: Generate ISO with xorriso
+# Build BIOS i386-pc core image for Universal Boot (Hybrid BIOS + UEFI)
+grub-mkstandalone \
+    --format=i386-pc \
+    --output="${IMAGE_DIR}/boot/grub/bios.img" \
+    --locales="" \
+    --fonts="" \
+    "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
+
+# Step 9: Generate Universal Hybrid ISO with xorriso
 log "Step 9: Creating Bootable ISO: ${OUT_ISO}..."
 xorriso -as mkisofs \
     -iso-level 3 \
@@ -224,17 +240,7 @@ xorriso -as mkisofs \
     -no-emul-boot \
     -isohybrid-gpt-basdat \
     -output "${OUT_ISO}" \
-    "${IMAGE_DIR}" 2>/dev/null || {
-        # Fallback simplified xorriso command if BIOS boot image is absent
-        xorriso -as mkisofs \
-            -iso-level 3 \
-            -volid "GEMINUX_OS" \
-            -e boot/grub/efi.img \
-            -no-emul-boot \
-            -isohybrid-gpt-basdat \
-            -output "${OUT_ISO}" \
-            "${IMAGE_DIR}"
-    }
+    "${IMAGE_DIR}"
 
 log_ok "Geminux OS ISO generated successfully: ${OUT_ISO}"
 log_ok "To test the ISO in QEMU: qemu-system-x86_64 -enable-kvm -m 4G -cdrom ${OUT_ISO} -boot d"
