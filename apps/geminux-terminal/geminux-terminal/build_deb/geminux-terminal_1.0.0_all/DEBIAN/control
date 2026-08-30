@@ -1,0 +1,12 @@
+Package: geminux-terminal
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Geminux Project <support@geminux.org>
+Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-vte-2.91, python3-cairo
+Description: Terminal moderno, bonito e customizável para Linux
+ Geminux Terminal é um emulador de terminal elegante com suporte a temas
+ modernos (Catppuccin, Dracula, Tokyo Night, Nord, Cyberpunk), transparência
+ com efeito glassmorphism, abas, divisão de tela (split panes), pesquisa,
+ URLs clicáveis e atalhos customizáveis.

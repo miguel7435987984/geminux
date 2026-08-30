@@ -40,7 +40,7 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/icons/hicolor/128x128/apps/
 fi
 
-# 4. Install Prius Terminal
+# 4. Install Prius Terminal & Geminux Terminal
 if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -d /usr/local/bin
     install -d /usr/share/applications
@@ -49,9 +49,14 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -m 755 /tmp/geminux-build/apps/prius-terminal/prius /usr/local/bin/prius
     install -m 644 /tmp/geminux-build/apps/prius-terminal/prius-terminal.desktop /usr/share/applications/prius-terminal.desktop
     install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
+fi
 
+# Install Geminux Terminal (.deb) as default system terminal (replacing gnome-terminal)
+if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb ]; then
+    dpkg -i /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb || apt-get install -f -y
     if [ -x "$(command -v update-alternatives)" ]; then
-        update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/prius 60 || true
+        update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/geminux-terminal 80 || true
+        update-alternatives --set x-terminal-emulator /usr/bin/geminux-terminal || true
     fi
 fi
 

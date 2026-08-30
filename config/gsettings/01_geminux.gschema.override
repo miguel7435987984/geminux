@@ -19,7 +19,7 @@ secondary-color='#000000'
 picture-uri='file:///usr/share/backgrounds/geminux/geminux-default.png'
 
 [org.gnome.shell]
-favorite-apps=['firefox.desktop', 'prius-terminal.desktop', 'org.gnome.Nautilus.desktop', 'calamares.desktop']
+favorite-apps=['firefox.desktop', 'geminux-terminal.desktop', 'prius-terminal.desktop', 'org.gnome.Nautilus.desktop', 'calamares.desktop']
 
 [org.gnome.shell.ubuntu]
 color-scheme='prefer-dark'

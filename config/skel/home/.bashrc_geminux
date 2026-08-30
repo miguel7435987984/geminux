@@ -1,10 +1,12 @@
 # Geminux custom bashrc additions
-if [ -n "$PRIUS_TERMINAL" ]; then
+if [ -n "$PRIUS_TERMINAL" ] || [ -n "$GEMINUX_TERMINAL" ]; then
     PS1='\[\033[01;36m\]geminux\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 fi
 
 alias prius='/usr/local/bin/prius'
+alias geminux-terminal='/usr/bin/geminux-terminal'
 alias fastfetch='fastfetch -c /etc/fastfetch/config.jsonc'
 alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
 alias geminux-info='fastfetch -c /etc/fastfetch/config.jsonc'
+
 

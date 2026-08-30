@@ -1,0 +1,13 @@
+Geminux Terminal para Debian / Ubuntu / Mint / Pop!_OS
+======================================================
+Para executar, abra o menu de aplicativos ou execute:
+  $ geminux-terminal
+
+Atalhos principais:
+  Ctrl+Shift+T : Nova Aba
+  Ctrl+Shift+W : Fechar Aba/Divisão
+  Ctrl+Shift+E : Dividir Verticalmente
+  Ctrl+Shift+O : Dividir Horizontalmente
+  Ctrl+Shift+F : Buscar no histórico
+  Ctrl+Shift+P : Abrir Preferências e Temas
+  F11          : Tela Cheia
