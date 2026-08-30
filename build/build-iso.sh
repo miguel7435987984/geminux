@@ -203,6 +203,12 @@ EOF
 
 # Step 8: Build EFI Boot image & Hybrid BIOS Boot
 log "Step 8: Setting up EFI boot loader and BIOS boot..."
+
+# Copy GRUB modules to ISO so normal.mod is always available for BIOS & EFI
+mkdir -p "${IMAGE_DIR}/boot/grub/i386-pc" "${IMAGE_DIR}/boot/grub/x86_64-efi"
+cp -r /usr/lib/grub/i386-pc/* "${IMAGE_DIR}/boot/grub/i386-pc/" 2>/dev/null || true
+cp -r /usr/lib/grub/x86_64-efi/* "${IMAGE_DIR}/boot/grub/x86_64-efi/" 2>/dev/null || true
+
 grub-mkstandalone \
     --format=x86_64-efi \
     --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
@@ -222,7 +228,7 @@ grub-mkimage \
     --format=i386-pc-eltorito \
     --output="${IMAGE_DIR}/boot/grub/bios.img" \
     --prefix=/boot/grub \
-    iso9660 biosdisk search search_fs_file
+    iso9660 biosdisk search search_fs_file normal test
 
 # Step 9: Generate Universal Hybrid ISO with xorriso
 log "Step 9: Creating Bootable ISO: ${OUT_ISO}..."
