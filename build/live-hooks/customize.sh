@@ -54,7 +54,7 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/icons/hicolor/128x128/apps/
 
-    # GNOME Settings (About Page) Pixmaps & Logos
+    # GNOME Settings (About Page) & GDM Login Screen Pixmaps & Logos
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text.svg || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text-dark.svg || true
@@ -62,6 +62,11 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text-dark.png || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text.svg || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text-dark.svg || true
+
+    # GDM Greeter Vendor Logos
+    mkdir -p /usr/share/images/vendor-logos
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/images/vendor-logos/logo-text-version-64.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/images/vendor-logos/logo-text-version-128.png || true
 
     # Distributor Logo (Yaru Theme)
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/Yaru/scalable/places/distributor-logo-symbolic.svg || true

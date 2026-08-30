@@ -24,6 +24,9 @@ favorite-apps=['firefox.desktop', 'geminux-terminal.desktop', 'prius-terminal.de
 [org.gnome.shell.ubuntu]
 color-scheme='prefer-dark'
 
+[org.gnome.login-screen]
+logo='/usr/share/pixmaps/ubuntu-logo.svg'
+
 [org.gnome.desktop.wm.preferences]
 button-layout='appmenu:minimize,maximize,close'
 theme='Adwaita-dark'
