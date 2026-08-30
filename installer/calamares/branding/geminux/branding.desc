@@ -25,6 +25,9 @@ images:
     productIcon:         "logo.png"
     productWelcome:      "welcome.png"
 
+slideshow:               "show.qml"
+slideshowAPI:            2
+
 style:
    SidebarBackground:    "#0f141c"
    SidebarText:          "#e6edf3"
