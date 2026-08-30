@@ -29,6 +29,27 @@ nautilus
 gdm3
 x11-xserver-utils
 
+# Language & Localization Essentials (Pre-installed)
+locales
+locales-all
+language-pack-pt
+language-pack-pt-base
+language-pack-gnome-pt
+language-pack-gnome-pt-base
+language-pack-en
+language-pack-en-base
+language-pack-gnome-en
+language-pack-gnome-en-base
+language-pack-es
+language-pack-es-base
+language-pack-gnome-es
+language-pack-gnome-es-base
+hunspell-pt-br
+hunspell-en-us
+wportuguese
+fonts-dejavu-core
+fonts-noto-core
+
 # Default Apps & Tools
 python3-gi
 python3-cairo

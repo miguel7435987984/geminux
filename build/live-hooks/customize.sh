@@ -9,13 +9,19 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "==> [Geminux Hook] Configuring System..."
 
-# 1. Hostname & Hosts
+# 1. Hostname, Hosts & Locales Generation
 echo "geminux" > /etc/hostname
 cat <<EOF > /etc/hosts
 127.0.0.1   localhost
 127.0.1.1   geminux
 ::1         localhost ip6-localhost ip6-loopback
 EOF
+
+# Pre-generate locales to ensure instant language switching in GNOME Language Support
+if [ -x "$(command -v locale-gen)" ]; then
+    locale-gen pt_BR.UTF-8 pt_PT.UTF-8 en_US.UTF-8 es_ES.UTF-8 || true
+    update-locale LANG=pt_BR.UTF-8 LC_MESSAGES=POSIX || true
+fi
 
 # 2. OS Release Information
 if [ -f /tmp/geminux-build/branding/os-release ]; then
