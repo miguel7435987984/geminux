@@ -4,4 +4,7 @@ if [ -n "$PRIUS_TERMINAL" ]; then
 fi
 
 alias prius='/usr/local/bin/prius'
-alias geminux-info='neofetch'
+alias fastfetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias geminux-info='fastfetch -c /etc/fastfetch/config.jsonc'
+

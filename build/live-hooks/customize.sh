@@ -182,12 +182,18 @@ StartupNotify=true
 EOF
 chmod 644 /usr/share/applications/calamares.desktop
 
-# 10. User Skel Configuration
+# 10. Fastfetch Configuration & Custom Logo
+mkdir -p /etc/fastfetch
+if [ -d /tmp/geminux-build/config/fastfetch ]; then
+    cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
+fi
+
+# 11. User Skel Configuration
 if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc
 fi
 
-# 11. Generate initramfs for Live boot
+# 12. Generate initramfs for Live boot
 KERNEL_VER=$(ls -1 /lib/modules | tail -n 1)
 if [ -n "${KERNEL_VER}" ]; then
     echo "==> Generating initramfs for kernel ${KERNEL_VER}..."
