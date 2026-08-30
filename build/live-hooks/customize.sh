@@ -17,11 +17,15 @@ cat <<EOF > /etc/hosts
 ::1         localhost ip6-localhost ip6-loopback
 EOF
 
-# Pre-generate locales to ensure instant language switching in GNOME Language Support
+# Pre-generate locales and set America/Sao_Paulo timezone
 if [ -x "$(command -v locale-gen)" ]; then
     locale-gen pt_BR.UTF-8 pt_PT.UTF-8 en_US.UTF-8 es_ES.UTF-8 || true
     update-locale LANG=pt_BR.UTF-8 LC_MESSAGES=POSIX || true
 fi
+
+# Set default timezone to America/Sao_Paulo (UTC-3)
+ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+echo "America/Sao_Paulo" > /etc/timezone
 
 # 2. OS Release Information
 if [ -f /tmp/geminux-build/branding/os-release ]; then
