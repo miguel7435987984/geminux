@@ -227,7 +227,15 @@ if [ -d /tmp/geminux-build/config/fastfetch ]; then
     cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
 fi
 
-# 11. User Skel Configuration
+# 11. Custom App Names: Geminux Atualizações (Update Manager) & Central de Aplicativos
+if [ -f /usr/share/applications/update-manager.desktop ]; then
+    sed -i 's/^Name=.*/Name=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
+    sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
+    sed -i 's/^GenericName=.*/GenericName=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
+    sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
+fi
+
+# 12. User Skel Configuration
 if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc
 fi
