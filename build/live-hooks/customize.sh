@@ -227,7 +227,7 @@ if [ -d /tmp/geminux-build/config/fastfetch ]; then
     cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
 fi
 
-# 11. Custom App Names: Geminux Atualizações (Update Manager) & Geminux Store (App Center)
+# 11. Custom App Names: Geminux Atualizações, Geminux Store & Geminux TaskView
 if [ -f /usr/share/applications/update-manager.desktop ]; then
     sed -i 's/^Name=.*/Name=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
@@ -241,6 +241,15 @@ for app_desktop in /usr/share/applications/snap-store_snap-store.desktop /usr/sh
         sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Store/g' "$app_desktop" || true
         sed -i 's/^GenericName=.*/GenericName=Geminux Store/g' "$app_desktop" || true
         sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Store/g' "$app_desktop" || true
+    fi
+done
+
+for task_desktop in /usr/share/applications/gnome-system-monitor.desktop /usr/share/applications/org.gnome.SystemMonitor.desktop; do
+    if [ -f "$task_desktop" ]; then
+        sed -i 's/^Name=.*/Name=Geminux TaskView/g' "$task_desktop" || true
+        sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux TaskView/g' "$task_desktop" || true
+        sed -i 's/^GenericName=.*/GenericName=Geminux TaskView/g' "$task_desktop" || true
+        sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux TaskView/g' "$task_desktop" || true
     fi
 done
 
