@@ -8,6 +8,7 @@ Type=Application
 Categories=System;TerminalEmulator;Utility;
 Keywords=shell;prompt;command;commandline;cmd;prius;geminux;
 StartupNotify=true
+StartupWMClass=prius-terminal
 Actions=NewTab;NewWindow;
 
 [Desktop Action NewTab]

@@ -291,12 +291,16 @@ class PriusWindow(Gtk.Window):
         about.set_website("https://geminux.org")
         about.set_website_label("Geminux Project")
         about.set_authors(["Geminux OS Team"])
-        about.set_logo_icon_name("utilities-terminal")
+        about.set_logo_icon_name("prius-terminal")
         about.run()
         about.destroy()
 
 def main():
+    GLib.set_prgname("prius-terminal")
+    GLib.set_application_name("Prius Terminal")
+    Gtk.Window.set_default_icon_name("prius-terminal")
     app = PriusWindow()
+    app.set_wmclass("prius-terminal", "prius-terminal")
     app.connect("destroy", Gtk.main_quit)
     app.show_all()
     Gtk.main()

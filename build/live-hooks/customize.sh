@@ -53,6 +53,11 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/hicolor/256x256/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/icons/hicolor/128x128/apps/
+    cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/pixmaps/prius-terminal.svg || true
+    cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/pixmaps/prius-terminal.png || true
+    mkdir -p /usr/share/icons/Yaru/scalable/apps
+    cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/Yaru/scalable/apps/ || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/Yaru/scalable/apps/ || true
 
     # GNOME Settings (About Page) & GDM Login Screen Pixmaps & Logos
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg || true
@@ -258,7 +263,16 @@ if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc
 fi
 
-# 12. Generate initramfs for Live boot
+# 13. Update Desktop & Icon Caches
+if [ -x "$(command -v update-desktop-database)" ]; then
+    update-desktop-database /usr/share/applications || true
+fi
+if [ -x "$(command -v gtk-update-icon-cache)" ]; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+    gtk-update-icon-cache -f -t /usr/share/icons/Yaru || true
+fi
+
+# 14. Generate initramfs for Live boot
 KERNEL_VER=$(ls -1 /lib/modules | tail -n 1)
 if [ -n "${KERNEL_VER}" ]; then
     echo "==> Generating initramfs for kernel ${KERNEL_VER}..."
