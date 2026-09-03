@@ -227,13 +227,22 @@ if [ -d /tmp/geminux-build/config/fastfetch ]; then
     cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
 fi
 
-# 11. Custom App Names: Geminux Atualizações (Update Manager) & Central de Aplicativos
+# 11. Custom App Names: Geminux Atualizações (Update Manager) & Geminux Store (App Center)
 if [ -f /usr/share/applications/update-manager.desktop ]; then
     sed -i 's/^Name=.*/Name=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^GenericName=.*/GenericName=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
 fi
+
+for app_desktop in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do
+    if [ -f "$app_desktop" ]; then
+        sed -i 's/^Name=.*/Name=Geminux Store/g' "$app_desktop" || true
+        sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Store/g' "$app_desktop" || true
+        sed -i 's/^GenericName=.*/GenericName=Geminux Store/g' "$app_desktop" || true
+        sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Store/g' "$app_desktop" || true
+    fi
+done
 
 # 12. User Skel Configuration
 if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
