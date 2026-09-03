@@ -51,6 +51,7 @@ fonts-dejavu-core
 fonts-noto-core
 
 # Default Apps & Tools
+gnome-software
 gnome-system-monitor
 python3-gi
 python3-cairo
