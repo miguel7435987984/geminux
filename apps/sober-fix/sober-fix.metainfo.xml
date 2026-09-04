@@ -35,6 +35,15 @@
     <keyword>game</keyword>
   </keywords>
   <content_rating type="oars-1.1" />
+  <releases>
+    <release version="1.0.0" date="2026-09-04">
+      <size type="download">4096</size>
+      <size type="installed">8192</size>
+      <description>
+        <p>Lançamento inicial oficial do Sober Fix para o Geminux OS 1.0 LTS.</p>
+      </description>
+    </release>
+  </releases>
   <developer id="org.geminux.soberfix">
     <name>Geminux OS Team</name>
   </developer>
