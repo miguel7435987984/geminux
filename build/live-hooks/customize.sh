@@ -185,12 +185,15 @@ if [ -f /tmp/geminux-build/config/gsettings/99_geminux.gschema.override ]; then
     glib-compile-schemas /usr/share/glib-2.0/schemas || true
 fi
 
-# 8.1 APT Branding Shield Hook (Ensures Geminux themes, Sobre page, Login screen & settings persist through any system upgrade)
+# 8.1 APT Branding Shield Hook (Ensures Geminux themes, Sobre page, Login screen, Store & settings persist through any system upgrade)
 mkdir -p /etc/apt/apt.conf.d
 cat <<'EOF' > /etc/apt/apt.conf.d/99geminux-branding
 DPkg::Post-Invoke {
     "if [ -f /etc/geminux/os-release ]; then cp /etc/geminux/os-release /etc/os-release && cp /etc/geminux/os-release /usr/lib/os-release || true; fi";
     "if [ -d /etc/geminux/branding ]; then cp /etc/geminux/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text.svg 2>/dev/null || true; fi";
+    "for app in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do if [ -f \"$app\" ]; then sed -i 's/^Name=.*/Name=Geminux Store/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux Store/g; s/^GenericName=.*/GenericName=Geminux Store/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux Store/g' \"$app\" 2>/dev/null || true; fi; done";
+    "for task in /usr/share/applications/gnome-system-monitor.desktop /usr/share/applications/org.gnome.SystemMonitor.desktop; do if [ -f \"$task\" ]; then sed -i 's/^Name=.*/Name=Geminux TaskView/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux TaskView/g; s/^GenericName=.*/GenericName=Geminux TaskView/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux TaskView/g' \"$task\" 2>/dev/null || true; fi; done";
+    "if [ -f /usr/share/applications/update-manager.desktop ]; then sed -i '/NoDisplay=true/d' /usr/share/applications/update-manager.desktop; echo 'NoDisplay=true' >> /usr/share/applications/update-manager.desktop || true; fi";
     "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
     "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
     "if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database -q /usr/share/applications 2>/dev/null || true; fi";
