@@ -42,7 +42,7 @@ if [ -f /tmp/geminux-build/branding/os-release ]; then
     cp /etc/geminux/os-release /etc/os-release
 fi
 
-# 3. Wallpapers, Pixmaps & System Branding (GNOME Settings About Page)
+# 3. Wallpapers, Pixmaps & System Branding (GNOME Settings About Page & GDM Login Screen)
 mkdir -p /usr/share/backgrounds/geminux
 mkdir -p /usr/share/backgrounds
 mkdir -p /usr/share/pixmaps
@@ -51,8 +51,11 @@ mkdir -p /usr/share/icons/hicolor/256x256/apps
 mkdir -p /usr/share/icons/hicolor/128x128/apps
 mkdir -p /usr/share/icons/Yaru/scalable/places
 mkdir -p /usr/share/icons/Yaru/256x256/places
+mkdir -p /etc/geminux/branding
 
 if [ -d /tmp/geminux-build/branding ]; then
+    cp -r /tmp/geminux-build/branding/* /etc/geminux/branding/ || true
+
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/geminux/geminux-default.png
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png || true
     cp /tmp/geminux-build/branding/wallpaper/geminux-default.png /usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png || true
@@ -182,11 +185,12 @@ if [ -f /tmp/geminux-build/config/gsettings/99_geminux.gschema.override ]; then
     glib-compile-schemas /usr/share/glib-2.0/schemas || true
 fi
 
-# 8.1 APT Branding Shield Hook (Ensures Geminux themes, Sobre page & settings persist through any system upgrade)
+# 8.1 APT Branding Shield Hook (Ensures Geminux themes, Sobre page, Login screen & settings persist through any system upgrade)
 mkdir -p /etc/apt/apt.conf.d
 cat <<'EOF' > /etc/apt/apt.conf.d/99geminux-branding
 DPkg::Post-Invoke {
     "if [ -f /etc/geminux/os-release ]; then cp /etc/geminux/os-release /etc/os-release && cp /etc/geminux/os-release /usr/lib/os-release || true; fi";
+    "if [ -d /etc/geminux/branding ]; then cp /etc/geminux/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text.svg 2>/dev/null || true; fi";
     "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
     "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
     "if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database -q /usr/share/applications 2>/dev/null || true; fi";
