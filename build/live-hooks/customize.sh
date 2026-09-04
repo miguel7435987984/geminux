@@ -94,7 +94,7 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/icons/Yaru/256x256@2x/places/distributor-logo.png || true
 fi
 
-# 4. Install Prius Terminal & Geminux Terminal
+# 4. Install Prius Terminal & Geminux Terminal & sober-fix
 if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -d /usr/local/bin
     install -d /usr/share/applications
@@ -103,6 +103,12 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -m 755 /tmp/geminux-build/apps/prius-terminal/prius /usr/local/bin/prius
     install -m 644 /tmp/geminux-build/apps/prius-terminal/prius-terminal.desktop /usr/share/applications/prius-terminal.desktop
     install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
+fi
+
+# Install sober-fix utility (Roblox / Sober repair tool)
+if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix ]; then
+    install -d /usr/local/bin
+    install -m 755 /tmp/geminux-build/apps/sober-fix/sober-fix /usr/local/bin/sober-fix
 fi
 
 # Install VMware Workstation & VirtualBox AppStream Metadata for Geminux Store
