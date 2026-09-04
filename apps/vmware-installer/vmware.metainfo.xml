@@ -7,11 +7,11 @@
   <summary>Execute e gerencie máquinas virtuais no Geminux OS</summary>
   <description>
     <p>
-      O VMware Workstation Pro permite que você execute múltiplos sistemas operacionais simultaneamente no Geminux.
-      Ideal para desenvolvedores, profissionais de TI e entusiastas que precisam de virtualização de alto desempenho.
+      O VMware Workstation Pro para Linux é distribuído oficialmente no formato <b>.bundle</b>.
+      Permite que você execute múltiplos sistemas operacionais simultaneamente com virtualização de alto desempenho.
     </p>
     <p>
-      Recursos principais:
+      Recursos principais do pacote oficial .bundle:
     </p>
     <ul>
       <li>Virtualização x86 e x64 de alto desempenho com aceleração 3D (DirectX e OpenGL)</li>

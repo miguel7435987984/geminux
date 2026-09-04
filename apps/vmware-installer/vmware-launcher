@@ -1,23 +1,35 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Geminux OS - VMware Workstation Pro / Player Helper & Launcher
+# Geminux OS - VMware Workstation Pro (.bundle) Automated Installer & Launcher
 # ==============================================================================
 
 set -e
 
+# If already installed, run VMware Workstation
 if [ -x "$(command -v vmware)" ]; then
     exec vmware "$@"
 elif [ -x "$(command -v vmplayer)" ]; then
     exec vmplayer "$@"
-else
-    # Check if pkexec is available for GUI password prompt
-    zenity_or_notify() {
-        if [ -x "$(command -v zenity)" ]; then
-            zenity --info --title="Geminux - VMware Workstation" --text="Para instalar o VMware Workstation Pro no Geminux:\n\n1. O VMware oficial (.bundle) é gratuito para uso pessoal.\n2. Você pode baixar diretamente pelo navegador ou executar a instalação automática.\n\nAbrindo a página oficial de download..." --width=450 2>/dev/null || true
-        fi
-    }
+fi
 
-    zenity_or_notify
+# Check for existing .bundle in Downloads or user directory
+BUNDLE_FILE=$(find "$HOME/Downloads" "$HOME" -maxdepth 2 -name "VMware-Workstation-*.bundle" -o -name "VMware-Player-*.bundle" 2>/dev/null | head -n 1)
+
+if [ -n "$BUNDLE_FILE" ] && [ -f "$BUNDLE_FILE" ]; then
+    chmod +x "$BUNDLE_FILE"
+    if [ -x "$(command -v pkexec)" ]; then
+        pkexec "$BUNDLE_FILE" --console --required --eulas-agreed
+    else
+        sudo "$BUNDLE_FILE" --console --required --eulas-agreed
+    fi
+    exec vmware "$@"
+else
+    # Open VMware official .bundle download page
+    if [ -x "$(command -v zenity)" ]; then
+        zenity --info --title="Geminux Store - VMware Workstation" \
+            --text="O VMware Workstation oficial para Linux é distribuído no formato oficial <b>.bundle</b>.\n\nAbrindo a página oficial da Broadcom/VMware para baixar o arquivo <b>.bundle</b>...\n\nAssim que o download terminar, a Geminux Store executará a instalação automaticamente!" \
+            --width=480 2>/dev/null || true
+    fi
     if [ -x "$(command -v xdg-open)" ]; then
         xdg-open "https://www.vmware.com/products/desktop-hypervisors/workstation-and-fusion" &
     fi
