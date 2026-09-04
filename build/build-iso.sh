@@ -150,7 +150,7 @@ umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
 
 # Step 6: Create SquashFS Image
 log "Step 6: Compressing root filesystem into filesystem.squashfs..."
-mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -noappend -comp zstd
+mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -noappend -comp xz -b 1048576 -Xdict-size 100%
 
 # Calculate filesystem size
 printf $(du -sx --block-size=1 "${ROOTFS_DIR}" | cut -f1) > "${IMAGE_DIR}/casper/filesystem.size"
