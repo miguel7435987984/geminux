@@ -112,9 +112,8 @@ grep -v '^#' /tmp/geminux-build/packages.list | grep -v '^$' | xargs apt-get ins
 # Run Geminux Customization Hook
 bash /tmp/geminux-build/customize.sh
 
-# Clean package cache
+# Clean package cache (keep lists so Geminux Store has instant catalog)
 apt-get clean
-rm -rf /var/lib/apt/lists/*
 EOF
 
 # Step 4: Extract Kernel & Initrd for Boot

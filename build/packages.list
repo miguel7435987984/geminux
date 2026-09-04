@@ -58,6 +58,7 @@ gnome-software-plugin-deb
 gnome-software-plugin-flatpak
 flatpak
 appstream
+appstream-util
 gnome-system-monitor
 python3-gi
 python3-cairo
