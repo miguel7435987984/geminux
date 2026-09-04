@@ -254,7 +254,18 @@ if [ -f /usr/share/applications/update-manager.desktop ]; then
     sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^GenericName=.*/GenericName=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
     sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
+    sed -i 's/^Comment=.*/Comment=Mantenha o Geminux OS seguro e atualizado/g' /usr/share/applications/update-manager.desktop || true
+    sed -i 's/^Comment\[pt_BR\]=.*/Comment[pt_BR]=Mantenha o Geminux OS seguro e atualizado/g' /usr/share/applications/update-manager.desktop || true
 fi
+
+# Patch update-manager python UI strings to replace "Software Updater" with "Geminux Atualizações" in window title
+for py_file in /usr/lib/python3/dist-packages/UpdateManager/UpdateManager.py /usr/lib/python3/dist-packages/UpdateManager/Dialogs.py /usr/bin/update-manager; do
+    if [ -f "$py_file" ]; then
+        sed -i 's/Software Updater/Geminux Atualizações/g' "$py_file" || true
+        sed -i 's/Atualizador de programas/Geminux Atualizações/g' "$py_file" || true
+        sed -i 's/Atualizador de Software/Geminux Atualizações/g' "$py_file" || true
+    fi
+done
 
 for app_desktop in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do
     if [ -f "$app_desktop" ]; then
