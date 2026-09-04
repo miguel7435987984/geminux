@@ -90,6 +90,18 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
 fi
 
+# Install VMware Workstation Helper, Desktop Entry & AppStream Metadata for Geminux Store
+if [ -d /tmp/geminux-build/apps/vmware-installer ]; then
+    install -d /usr/local/bin
+    install -d /usr/share/applications
+    install -d /usr/share/metainfo
+    install -m 755 /tmp/geminux-build/apps/vmware-installer/vmware-launcher /usr/local/bin/vmware-launcher
+    install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.desktop /usr/share/applications/vmware.desktop
+    if [ -f /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml /usr/share/metainfo/vmware.metainfo.xml
+    fi
+fi
+
 # Install Geminux Terminal (.deb) as default system terminal (replacing gnome-terminal)
 if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb ]; then
     dpkg -i /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb || apt-get install -f -y

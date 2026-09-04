@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>vmware.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Proprietary</project_license>
+  <name>VMware Workstation Pro</name>
+  <summary>Execute e gerencie máquinas virtuais no Geminux OS</summary>
+  <description>
+    <p>
+      O VMware Workstation Pro permite que você execute múltiplos sistemas operacionais simultaneamente no Geminux.
+      Ideal para desenvolvedores, profissionais de TI e entusiastas que precisam de virtualização de alto desempenho.
+    </p>
+    <p>
+      Recursos principais:
+    </p>
+    <ul>
+      <li>Virtualização x86 e x64 de alto desempenho com aceleração 3D (DirectX e OpenGL)</li>
+      <li>Suporte para dezenas de sistemas operacionais convidados (Linux, Windows, BSD)</li>
+      <li>Instantâneos (Snapshots) para restaurar estados anteriores do sistema</li>
+      <li>Redes virtuais avançadas e isolamento de ambientes</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">vmware.desktop</launchable>
+  <icon type="stock">vmware</icon>
+  <categories>
+    <category>Development</category>
+    <category>System</category>
+    <category>Emulator</category>
+  </categories>
+  <developer_name>Broadcom / VMware</developer_name>
+  <url type="homepage">https://www.vmware.com/products/desktop-hypervisors/workstation-and-fusion</url>
+</component>
