@@ -19,6 +19,8 @@ network-manager
 net-tools
 iw
 wpasupplicant
+open-vm-tools-desktop
+virtualbox-guest-x11
 
 # GNOME Desktop Minimal
 ubuntu-desktop-minimal
