@@ -27,10 +27,19 @@ fi
 ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
 echo "America/Sao_Paulo" > /etc/timezone
 
-# 2. OS Release Information
+# 2. OS Release Information (Protected with dpkg-divert)
 if [ -f /tmp/geminux-build/branding/os-release ]; then
-    cp /tmp/geminux-build/branding/os-release /etc/os-release
-    cp /tmp/geminux-build/branding/os-release /usr/lib/os-release
+    mkdir -p /etc/geminux
+    cp /tmp/geminux-build/branding/os-release /etc/geminux/os-release
+
+    # Use dpkg-divert so base-files upgrades never overwrite Geminux OS identity
+    if [ -x "$(command -v dpkg-divert)" ]; then
+        dpkg-divert --package geminux-branding --divert /usr/lib/os-release.ubuntu --rename /usr/lib/os-release || true
+        dpkg-divert --package geminux-branding --divert /etc/os-release.ubuntu --rename /etc/os-release || true
+    fi
+
+    cp /etc/geminux/os-release /usr/lib/os-release
+    cp /etc/geminux/os-release /etc/os-release
 fi
 
 # 3. Wallpapers, Pixmaps & System Branding (GNOME Settings About Page)
@@ -173,10 +182,11 @@ if [ -f /tmp/geminux-build/config/gsettings/99_geminux.gschema.override ]; then
     glib-compile-schemas /usr/share/glib-2.0/schemas || true
 fi
 
-# 8.1 APT Branding Shield Hook (Ensures Geminux themes & settings persist through any system upgrade)
+# 8.1 APT Branding Shield Hook (Ensures Geminux themes, Sobre page & settings persist through any system upgrade)
 mkdir -p /etc/apt/apt.conf.d
 cat <<'EOF' > /etc/apt/apt.conf.d/99geminux-branding
 DPkg::Post-Invoke {
+    "if [ -f /etc/geminux/os-release ]; then cp /etc/geminux/os-release /etc/os-release && cp /etc/geminux/os-release /usr/lib/os-release || true; fi";
     "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
     "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
     "if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database -q /usr/share/applications 2>/dev/null || true; fi";
