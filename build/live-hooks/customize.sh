@@ -166,12 +166,22 @@ if [ -f /tmp/geminux-build/config/firefox/policies.json ]; then
     cp /tmp/geminux-build/config/firefox/policies.json /etc/firefox/policies/policies.json
 fi
 
-# 8. GNOME GSettings Schema Overrides
+# 8. GNOME GSettings Schema Overrides (Highest Priority 99)
 mkdir -p /usr/share/glib-2.0/schemas
-if [ -f /tmp/geminux-build/config/gsettings/01_geminux.gschema.override ]; then
-    cp /tmp/geminux-build/config/gsettings/01_geminux.gschema.override /usr/share/glib-2.0/schemas/
+if [ -f /tmp/geminux-build/config/gsettings/99_geminux.gschema.override ]; then
+    cp /tmp/geminux-build/config/gsettings/99_geminux.gschema.override /usr/share/glib-2.0/schemas/
     glib-compile-schemas /usr/share/glib-2.0/schemas || true
 fi
+
+# 8.1 APT Branding Shield Hook (Ensures Geminux themes & settings persist through any system upgrade)
+mkdir -p /etc/apt/apt.conf.d
+cat <<'EOF' > /etc/apt/apt.conf.d/99geminux-branding
+DPkg::Post-Invoke {
+    "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
+    "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
+    "if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database -q /usr/share/applications 2>/dev/null || true; fi";
+};
+EOF
 
 # 9. Calamares Installer Branding & Configuration
 mkdir -p /etc/calamares/branding/geminux
@@ -255,24 +265,21 @@ if [ -d /tmp/geminux-build/config/fastfetch ]; then
     cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
 fi
 
-# 11. Custom App Names: Geminux Atualizações, Geminux Store & Geminux TaskView
-if [ -f /usr/share/applications/update-manager.desktop ]; then
-    sed -i 's/^Name=.*/Name=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
-    sed -i 's/^Name\[pt_BR\]=.*/Name[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
-    sed -i 's/^GenericName=.*/GenericName=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
-    sed -i 's/^GenericName\[pt_BR\]=.*/GenericName[pt_BR]=Geminux Atualizações/g' /usr/share/applications/update-manager.desktop || true
-    sed -i 's/^Comment=.*/Comment=Mantenha o Geminux OS seguro e atualizado/g' /usr/share/applications/update-manager.desktop || true
-    sed -i 's/^Comment\[pt_BR\]=.*/Comment[pt_BR]=Mantenha o Geminux OS seguro e atualizado/g' /usr/share/applications/update-manager.desktop || true
-fi
+# Disable automatic popups and update notifications completely
+mkdir -p /etc/apt/apt.conf.d
+cat <<'EOF' > /etc/apt/apt.conf.d/99disable-periodic-updates
+APT::Periodic::Enable "0";
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Download-Upgradeable-Packages "0";
+APT::Periodic::AutocleanInterval "0";
+APT::Periodic::Unattended-Upgrade "0";
+EOF
 
-# Patch update-manager python UI strings to replace "Software Updater" with "Geminux Atualizações" in window title
-for py_file in /usr/lib/python3/dist-packages/UpdateManager/UpdateManager.py /usr/lib/python3/dist-packages/UpdateManager/Dialogs.py /usr/bin/update-manager; do
-    if [ -f "$py_file" ]; then
-        sed -i 's/Software Updater/Geminux Atualizações/g' "$py_file" || true
-        sed -i 's/Atualizador de programas/Geminux Atualizações/g' "$py_file" || true
-        sed -i 's/Atualizador de Software/Geminux Atualizações/g' "$py_file" || true
-    fi
-done
+# Remove update notifier autostart so it never annoys the user with popups
+rm -f /etc/xdg/autostart/update-notifier.desktop || true
+if [ -f /usr/share/applications/update-manager.desktop ]; then
+    echo "NoDisplay=true" >> /usr/share/applications/update-manager.desktop || true
+fi
 
 for app_desktop in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do
     if [ -f "$app_desktop" ]; then

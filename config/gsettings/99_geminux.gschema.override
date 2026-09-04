@@ -1,4 +1,4 @@
-# Geminux GNOME Default Settings
+# Geminux GNOME Default Settings (Maximum Priority Override)
 [org.gnome.desktop.interface]
 gtk-theme='Adwaita-dark'
 icon-theme='Yaru-blue'
