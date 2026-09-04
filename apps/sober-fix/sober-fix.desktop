@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Sober Fix (Roblox Cleaner)
+GenericName=Roblox Cache Cleaner
+GenericName[pt_BR]=Limpador de Cache do Roblox
+Comment=Limpeza de cache e reparo do Sober / Roblox no Geminux OS
+Exec=sober-fix
+Icon=sober-fix
+Terminal=true
+Categories=Game;Utility;
+StartupNotify=true
+NoDisplay=true

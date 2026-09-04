@@ -66,13 +66,16 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/icons/hicolor/128x128/apps/
     cp /tmp/geminux-build/branding/icons/vmware.svg /usr/share/icons/hicolor/scalable/apps/ || true
+    cp /tmp/geminux-build/branding/icons/sober-fix.svg /usr/share/icons/hicolor/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/pixmaps/prius-terminal.svg || true
     cp /tmp/geminux-build/branding/icons/prius-terminal.png /usr/share/pixmaps/prius-terminal.png || true
     cp /tmp/geminux-build/branding/icons/vmware.svg /usr/share/pixmaps/vmware.svg || true
+    cp /tmp/geminux-build/branding/icons/sober-fix.svg /usr/share/pixmaps/sober-fix.svg || true
     mkdir -p /usr/share/icons/Yaru/scalable/apps
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/vmware.svg /usr/share/icons/Yaru/scalable/apps/ || true
+    cp /tmp/geminux-build/branding/icons/sober-fix.svg /usr/share/icons/Yaru/scalable/apps/ || true
 
     # GNOME Settings (About Page) & GDM Login Screen Pixmaps & Logos
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg || true
@@ -105,10 +108,18 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
 fi
 
-# Install sober-fix utility (Roblox / Sober repair tool)
+# Install sober-fix utility (Roblox / Sober repair tool) & Geminux Store Metainfo
 if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix ]; then
     install -d /usr/local/bin
+    install -d /usr/share/metainfo
+    install -d /usr/share/applications
     install -m 755 /tmp/geminux-build/apps/sober-fix/sober-fix /usr/local/bin/sober-fix
+    if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/sober-fix/sober-fix.desktop /usr/share/applications/sober-fix.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/sober-fix/sober-fix.metainfo.xml /usr/share/metainfo/sober-fix.metainfo.xml
+    fi
 fi
 
 # Install VMware Workstation & VirtualBox AppStream Metadata for Geminux Store

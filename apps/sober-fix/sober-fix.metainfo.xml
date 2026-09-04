@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>sober-fix.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Sober Fix (Roblox Cleaner)</name>
+  <summary>Limpeza de cache e reparo automático do Sober / Roblox no Geminux OS</summary>
+  <description>
+    <p>
+      O Sober Fix é um utilitário exclusivo desenvolvido para o Geminux OS que resolve travamentos,
+      erros de atualização e problemas de cache do cliente Sober / Roblox no Linux.
+    </p>
+    <p>
+      Recursos principais:
+    </p>
+    <ul>
+      <li>Limpeza profunda do cache de jogos e dados temporários do Sober</li>
+      <li>Finalização segura de instâncias travadas em segundo plano</li>
+      <li>Restauração rápida da estabilidade do Roblox sem necessidade de reinstalar</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">sober-fix.desktop</launchable>
+  <icon type="stock">sober-fix</icon>
+  <categories>
+    <category>Game</category>
+    <category>Utility</category>
+    <category>System</category>
+  </categories>
+  <developer id="org.geminux.soberfix">
+    <name>Geminux OS Team</name>
+  </developer>
+  <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+</component>
