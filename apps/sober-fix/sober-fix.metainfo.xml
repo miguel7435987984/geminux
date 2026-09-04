@@ -34,6 +34,7 @@
     <keyword>clean</keyword>
     <keyword>game</keyword>
   </keywords>
+  <content_rating type="oars-1.1" />
   <developer id="org.geminux.soberfix">
     <name>Geminux OS Team</name>
   </developer>
