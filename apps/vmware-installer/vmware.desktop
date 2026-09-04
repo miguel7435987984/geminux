@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=VMware Workstation Pro
+GenericName=Virtual Machine Manager
+GenericName[pt_BR]=Gerenciador de Máquinas Virtuais
+Comment=Execute e gerencie máquinas virtuais no Geminux OS
+Exec=vmware-launcher %U
+Icon=vmware
+Terminal=false
+Categories=System;Emulator;
+StartupNotify=true
+MimeType=application/x-vmware-vm;application/x-vmware-team;application/x-vmware-enc-vm;

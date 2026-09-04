@@ -97,7 +97,11 @@ fi
 if [ -d /tmp/geminux-build/apps/vmware-installer ]; then
     install -d /usr/local/bin
     install -d /usr/share/metainfo
+    install -d /usr/share/applications
     install -m 755 /tmp/geminux-build/apps/vmware-installer/vmware-launcher /usr/local/bin/vmware-launcher
+    if [ -f /tmp/geminux-build/apps/vmware-installer/vmware.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.desktop /usr/share/applications/vmware.desktop
+    fi
     if [ -f /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml ]; then
         install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml /usr/share/metainfo/vmware.metainfo.xml
     fi
