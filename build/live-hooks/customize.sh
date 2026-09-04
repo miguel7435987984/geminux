@@ -258,6 +258,16 @@ for task_desktop in /usr/share/applications/gnome-system-monitor.desktop /usr/sh
     fi
 done
 
+# Configure Flathub Repository & AppStream Metadata Cache for Geminux Store
+if [ -x "$(command -v flatpak)" ]; then
+    echo "==> Configuring Flathub repository..."
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+fi
+if [ -x "$(command -v appstreamcli)" ]; then
+    echo "==> Refreshing AppStream catalog cache..."
+    appstreamcli refresh-cache --force || true
+fi
+
 # 12. User Skel Configuration
 if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc

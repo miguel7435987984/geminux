@@ -52,6 +52,10 @@ fonts-noto-core
 
 # Default Apps & Tools
 gnome-software
+gnome-software-plugin-deb
+gnome-software-plugin-flatpak
+flatpak
+appstream
 gnome-system-monitor
 python3-gi
 python3-cairo
