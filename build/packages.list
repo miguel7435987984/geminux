@@ -58,8 +58,6 @@ gnome-software-plugin-deb
 gnome-software-plugin-flatpak
 flatpak
 appstream
-virtualbox
-virtualbox-qt
 gnome-system-monitor
 python3-gi
 python3-cairo

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>virtualbox.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0</project_license>
+  <name>Oracle VM VirtualBox</name>
+  <summary>Poderosa solução de virtualização de código aberto para x86 e AMD64</summary>
+  <description>
+    <p>
+      O VirtualBox é um virtualizador completo de uso geral para hardware x86 e x86_64, direcionado para uso doméstico e corporativo.
+    </p>
+    <p>
+      Com o VirtualBox no Geminux OS, você pode:
+    </p>
+    <ul>
+      <li>Criar e executar múltiplas máquinas virtuais simultaneamente</li>
+      <li>Executar Windows, Linux, BSD e outros sistemas com facilidade</li>
+      <li>Compartilhar pastas, área de transferência e periféricos USB</li>
+      <li>Tirar fotos instantâneas (Snapshots) do estado da máquina virtual</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">virtualbox.desktop</launchable>
+  <icon type="stock">virtualbox</icon>
+  <categories>
+    <category>Development</category>
+    <category>System</category>
+    <category>Emulator</category>
+  </categories>
+  <developer_name>Oracle Corporation</developer_name>
+  <url type="homepage">https://www.virtualbox.org/</url>
+</component>
