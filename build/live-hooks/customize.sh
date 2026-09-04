@@ -258,10 +258,12 @@ for task_desktop in /usr/share/applications/gnome-system-monitor.desktop /usr/sh
     fi
 done
 
-# Configure Flathub Repository & AppStream Metadata Cache for Geminux Store
+# Configure Flathub Repository & AppStream Metadata Cache for Geminux Store (including Sober / Roblox & Games)
 if [ -x "$(command -v flatpak)" ]; then
     echo "==> Configuring Flathub repository..."
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+    echo "==> Updating Flathub AppStream metadata cache..."
+    flatpak update --appstream -y || true
 fi
 if [ -x "$(command -v appstreamcli)" ]; then
     echo "==> Refreshing AppStream catalog cache..."
