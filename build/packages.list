@@ -1,6 +1,7 @@
 # Base System & Kernel
 linux-generic
 linux-headers-generic
+linux-firmware
 initramfs-tools
 systemd-sysv
 grub-efi-amd64-signed
@@ -16,8 +17,12 @@ laptop-detect
 os-prober
 sudo
 network-manager
+netplan.io
+systemd-resolved
 net-tools
 iw
+wireless-regdb
+rfkill
 wpasupplicant
 open-vm-tools-desktop
 virtualbox-guest-x11

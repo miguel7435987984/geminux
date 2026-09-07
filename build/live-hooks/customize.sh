@@ -211,6 +211,7 @@ DPkg::Post-Invoke {
     "for app in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do if [ -f \"$app\" ]; then sed -i 's/^Name=.*/Name=Geminux Store/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux Store/g; s/^GenericName=.*/GenericName=Geminux Store/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux Store/g' \"$app\" 2>/dev/null || true; fi; done";
     "for task in /usr/share/applications/gnome-system-monitor.desktop /usr/share/applications/org.gnome.SystemMonitor.desktop; do if [ -f \"$task\" ]; then sed -i 's/^Name=.*/Name=Geminux TaskView/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux TaskView/g; s/^GenericName=.*/GenericName=Geminux TaskView/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux TaskView/g' \"$task\" 2>/dev/null || true; fi; done";
     "if [ -f /usr/share/applications/update-manager.desktop ]; then sed -i '/NoDisplay=true/d' /usr/share/applications/update-manager.desktop; echo 'NoDisplay=true' >> /usr/share/applications/update-manager.desktop || true; fi";
+    "if [ -d /etc/NetworkManager/conf.d ]; then printf '[keyfile]\nunmanaged-devices=none\n' > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf || true; fi";
     "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
     "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
     "if [ -x /usr/bin/update-desktop-database ]; then update-desktop-database -q /usr/share/applications 2>/dev/null || true; fi";
@@ -350,7 +351,71 @@ if [ -f /tmp/geminux-build/config/skel/home/.bashrc_geminux ]; then
     cat /tmp/geminux-build/config/skel/home/.bashrc_geminux >> /etc/skel/.bashrc
 fi
 
-# 13. Update Desktop & Icon Caches
+# 13. Network & Wi-Fi Configuration for Notebooks & Desktops (NetworkManager & Netplan)
+echo "==> Configuring NetworkManager, Netplan and Wi-Fi drivers..."
+mkdir -p /etc/netplan
+cat <<'EOF' > /etc/netplan/01-network-manager-all.yaml
+# Let NetworkManager manage all devices on this system
+network:
+  version: 2
+  renderer: NetworkManager
+EOF
+chmod 600 /etc/netplan/01-network-manager-all.yaml
+
+# Ensure NetworkManager manages all devices globally (Ethernet, Wi-Fi, WWAN)
+mkdir -p /etc/NetworkManager/conf.d
+cat <<'EOF' > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf
+[keyfile]
+unmanaged-devices=none
+EOF
+
+# Prevent aggressive Wi-Fi powersaving that causes drops on laptop Wi-Fi cards
+cat <<'EOF' > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+[connection]
+wifi.powersave=2
+EOF
+
+# Ensure NetworkManager and systemd-resolved are enabled
+if [ -x "$(command -v systemctl)" ]; then
+    systemctl enable NetworkManager || true
+    systemctl enable systemd-resolved || true
+fi
+
+# Run netplan generate if netplan is installed
+if [ -x "$(command -v netplan)" ]; then
+    netplan generate || true
+fi
+
+# Unblock all wireless devices (rfkill unblock all) via systemd service on boot
+mkdir -p /etc/systemd/system
+cat <<'EOF' > /etc/systemd/system/geminux-rfkill-unblock.service
+[Unit]
+Description=Unblock all wireless devices on Geminux boot
+After=network-pre.target
+Before=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill unblock all
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+if [ -x "$(command -v systemctl)" ]; then
+    systemctl enable geminux-rfkill-unblock.service || true
+fi
+
+# Set Brazil (BR) regulatory domain as standard for wireless frequencies
+if [ -x "$(command -v iw)" ]; then
+    iw reg set BR 2>/dev/null || true
+fi
+if [ -f /etc/default/crda ]; then
+    sed -i 's/^REGDOMAIN=.*/REGDOMAIN=BR/g' /etc/default/crda 2>/dev/null || true
+fi
+
+# 14. Update Desktop & Icon Caches
 if [ -x "$(command -v update-desktop-database)" ]; then
     update-desktop-database /usr/share/applications || true
 fi
@@ -359,11 +424,15 @@ if [ -x "$(command -v gtk-update-icon-cache)" ]; then
     gtk-update-icon-cache -f -t /usr/share/icons/Yaru || true
 fi
 
-# 14. Generate initramfs for Live boot
+# 15. Generate initramfs for Live boot
 KERNEL_VER=$(ls -1 /lib/modules | tail -n 1)
 if [ -n "${KERNEL_VER}" ]; then
     echo "==> Generating initramfs for kernel ${KERNEL_VER}..."
     update-initramfs -c -k "${KERNEL_VER}" || update-initramfs -u -k all || true
 fi
+
+# Ensure /etc/resolv.conf is properly linked to systemd-resolved stub
+rm -f /etc/resolv.conf || true
+ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf || true
 
 echo "==> [Geminux Hook] Customization completed successfully!"

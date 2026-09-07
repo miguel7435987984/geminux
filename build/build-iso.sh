@@ -140,6 +140,10 @@ rm -rf "${ROOTFS_DIR}/tmp/geminux-build"
 rm -rf "${ROOTFS_DIR}/var/cache/apt/archives"/*
 rm -rf "${ROOTFS_DIR}/tmp"/*
 
+# Ensure /etc/resolv.conf points to systemd-resolved stub for live session and installed system
+rm -f "${ROOTFS_DIR}/etc/resolv.conf"
+ln -sf ../run/systemd/resolve/stub-resolv.conf "${ROOTFS_DIR}/etc/resolv.conf"
+
 # Explicitly unmount virtual fs so mksquashfs only compresses real files
 umount -lf "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
 umount -lf "${ROOTFS_DIR}/dev" 2>/dev/null || true
