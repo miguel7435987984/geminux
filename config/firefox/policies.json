@@ -2,15 +2,14 @@
   "policies": {
     "DisableAppUpdate": true,
     "Homepage": {
-      "URL": "https://geminux.org",
+      "URL": "https://github.com/miguel7435987984/geminux",
       "Locked": false,
       "StartPage": "homepage"
     },
     "Bookmarks": [
       {
-        "Title": "Geminux OS",
-        "URL": "https://geminux.org",
-        "Favicon": "https://geminux.org/favicon.ico",
+        "Title": "Geminux OS (GitHub)",
+        "URL": "https://github.com/miguel7435987984/geminux",
         "Placement": "toolbar"
       },
       {
