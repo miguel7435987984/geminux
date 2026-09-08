@@ -30,3 +30,14 @@ logo='/usr/share/pixmaps/ubuntu-logo.svg'
 [org.gnome.desktop.wm.preferences]
 button-layout='appmenu:minimize,maximize,close'
 theme='Adwaita-dark'
+
+[com.ubuntu.update-notifier]
+no-show-notifications=true
+show-updates-status-icon=false
+regular-auto-launch-interval=999999
+show-apport-crashes=false
+
+[com.ubuntu.update-manager]
+check-dist-upgrades=false
+first-run=false
+

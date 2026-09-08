@@ -210,7 +210,7 @@ DPkg::Post-Invoke {
     "if [ -d /etc/geminux/branding ]; then cp /etc/geminux/branding/wallpaper/geminux-default.png /usr/share/backgrounds/warty-final-ubuntu.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo-text.svg 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.png /usr/share/pixmaps/ubuntu-logo-text.png 2>/dev/null || true; cp /etc/geminux/branding/icons/geminux-logo.svg /usr/share/icons/gnome-logo-text.svg 2>/dev/null || true; fi";
     "for app in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do if [ -f \"$app\" ]; then sed -i 's/^Name=.*/Name=Geminux Store/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux Store/g; s/^GenericName=.*/GenericName=Geminux Store/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux Store/g' \"$app\" 2>/dev/null || true; fi; done";
     "for task in /usr/share/applications/gnome-system-monitor.desktop /usr/share/applications/org.gnome.SystemMonitor.desktop; do if [ -f \"$task\" ]; then sed -i 's/^Name=.*/Name=Geminux TaskView/g; s/^Name\\[pt_BR\\]=.*/Name[pt_BR]=Geminux TaskView/g; s/^GenericName=.*/GenericName=Geminux TaskView/g; s/^GenericName\\[pt_BR\\]=.*/GenericName[pt_BR]=Geminux TaskView/g' \"$task\" 2>/dev/null || true; fi; done";
-    "if [ -f /usr/share/applications/update-manager.desktop ]; then sed -i '/NoDisplay=true/d' /usr/share/applications/update-manager.desktop; echo 'NoDisplay=true' >> /usr/share/applications/update-manager.desktop || true; fi";
+    "rm -f /etc/xdg/autostart/update-notifier.desktop /usr/share/applications/update-manager.desktop /etc/apt/apt.conf.d/99update-notifier /etc/apt/apt.conf.d/15update-stamp 2>/dev/null || true";
     "if [ -d /etc/NetworkManager/conf.d ]; then printf '[keyfile]\nunmanaged-devices=none\n' > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf || true; fi";
     "if [ -d /usr/share/glib-2.0/schemas ]; then glib-compile-schemas /usr/share/glib-2.0/schemas || true; fi";
     "if [ -x /usr/bin/gtk-update-icon-cache ]; then gtk-update-icon-cache -q -f -t /usr/share/icons/hicolor /usr/share/icons/Yaru 2>/dev/null || true; fi";
@@ -309,12 +309,34 @@ APT::Periodic::Download-Upgradeable-Packages "0";
 APT::Periodic::AutocleanInterval "0";
 APT::Periodic::Unattended-Upgrade "0";
 EOF
+rm -f /etc/apt/apt.conf.d/99update-notifier || true
+rm -f /etc/apt/apt.conf.d/15update-stamp || true
 
-# Remove update notifier autostart so it never annoys the user with popups
+# Neutralize update-notifier and update-manager binaries with dpkg-divert so they never execute
+dpkg-divert --divert /usr/bin/update-notifier.real --local --rename /usr/bin/update-notifier 2>/dev/null || true
+cat <<'EOF' > /usr/bin/update-notifier
+#!/bin/sh
+exit 0
+EOF
+chmod 755 /usr/bin/update-notifier
+
+dpkg-divert --divert /usr/bin/update-manager.real --local --rename /usr/bin/update-manager 2>/dev/null || true
+cat <<'EOF' > /usr/bin/update-manager
+#!/bin/sh
+exit 0
+EOF
+chmod 755 /usr/bin/update-manager
+
+# Remove update notifier autostart and menu shortcuts
 rm -f /etc/xdg/autostart/update-notifier.desktop || true
-if [ -f /usr/share/applications/update-manager.desktop ]; then
-    echo "NoDisplay=true" >> /usr/share/applications/update-manager.desktop || true
-fi
+rm -f /usr/share/applications/update-manager.desktop || true
+
+# Mask all systemd user and system units for update-notifier
+mkdir -p /etc/systemd/user /etc/systemd/system
+for u in update-notifier.service update-notifier-release.path update-notifier-crash.path update-notifier-livepatch.path update-notifier-motd.timer update-notifier-download.timer update-notifier-motd.service update-notifier-download.service; do
+    ln -sf /dev/null "/etc/systemd/user/${u}" 2>/dev/null || true
+    ln -sf /dev/null "/etc/systemd/system/${u}" 2>/dev/null || true
+done
 
 for app_desktop in /usr/share/applications/snap-store_snap-store.desktop /usr/share/applications/snap-store.desktop /usr/share/applications/org.gnome.Software.desktop /usr/share/applications/ubuntu-app-center.desktop /usr/share/applications/app-center.desktop; do
     if [ -f "$app_desktop" ]; then
