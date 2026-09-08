@@ -19,6 +19,12 @@
       <li>Restauração rápida da estabilidade do Roblox sem necessidade de reinstalar</li>
     </ul>
   </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Terminal do Geminux OS executando a limpeza e reparo de cache do Sober Fix</caption>
+      <image width="1280" height="720">https://raw.githubusercontent.com/miguel7435987984/geminux/main/branding/screenshots/sober-fix.png</image>
+    </screenshot>
+  </screenshots>
   <launchable type="desktop-id">sober-fix.desktop</launchable>
   <icon type="stock">sober-fix</icon>
   <categories>
@@ -37,8 +43,6 @@
   <content_rating type="oars-1.1" />
   <releases>
     <release version="1.0.0" date="2026-09-04">
-      <size type="download">4096</size>
-      <size type="installed">8192</size>
       <description>
         <p>Lançamento inicial oficial do Sober Fix para o Geminux OS 1.0 LTS.</p>
       </description>
