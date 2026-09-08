@@ -126,8 +126,6 @@
     <content_rating type="oars-1.1" />
     <releases>
       <release version="1.0.0" date="2026-09-08">
-        <size type="download">15360</size>
-        <size type="installed">49152</size>
         <description>
           <p>Lançamento oficial do Geminux Virtual Machine com suporte multi-motor a KVM / Hyper-V, VirtualBox e VMware para Windows, Linux e macOS.</p>
         </description>

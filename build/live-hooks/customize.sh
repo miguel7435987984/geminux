@@ -116,11 +116,13 @@ fi
 # 4.1 Setup Geminux Official Local APT Repository & AppStream Catalog
 echo "==> Configuring Geminux Official Repository and AppStream Catalog..."
 mkdir -p /var/lib/geminux/repo
-mkdir -p /usr/share/swcatalog/xml /var/lib/swcatalog/xml
+mkdir -p /usr/share/swcatalog/xml /var/lib/swcatalog/xml /usr/share/app-info/xmls /var/lib/app-info/xmls /usr/share/metainfo
 
 if [ -f /tmp/geminux-build/config/appstream/catalogs/geminux.xml ]; then
     cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /usr/share/swcatalog/xml/geminux.xml
     cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /var/lib/swcatalog/xml/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /usr/share/app-info/xmls/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /var/lib/app-info/xmls/geminux.xml
 fi
 
 if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
@@ -218,10 +220,10 @@ if [ -d /tmp/geminux-build/apps/vmware-installer ]; then
     fi
 fi
 
-# Install VirtualBox AppStream Metadata for Geminux Store
-if [ -f /tmp/geminux-build/config/appstream/metainfo/virtualbox.metainfo.xml ]; then
+# Install AppStream Metadata for Geminux Store (Geminux VM, Sober Fix, VirtualBox, VMware)
+if [ -d /tmp/geminux-build/config/appstream/metainfo ]; then
     install -d /usr/share/metainfo
-    install -m 644 /tmp/geminux-build/config/appstream/metainfo/virtualbox.metainfo.xml /usr/share/metainfo/virtualbox.metainfo.xml
+    cp /tmp/geminux-build/config/appstream/metainfo/*.metainfo.xml /usr/share/metainfo/ 2>/dev/null || true
 fi
 
 # Install Geminux Terminal (.deb) as default system terminal (replacing gnome-terminal)
