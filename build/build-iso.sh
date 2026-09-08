@@ -131,8 +131,10 @@ fi
 log "Kernel found: ${VMLINUZ}"
 log "Initramfs found: ${INITRD}"
 
-cp "${VMLINUZ}" "${IMAGE_DIR}/casper/vmlinuz"
-cp "${INITRD}" "${IMAGE_DIR}/casper/initrd"
+# Dereference symlinks and ensure permissions are world-readable
+cp -L "${VMLINUZ}" "${IMAGE_DIR}/casper/vmlinuz"
+cp -L "${INITRD}" "${IMAGE_DIR}/casper/initrd"
+chmod 644 "${IMAGE_DIR}/casper/vmlinuz" "${IMAGE_DIR}/casper/initrd"
 
 # Step 5: Clean Chroot & Unmount Virtual FS before SquashFS
 log "Step 5: Cleaning up rootfs and unmounting virtual filesystems..."
@@ -161,7 +163,6 @@ printf $(du -sx --block-size=1 "${ROOTFS_DIR}" | cut -f1) > "${IMAGE_DIR}/casper
 # Step 7: Configure GRUB Bootloader for ISO
 log "Step 7: Generating GRUB boot configurations..."
 cat <<EOF > "${IMAGE_DIR}/boot/grub/grub.cfg"
-search --set=root --file /casper/vmlinuz
 set default="0"
 set timeout=5
 
@@ -197,9 +198,29 @@ menuentry "Boot from next volume" {
 }
 EOF
 
+# Ventoy Loopback Configuration (enables 100% stable Ventoy boot without partition errors)
+cat <<EOF > "${IMAGE_DIR}/boot/grub/loopback.cfg"
+set default="0"
+set timeout=5
+
+menuentry "Try or Install Geminux OS (Live)" {
+    set gfxpayload=keep
+    linux   /casper/vmlinuz boot=casper iso-scan/filename=\${iso_path} quiet splash ---
+    initrd  /casper/initrd
+}
+
+menuentry "Geminux OS (Safe Graphics)" {
+    set gfxpayload=keep
+    linux   /casper/vmlinuz boot=casper nomodeset iso-scan/filename=\${iso_path} quiet splash ---
+    initrd  /casper/initrd
+}
+EOF
+
 # Embedded early grub config for EFI to locate CD-ROM root
 cat <<EOF > "${WORK_DIR}/early-grub.cfg"
-search --set=root --file /casper/vmlinuz
+if [ -z "\$root" -o ! -f "(\$root)/casper/vmlinuz" ]; then
+    search --no-floppy --set=root --file /casper/vmlinuz
+fi
 set prefix=(\$root)/boot/grub
 configfile \$prefix/grub.cfg
 EOF
@@ -217,6 +238,7 @@ grub-mkstandalone \
     --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
     --locales="" \
     --fonts="" \
+    --modules="all_video efi_gop efi_uga iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_fs_file configfile test echo reboot" \
     "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
 
 # Create FAT image for EFI
@@ -231,13 +253,15 @@ grub-mkimage \
     --format=i386-pc-eltorito \
     --output="${IMAGE_DIR}/boot/grub/bios.img" \
     --prefix=/boot/grub \
-    iso9660 biosdisk search search_fs_file normal test
+    iso9660 biosdisk search search_fs_file normal test linux
 
 # Step 9: Generate Universal Hybrid ISO with xorriso
 log "Step 9: Creating Bootable ISO: ${OUT_ISO}..."
 xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
+    -r \
+    -J \
     -volid "GEMINUX_OS" \
     -eltorito-boot boot/grub/bios.img \
     -eltorito-catalog boot/grub/boot.cat \
