@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<components version="0.14" origin="geminux">
+  <component type="desktop-application">
+    <id>sober-fix.desktop</id>
+    <pkgname>sober-fix</pkgname>
+    <source_pkgname>sober-fix</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Sober Fix (Roblox Cleaner)</name>
+    <summary>Limpeza de cache e reparo automático do Sober / Roblox no Geminux OS</summary>
+    <description>
+      <p>
+        O Sober Fix é um utilitário exclusivo desenvolvido para o Geminux OS que resolve travamentos,
+        erros de atualização e problemas de cache do cliente Sober / Roblox no Linux.
+      </p>
+      <p>
+        Recursos principais:
+      </p>
+      <ul>
+        <li>Limpeza profunda do cache de jogos e dados temporários do Sober</li>
+        <li>Finalização segura de instâncias travadas em segundo plano</li>
+        <li>Restauração rápida da estabilidade do Roblox sem necessidade de reinstalar</li>
+      </ul>
+    </description>
+    <screenshots>
+      <screenshot type="default">
+        <caption>Terminal do Geminux OS executando a limpeza e reparo de cache do Sober Fix</caption>
+        <image width="1280" height="720">https://raw.githubusercontent.com/miguel7435987984/geminux/main/branding/screenshots/sober-fix.png</image>
+      </screenshot>
+    </screenshots>
+    <launchable type="desktop-id">sober-fix.desktop</launchable>
+    <icon type="stock">sober-fix</icon>
+    <provides>
+      <binary>sober-fix</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>Game</category>
+      <category>Utility</category>
+      <category>System</category>
+    </categories>
+    <keywords>
+      <keyword>sober</keyword>
+      <keyword>roblox</keyword>
+      <keyword>fix</keyword>
+      <keyword>cache</keyword>
+      <keyword>clean</keyword>
+      <keyword>game</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-04">
+        <description>
+          <p>Lançamento inicial oficial do Sober Fix para o Geminux OS 1.0 LTS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.soberfix">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+</components>

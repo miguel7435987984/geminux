@@ -108,6 +108,58 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
     install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
 fi
 
+# 4.1 Setup Geminux Official Local APT Repository & AppStream Catalog
+echo "==> Configuring Geminux Official Repository and AppStream Catalog..."
+mkdir -p /var/lib/geminux/repo
+mkdir -p /usr/share/swcatalog/xml /var/lib/swcatalog/xml
+
+if [ -f /tmp/geminux-build/config/appstream/catalogs/geminux.xml ]; then
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /usr/share/swcatalog/xml/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /var/lib/swcatalog/xml/geminux.xml
+fi
+
+if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
+    cp /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb /var/lib/geminux/repo/
+fi
+if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb ]; then
+    cp /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb /var/lib/geminux/repo/
+fi
+
+(
+    cd /var/lib/geminux/repo
+    if [ -x "$(command -v dpkg-scanpackages)" ]; then
+        dpkg-scanpackages . /dev/null > Packages 2>/dev/null || true
+    fi
+    if [ ! -s Packages ]; then
+        > Packages
+        for deb in *.deb; do
+            if [ -f "$deb" ]; then
+                dpkg-deb -I "$deb" control 2>/dev/null | sed '/^$/d' >> Packages
+                echo "Filename: ./$deb" >> Packages
+                echo "Size: $(stat -c%s "$deb")" >> Packages
+                echo "SHA256: $(sha256sum "$deb" | cut -d' ' -f1)" >> Packages
+                echo "" >> Packages
+            fi
+        done
+    fi
+    gzip -9c Packages > Packages.gz
+
+    cat <<'EOF_REL' > Release
+Archive: resolute
+Origin: Geminux
+Label: Geminux OS
+Suite: resolute
+Codename: resolute
+Architectures: all amd64
+Components: main
+Description: Geminux OS Official Local Repository
+EOF_REL
+)
+
+cat <<'EOF_SRC' > /etc/apt/sources.list.d/geminux.list
+deb [trusted=yes] file:/var/lib/geminux/repo ./
+EOF_SRC
+
 # Install sober-fix utility (Roblox / Sober repair tool) & Geminux Store Metainfo
 if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
     dpkg -i /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb || apt-get install -f -y

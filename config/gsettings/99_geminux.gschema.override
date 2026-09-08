@@ -41,3 +41,12 @@ show-apport-crashes=false
 check-dist-upgrades=false
 first-run=false
 
+[org.gnome.software]
+official-repos=['geminux', 'geminux-*', 'geminux-repo', 'ubuntu', 'ubuntu-*', 'flathub', 'local', '*']
+required-repos=['geminux', 'ubuntu']
+compatible-projects=['GNOME', 'KDE', 'XFCE', 'Geminux']
+allow-updates=false
+download-updates=false
+download-updates-notify=false
+first-run=false
+
