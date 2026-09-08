@@ -311,7 +311,14 @@ class VMManager:
         elif not disk_format:
             disk_format = "qcow2"
 
-        cmd = ["qemu-system-x86_64", "-enable-kvm"]
+        # Verifica se KVM está disponível e com permissão no sistema
+        has_kvm = os.path.exists("/dev/kvm") and os.access("/dev/kvm", os.R_OK | os.W_OK)
+        cmd = ["qemu-system-x86_64"]
+        if has_kvm:
+            cmd.append("-enable-kvm")
+            default_cpu = "host"
+        else:
+            default_cpu = "qemu64"
 
         # Memória e CPUs
         ram_mb = vm.get("ram_mb", 2048)
@@ -322,13 +329,13 @@ class VMManager:
         if engine == "virtualbox":
             # Perfil de Compatibilidade Oracle VM VirtualBox
             cmd.extend([
-                "-cpu", "host",
+                "-cpu", default_cpu,
                 "-vga", "std",
                 "-device", "usb-tablet"
             ])
             if os_type == "windows":
-                # Hyper-V enlightenments em perfil VirtualBox
-                cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                if has_kvm:
+                    cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
                 ovmf_paths = [
                     "/usr/share/OVMF/OVMF_CODE.fd",
                     "/usr/share/qemu/OVMF.fd",
@@ -341,18 +348,19 @@ class VMManager:
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
                 ])
         elif engine == "vmware":
             # Perfil de Compatibilidade VMware Workstation
             cmd.extend([
-                "-cpu", "host",
+                "-cpu", default_cpu,
                 "-vga", "vmware",
                 "-device", "usb-tablet"
             ])
             if os_type == "windows":
-                cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                if has_kvm:
+                    cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
                 ovmf_paths = [
                     "/usr/share/OVMF/OVMF_CODE.fd",
                     "/usr/share/qemu/OVMF.fd",
@@ -365,15 +373,16 @@ class VMManager:
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
                 ])
         else:
             # Perfil Nativo KVM / Hyper-V
             if os_type == "windows":
                 # Otimizações completas Hyper-V para Windows
+                win_cpu = "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time" if has_kvm else "qemu64"
                 cmd.extend([
-                    "-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time",
+                    "-cpu", win_cpu,
                     "-vga", "virtio",
                     "-device", "usb-tablet"
                 ])
@@ -391,14 +400,14 @@ class VMManager:
                 # Configuração recomendada para macOS (q35, CPU compatível e gráficos vmware)
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
                     "-vga", "vmware",
                     "-device", "usb-tablet",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
                 ])
             else: # Linux
                 cmd.extend([
-                    "-cpu", "host",
+                    "-cpu", default_cpu,
                     "-vga", "virtio",
                     "-device", "usb-tablet"
                 ])
@@ -420,14 +429,25 @@ class VMManager:
         else:
             cmd.extend(["-boot", "c"])
 
-        # Áudio e Rede
+        # Áudio e Rede Segura
         nic_model = "virtio" if (engine == "kvm" and os_type == "linux") else "e1000"
-        cmd.extend([
-            "-nic", f"user,model={nic_model}",
-            "-audiodev", "pa,id=snd0",
-            "-device", "ich9-intel-hda",
-            "-device", "hda-output,audiodev=snd0"
-        ])
+        cmd.extend(["-nic", f"user,model={nic_model}"])
+
+        # Detecta disponibilidade de som sem abortar o QEMU se ausente
+        pulse_sock = f"/run/user/{os.getuid()}/pulse/native"
+        pipewire_sock = f"/run/user/{os.getuid()}/pipewire-0"
+        if os.path.exists(pulse_sock) or os.environ.get("PULSE_SERVER"):
+            cmd.extend([
+                "-audiodev", "pa,id=snd0",
+                "-device", "ich9-intel-hda",
+                "-device", "hda-output,audiodev=snd0"
+            ])
+        elif os.path.exists(pipewire_sock):
+            cmd.extend([
+                "-audiodev", "pipewire,id=snd0",
+                "-device", "ich9-intel-hda",
+                "-device", "hda-output,audiodev=snd0"
+            ])
 
         try:
             proc = subprocess.Popen(
@@ -436,6 +456,16 @@ class VMManager:
                 stderr=subprocess.PIPE,
                 text=True
             )
+            # Aguarda um curto intervalo para verificar se o QEMU não abortou imediatamente
+            time.sleep(0.6)
+            if proc.poll() is not None:
+                err_output = proc.stderr.read().strip()
+                if not err_output:
+                    err_output = proc.stdout.read().strip()
+                if not err_output:
+                    err_output = f"Código de encerramento do processo: {proc.returncode}"
+                return False, f"O motor de virtualização (QEMU) encerrou inesperadamente:\n\n{err_output}"
+
             self.running_processes[vm_id] = proc
             return True, "Máquina virtual iniciada com sucesso."
         except Exception as e:
@@ -463,16 +493,26 @@ class NewVMDialog(Gtk.Dialog):
             modal=True,
             destroy_with_parent=True
         )
-        self.set_default_size(520, 560)
-        self.set_resizable(False)
+        self.set_default_size(540, 480)
+        self.set_resizable(True)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.selected_os = "linux"
 
-        box = self.get_content_area()
-        box.set_spacing(16)
-        box.set_margin_top(20)
-        box.set_margin_bottom(20)
-        box.set_margin_start(24)
-        box.set_margin_end(24)
+        content_area = self.get_content_area()
+
+        # Janela deslizante com barra de rolagem (garante acesso ao botão em telas de notebook como Asus 1366x768)
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_hexpand(True)
+        scrolled.set_vexpand(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+        scrolled.add(box)
+        content_area.pack_start(scrolled, True, True, 0)
 
         title_lbl = Gtk.Label()
         title_lbl.set_markup("<span size='x-large' weight='bold'>Nova Máquina Virtual</span>")

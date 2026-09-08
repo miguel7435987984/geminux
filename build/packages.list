@@ -102,5 +102,6 @@ efibootmgr
 
 # Virtualization & QEMU / KVM
 qemu-system-x86
+qemu-system-gui
 qemu-utils
 ovmf

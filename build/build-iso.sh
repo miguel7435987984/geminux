@@ -51,19 +51,26 @@ for dep in $DEPS; do
 done
 
 # Prepare Workspace
-if [ -f "${IMAGE_DIR}/casper/filesystem.squashfs" ] && [ -f "${IMAGE_DIR}/casper/vmlinuz" ] && [ "${CLEAN:-0}" != "1" ]; then
+if [ -f "${IMAGE_DIR}/casper/filesystem.squashfs" ] && [ -f "${IMAGE_DIR}/casper/vmlinuz" ] && [ "${REBUILD_SQUASHFS:-0}" != "1" ] && [ "${CLEAN:-0}" != "1" ]; then
     log_ok "Existing filesystem.squashfs and kernel found in ${IMAGE_DIR}/casper!"
     log "Reusing built rootfs and resuming directly at bootloader and ISO packaging..."
 else
-    log "Preparing build directory at ${WORK_DIR}..."
-    rm -rf "${WORK_DIR}"
-    mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
-    echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
-    touch "${IMAGE_DIR}/.disk/base_installable"
+    if [ "${CLEAN:-0}" = "1" ] || [ ! -f "${ROOTFS_DIR}/bin/bash" ]; then
+        log "Preparing clean build directory at ${WORK_DIR}..."
+        rm -rf "${WORK_DIR}"
+        mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
+        echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
+        touch "${IMAGE_DIR}/.disk/base_installable"
 
-    # Step 1: Debootstrap Rootfs
-    log "Step 1: Running debootstrap for Ubuntu (${CODENAME})..."
-    debootstrap --arch=amd64 --variant=minbase "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"
+        # Step 1: Debootstrap Rootfs
+        log "Step 1: Running debootstrap for Ubuntu (${CODENAME})..."
+        debootstrap --arch=amd64 --variant=minbase "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"
+    else
+        log_ok "Existing rootfs found at ${ROOTFS_DIR}! Skipping debootstrap..."
+        mkdir -p "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
+        echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
+        touch "${IMAGE_DIR}/.disk/base_installable"
+    fi
 
     # Step 2: Setup Mounts for Chroot
     log "Step 2: Mounting virtual filesystems for chroot..."
