@@ -326,16 +326,17 @@ class VMManager:
         cmd.extend(["-m", f"{ram_mb}M", "-smp", str(cpus), "-usb"])
 
         # Configurações Específicas por Motor e Sistema Operacional
+        macos_cpu = "host,vendor=GenuineIntel" if has_kvm else "qemu64,vendor=GenuineIntel"
+        win_cpu = "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time" if has_kvm else "qemu64"
+
         if engine == "virtualbox":
             # Perfil de Compatibilidade Oracle VM VirtualBox
-            cmd.extend([
-                "-cpu", default_cpu,
-                "-vga", "std",
-                "-device", "usb-tablet"
-            ])
             if os_type == "windows":
-                if has_kvm:
-                    cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                cmd.extend([
+                    "-cpu", win_cpu,
+                    "-vga", "std",
+                    "-device", "usb-tablet"
+                ])
                 ovmf_paths = [
                     "/usr/share/OVMF/OVMF_CODE.fd",
                     "/usr/share/qemu/OVMF.fd",
@@ -348,19 +349,25 @@ class VMManager:
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
+                    "-cpu", macos_cpu,
+                    "-vga", "std",
+                    "-device", "usb-tablet",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+                ])
+            else: # Linux
+                cmd.extend([
+                    "-cpu", default_cpu,
+                    "-vga", "std",
+                    "-device", "usb-tablet"
                 ])
         elif engine == "vmware":
             # Perfil de Compatibilidade VMware Workstation
-            cmd.extend([
-                "-cpu", default_cpu,
-                "-vga", "vmware",
-                "-device", "usb-tablet"
-            ])
             if os_type == "windows":
-                if has_kvm:
-                    cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                cmd.extend([
+                    "-cpu", win_cpu,
+                    "-vga", "vmware",
+                    "-device", "usb-tablet"
+                ])
                 ovmf_paths = [
                     "/usr/share/OVMF/OVMF_CODE.fd",
                     "/usr/share/qemu/OVMF.fd",
@@ -373,20 +380,26 @@ class VMManager:
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
+                    "-cpu", macos_cpu,
+                    "-vga", "vmware",
+                    "-device", "usb-tablet",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+                ])
+            else: # Linux
+                cmd.extend([
+                    "-cpu", default_cpu,
+                    "-vga", "vmware",
+                    "-device", "usb-tablet"
                 ])
         else:
             # Perfil Nativo KVM / Hyper-V
             if os_type == "windows":
                 # Otimizações completas Hyper-V para Windows
-                win_cpu = "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time" if has_kvm else "qemu64"
                 cmd.extend([
                     "-cpu", win_cpu,
                     "-vga", "virtio",
                     "-device", "usb-tablet"
                 ])
-                # Tenta encontrar firmware UEFI OVMF se disponível
                 ovmf_paths = [
                     "/usr/share/OVMF/OVMF_CODE.fd",
                     "/usr/share/qemu/OVMF.fd",
@@ -400,7 +413,7 @@ class VMManager:
                 # Configuração recomendada para macOS (q35, CPU compatível e gráficos vmware)
                 cmd.extend([
                     "-machine", "q35",
-                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on" if has_kvm else "qemu64",
+                    "-cpu", macos_cpu,
                     "-vga", "vmware",
                     "-device", "usb-tablet",
                     "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
