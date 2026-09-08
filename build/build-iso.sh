@@ -51,51 +51,55 @@ for dep in $DEPS; do
 done
 
 # Prepare Workspace
-log "Preparing build directory at ${WORK_DIR}..."
-rm -rf "${WORK_DIR}"
-mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
-echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
-touch "${IMAGE_DIR}/.disk/base_installable"
+if [ -f "${IMAGE_DIR}/casper/filesystem.squashfs" ] && [ -f "${IMAGE_DIR}/casper/vmlinuz" ] && [ "${CLEAN:-0}" != "1" ]; then
+    log_ok "Existing filesystem.squashfs and kernel found in ${IMAGE_DIR}/casper!"
+    log "Reusing built rootfs and resuming directly at bootloader and ISO packaging..."
+else
+    log "Preparing build directory at ${WORK_DIR}..."
+    rm -rf "${WORK_DIR}"
+    mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
+    echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
+    touch "${IMAGE_DIR}/.disk/base_installable"
 
-# Step 1: Debootstrap Rootfs
-log "Step 1: Running debootstrap for Ubuntu (${CODENAME})..."
-debootstrap --arch=amd64 --variant=minbase "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"
+    # Step 1: Debootstrap Rootfs
+    log "Step 1: Running debootstrap for Ubuntu (${CODENAME})..."
+    debootstrap --arch=amd64 --variant=minbase "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"
 
-# Step 2: Setup Mounts for Chroot
-log "Step 2: Mounting virtual filesystems for chroot..."
-mount --bind /dev "${ROOTFS_DIR}/dev"
-mount --bind /run "${ROOTFS_DIR}/run"
-mount -t devpts devpts "${ROOTFS_DIR}/dev/pts"
-mount -t proc proc "${ROOTFS_DIR}/proc"
-mount -t sysfs sysfs "${ROOTFS_DIR}/sys"
+    # Step 2: Setup Mounts for Chroot
+    log "Step 2: Mounting virtual filesystems for chroot..."
+    mount --bind /dev "${ROOTFS_DIR}/dev"
+    mount --bind /run "${ROOTFS_DIR}/run"
+    mount -t devpts devpts "${ROOTFS_DIR}/dev/pts"
+    mount -t proc proc "${ROOTFS_DIR}/proc"
+    mount -t sysfs sysfs "${ROOTFS_DIR}/sys"
 
-# Setup DNS inside chroot
-rm -f "${ROOTFS_DIR}/etc/resolv.conf"
-echo "nameserver 8.8.8.8" > "${ROOTFS_DIR}/etc/resolv.conf"
-echo "nameserver 1.1.1.1" >> "${ROOTFS_DIR}/etc/resolv.conf"
+    # Setup DNS inside chroot
+    rm -f "${ROOTFS_DIR}/etc/resolv.conf"
+    echo "nameserver 8.8.8.8" > "${ROOTFS_DIR}/etc/resolv.conf"
+    echo "nameserver 1.1.1.1" >> "${ROOTFS_DIR}/etc/resolv.conf"
 
-cleanup() {
-    log "Cleaning up mounts..."
-    umount -lf "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
-    umount -lf "${ROOTFS_DIR}/dev" 2>/dev/null || true
-    umount -lf "${ROOTFS_DIR}/run" 2>/dev/null || true
-    umount -lf "${ROOTFS_DIR}/proc" 2>/dev/null || true
-    umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
-}
-trap cleanup EXIT
+    cleanup() {
+        log "Cleaning up mounts..."
+        umount -lf "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
+        umount -lf "${ROOTFS_DIR}/dev" 2>/dev/null || true
+        umount -lf "${ROOTFS_DIR}/run" 2>/dev/null || true
+        umount -lf "${ROOTFS_DIR}/proc" 2>/dev/null || true
+        umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
+    }
+    trap cleanup EXIT
 
-# Copy Geminux assets into chroot
-mkdir -p "${ROOTFS_DIR}/tmp/geminux-build"
-cp -r "${SCRIPT_DIR}/apps" "${ROOTFS_DIR}/tmp/geminux-build/"
-cp -r "${SCRIPT_DIR}/branding" "${ROOTFS_DIR}/tmp/geminux-build/"
-cp -r "${SCRIPT_DIR}/config" "${ROOTFS_DIR}/tmp/geminux-build/"
-cp -r "${SCRIPT_DIR}/installer" "${ROOTFS_DIR}/tmp/geminux-build/"
-cp "${SCRIPT_DIR}/build/live-hooks/customize.sh" "${ROOTFS_DIR}/tmp/geminux-build/"
-cp "${SCRIPT_DIR}/build/packages.list" "${ROOTFS_DIR}/tmp/geminux-build/"
+    # Copy Geminux assets into chroot
+    mkdir -p "${ROOTFS_DIR}/tmp/geminux-build"
+    cp -r "${SCRIPT_DIR}/apps" "${ROOTFS_DIR}/tmp/geminux-build/"
+    cp -r "${SCRIPT_DIR}/branding" "${ROOTFS_DIR}/tmp/geminux-build/"
+    cp -r "${SCRIPT_DIR}/config" "${ROOTFS_DIR}/tmp/geminux-build/"
+    cp -r "${SCRIPT_DIR}/installer" "${ROOTFS_DIR}/tmp/geminux-build/"
+    cp "${SCRIPT_DIR}/build/live-hooks/customize.sh" "${ROOTFS_DIR}/tmp/geminux-build/"
+    cp "${SCRIPT_DIR}/build/packages.list" "${ROOTFS_DIR}/tmp/geminux-build/"
 
-# Step 3: Install Packages inside Chroot
-log "Step 3: Installing packages and kernel inside chroot..."
-cat <<EOF | chroot "${ROOTFS_DIR}" /bin/bash
+    # Step 3: Install Packages inside Chroot
+    log "Step 3: Installing packages and kernel inside chroot..."
+    cat <<EOF | chroot "${ROOTFS_DIR}" /bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
@@ -118,49 +122,50 @@ bash /tmp/geminux-build/customize.sh
 apt-get clean
 EOF
 
-# Step 4: Extract Kernel & Initrd for Boot
-log "Step 4: Extracting kernel and initramfs to ISO image..."
-VMLINUZ=$(ls -1t "${ROOTFS_DIR}/boot/vmlinuz-"* 2>/dev/null | head -n 1)
-INITRD=$(ls -1t "${ROOTFS_DIR}/boot/initrd.img-"* 2>/dev/null | head -n 1)
-
-if [ -z "${INITRD}" ] || [ ! -f "${INITRD}" ]; then
-    log "Generating initrd for kernel..."
-    KERNEL_VER=$(ls -1 "${ROOTFS_DIR}/lib/modules" | tail -n 1)
-    chroot "${ROOTFS_DIR}" update-initramfs -c -k "${KERNEL_VER}"
+    # Step 4: Extract Kernel & Initrd for Boot
+    log "Step 4: Extracting kernel and initramfs to ISO image..."
+    VMLINUZ=$(ls -1t "${ROOTFS_DIR}/boot/vmlinuz-"* 2>/dev/null | head -n 1)
     INITRD=$(ls -1t "${ROOTFS_DIR}/boot/initrd.img-"* 2>/dev/null | head -n 1)
+
+    if [ -z "${INITRD}" ] || [ ! -f "${INITRD}" ]; then
+        log "Generating initrd for kernel..."
+        KERNEL_VER=$(ls -1 "${ROOTFS_DIR}/lib/modules" | tail -n 1)
+        chroot "${ROOTFS_DIR}" update-initramfs -c -k "${KERNEL_VER}"
+        INITRD=$(ls -1t "${ROOTFS_DIR}/boot/initrd.img-"* 2>/dev/null | head -n 1)
+    fi
+
+    log "Kernel found: ${VMLINUZ}"
+    log "Initramfs found: ${INITRD}"
+
+    # Dereference symlinks and ensure permissions are world-readable
+    cp -L "${VMLINUZ}" "${IMAGE_DIR}/casper/vmlinuz"
+    cp -L "${INITRD}" "${IMAGE_DIR}/casper/initrd"
+    chmod 644 "${IMAGE_DIR}/casper/vmlinuz" "${IMAGE_DIR}/casper/initrd"
+
+    # Step 5: Clean Chroot & Unmount Virtual FS before SquashFS
+    log "Step 5: Cleaning up rootfs and unmounting virtual filesystems..."
+    rm -rf "${ROOTFS_DIR}/tmp/geminux-build"
+    rm -rf "${ROOTFS_DIR}/var/cache/apt/archives"/*
+    rm -rf "${ROOTFS_DIR}/tmp"/*
+
+    # Ensure /etc/resolv.conf points to systemd-resolved stub for live session and installed system
+    rm -f "${ROOTFS_DIR}/etc/resolv.conf"
+    ln -sf ../run/systemd/resolve/stub-resolv.conf "${ROOTFS_DIR}/etc/resolv.conf"
+
+    # Explicitly unmount virtual fs so mksquashfs only compresses real files
+    umount -lf "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
+    umount -lf "${ROOTFS_DIR}/dev" 2>/dev/null || true
+    umount -lf "${ROOTFS_DIR}/run" 2>/dev/null || true
+    umount -lf "${ROOTFS_DIR}/proc" 2>/dev/null || true
+    umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
+
+    # Step 6: Create SquashFS Image
+    log "Step 6: Compressing root filesystem into filesystem.squashfs..."
+    mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -noappend -comp xz -b 1048576 -Xdict-size 100%
+
+    # Calculate filesystem size
+    printf $(du -sx --block-size=1 "${ROOTFS_DIR}" | cut -f1) > "${IMAGE_DIR}/casper/filesystem.size"
 fi
-
-log "Kernel found: ${VMLINUZ}"
-log "Initramfs found: ${INITRD}"
-
-# Dereference symlinks and ensure permissions are world-readable
-cp -L "${VMLINUZ}" "${IMAGE_DIR}/casper/vmlinuz"
-cp -L "${INITRD}" "${IMAGE_DIR}/casper/initrd"
-chmod 644 "${IMAGE_DIR}/casper/vmlinuz" "${IMAGE_DIR}/casper/initrd"
-
-# Step 5: Clean Chroot & Unmount Virtual FS before SquashFS
-log "Step 5: Cleaning up rootfs and unmounting virtual filesystems..."
-rm -rf "${ROOTFS_DIR}/tmp/geminux-build"
-rm -rf "${ROOTFS_DIR}/var/cache/apt/archives"/*
-rm -rf "${ROOTFS_DIR}/tmp"/*
-
-# Ensure /etc/resolv.conf points to systemd-resolved stub for live session and installed system
-rm -f "${ROOTFS_DIR}/etc/resolv.conf"
-ln -sf ../run/systemd/resolve/stub-resolv.conf "${ROOTFS_DIR}/etc/resolv.conf"
-
-# Explicitly unmount virtual fs so mksquashfs only compresses real files
-umount -lf "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
-umount -lf "${ROOTFS_DIR}/dev" 2>/dev/null || true
-umount -lf "${ROOTFS_DIR}/run" 2>/dev/null || true
-umount -lf "${ROOTFS_DIR}/proc" 2>/dev/null || true
-umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
-
-# Step 6: Create SquashFS Image
-log "Step 6: Compressing root filesystem into filesystem.squashfs..."
-mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -noappend -comp xz -b 1048576 -Xdict-size 100%
-
-# Calculate filesystem size
-printf $(du -sx --block-size=1 "${ROOTFS_DIR}" | cut -f1) > "${IMAGE_DIR}/casper/filesystem.size"
 
 # Step 7: Configure GRUB Bootloader for ISO
 log "Step 7: Generating GRUB boot configurations..."
@@ -242,7 +247,7 @@ grub-mkstandalone \
     --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
     --locales="" \
     --fonts="" \
-    --modules="all_video efi_gop efi_uga iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_label search_fs_file search_fs_uuid configfile test echo reboot" \
+    --modules="all_video efi_gop iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_label search_fs_file search_fs_uuid configfile test echo reboot" \
     "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
 
 # Create FAT image for EFI
