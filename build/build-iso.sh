@@ -53,7 +53,9 @@ done
 # Prepare Workspace
 log "Preparing build directory at ${WORK_DIR}..."
 rm -rf "${WORK_DIR}"
-mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT"
+mkdir -p "${ROOTFS_DIR}" "${IMAGE_DIR}/casper" "${IMAGE_DIR}/boot/grub/x86_64-efi" "${IMAGE_DIR}/EFI/BOOT" "${IMAGE_DIR}/.disk"
+echo "Geminux OS 1.0 LTS (Resolute) - Release amd64" > "${IMAGE_DIR}/.disk/info"
+touch "${IMAGE_DIR}/.disk/base_installable"
 
 # Step 1: Debootstrap Rootfs
 log "Step 1: Running debootstrap for Ubuntu (${CODENAME})..."
@@ -219,7 +221,9 @@ EOF
 # Embedded early grub config for EFI to locate CD-ROM root
 cat <<EOF > "${WORK_DIR}/early-grub.cfg"
 if [ -z "\$root" -o ! -f "(\$root)/casper/vmlinuz" ]; then
-    search --no-floppy --set=root --file /casper/vmlinuz
+    if ! search --no-floppy --set=root --label GEMINUX_OS; then
+        search --no-floppy --set=root --file /.disk/info
+    fi
 fi
 set prefix=(\$root)/boot/grub
 configfile \$prefix/grub.cfg
@@ -238,7 +242,7 @@ grub-mkstandalone \
     --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
     --locales="" \
     --fonts="" \
-    --modules="all_video efi_gop efi_uga iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_fs_file configfile test echo reboot" \
+    --modules="all_video efi_gop efi_uga iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_label search_fs_file search_fs_uuid configfile test echo reboot" \
     "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
 
 # Create FAT image for EFI
@@ -253,7 +257,7 @@ grub-mkimage \
     --format=i386-pc-eltorito \
     --output="${IMAGE_DIR}/boot/grub/bios.img" \
     --prefix=/boot/grub \
-    iso9660 biosdisk search search_fs_file normal test linux
+    iso9660 biosdisk search search_label search_fs_file normal test linux
 
 # Step 9: Generate Universal Hybrid ISO with xorriso
 log "Step 9: Creating Bootable ISO: ${OUT_ISO}..."
