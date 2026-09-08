@@ -320,10 +320,10 @@ class VMManager:
         else:
             default_cpu = "qemu64"
 
-        # Memória e CPUs
+        # Memória, CPUs e Barramento USB
         ram_mb = vm.get("ram_mb", 2048)
         cpus = vm.get("cpus", 2)
-        cmd.extend(["-m", f"{ram_mb}M", "-smp", str(cpus)])
+        cmd.extend(["-m", f"{ram_mb}M", "-smp", str(cpus), "-usb"])
 
         # Configurações Específicas por Motor e Sistema Operacional
         if engine == "virtualbox":
@@ -464,6 +464,8 @@ class VMManager:
                     err_output = proc.stdout.read().strip()
                 if not err_output:
                     err_output = f"Código de encerramento do processo: {proc.returncode}"
+                if "Cannot allocate memory" in err_output or "cannot set up guest memory" in err_output:
+                    err_output += "\n\n💡 Dica Geminux: A quantidade de memória RAM configurada para esta máquina virtual é superior à memória livre do computador hospedeiro. Experimente reduzir a RAM para 1024 MB ou 1536 MB."
                 return False, f"O motor de virtualização (QEMU) encerrou inesperadamente:\n\n{err_output}"
 
             self.running_processes[vm_id] = proc
@@ -484,6 +486,26 @@ class VMManager:
         return False
 
 
+def get_safe_system_ram():
+    """Detecta a memória física total do host para sugerir valores seguros de RAM e evitar estouro de memória"""
+    try:
+        pages = os.sysconf('SC_PHYS_PAGES')
+        page_size = os.sysconf('SC_PAGE_SIZE')
+        total_ram_mb = (pages * page_size) // (1024 * 1024)
+    except Exception:
+        total_ram_mb = 4096
+
+    if total_ram_mb <= 2048:
+        return {"total": total_ram_mb, "linux": 512, "windows": 1024, "macos": 1024}
+    elif total_ram_mb <= 4096:
+        # Host ou QEMU com 4GB ou menos: evita alocar 4GB na VM interna
+        return {"total": total_ram_mb, "linux": 1024, "windows": 1536, "macos": 1536}
+    elif total_ram_mb <= 8192:
+        return {"total": total_ram_mb, "linux": 2048, "windows": 2048, "macos": 2048}
+    else:
+        return {"total": total_ram_mb, "linux": 2048, "windows": 4096, "macos": 4096}
+
+
 class NewVMDialog(Gtk.Dialog):
     """Janela de Criação de Nova Máquina Virtual"""
     def __init__(self, parent):
@@ -497,6 +519,7 @@ class NewVMDialog(Gtk.Dialog):
         self.set_resizable(True)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.selected_os = "linux"
+        self.safe_ram = get_safe_system_ram()
 
         content_area = self.get_content_area()
 
@@ -619,18 +642,19 @@ class NewVMDialog(Gtk.Dialog):
         specs_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         specs_card.get_style_context().add_class("card")
 
-        # Memória RAM Slider
+        # Memória RAM Slider (Permite de 512 MB a 16 GB com passos suaves de 256 MB)
+        init_ram = self.safe_ram.get("linux", 1024)
         ram_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         ram_lbl = Gtk.Label(label="Memória RAM:")
         ram_lbl.set_halign(Gtk.Align.START)
-        self.ram_val_lbl = Gtk.Label(label="2048 MB (2.0 GB)")
+        self.ram_val_lbl = Gtk.Label(label=f"{init_ram} MB ({init_ram / 1024.0:.1f} GB)")
         self.ram_val_lbl.set_halign(Gtk.Align.END)
         ram_box.pack_start(ram_lbl, True, True, 0)
         ram_box.pack_start(self.ram_val_lbl, False, False, 0)
         specs_card.pack_start(ram_box, False, False, 0)
 
-        self.ram_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1024, 16384, 512)
-        self.ram_scale.set_value(2048)
+        self.ram_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 512, 16384, 256)
+        self.ram_scale.set_value(init_ram)
         self.ram_scale.connect("value-changed", self.on_ram_changed)
         specs_card.pack_start(self.ram_scale, False, False, 0)
 
@@ -684,20 +708,21 @@ class NewVMDialog(Gtk.Dialog):
     def on_os_changed(self, button, os_type):
         if button.get_active():
             self.selected_os = os_type
+            rec_ram = self.safe_ram.get(os_type, 1024)
             if os_type == "windows":
-                self.ram_scale.set_value(4096)
+                self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(64)
                 self.cpu_spin.set_value(2)
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("Windows 11")
             elif os_type == "macos":
-                self.ram_scale.set_value(4096)
+                self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(64)
-                self.cpu_spin.set_value(4)
+                self.cpu_spin.set_value(2 if self.safe_ram["total"] <= 4096 else 4)
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("macOS")
             else: # linux
-                self.ram_scale.set_value(2048)
+                self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(30)
                 self.cpu_spin.set_value(2)
                 if not self.name_entry.get_text():
