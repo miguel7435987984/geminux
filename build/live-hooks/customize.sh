@@ -207,13 +207,36 @@ if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb 
     fi
 fi
 
-# 5. Plymouth Boot Splash Theme
-mkdir -p /usr/share/plymouth/themes/geminux-plymouth
-if [ -d /tmp/geminux-build/branding/plymouth/geminux-plymouth ]; then
-    cp -r /tmp/geminux-build/branding/plymouth/geminux-plymouth/* /usr/share/plymouth/themes/geminux-plymouth/
+# 5. Plymouth Boot Splash Theme (Official BGRT + 60-frame Boot Spinner)
+echo "==> Configuring Plymouth Boot Splash (BGRT + 60-frame Spinner)..."
+mkdir -p /etc/plymouth
+cat <<'EOF_PLY' > /etc/plymouth/plymouthd.conf
+[Daemon]
+Theme=bgrt
+ShowDelay=0
+DeviceTimeout=8
+EOF_PLY
+
+mkdir -p /usr/share/plymouth/themes/bgrt
+mkdir -p /usr/share/plymouth/themes/spinner
+
+if [ -d /tmp/geminux-build/branding/plymouth/bgrt ]; then
+    cp -r /tmp/geminux-build/branding/plymouth/bgrt/* /usr/share/plymouth/themes/bgrt/ || true
+fi
+if [ -d /tmp/geminux-build/branding/plymouth/spinner ]; then
+    cp -r /tmp/geminux-build/branding/plymouth/spinner/* /usr/share/plymouth/themes/spinner/ || true
+fi
+if [ -f /tmp/geminux-build/branding/icons/geminux-logo.png ]; then
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/plymouth/themes/spinner/bgrt-fallback.png || true
+fi
+
+if [ -f /usr/share/plymouth/themes/bgrt/bgrt.plymouth ]; then
     if [ -x "$(command -v update-alternatives)" ]; then
-        update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth /usr/share/plymouth/themes/geminux-plymouth/geminux-plymouth.plymouth 100 || true
-        update-alternatives --set default.plymouth /usr/share/plymouth/themes/geminux-plymouth/geminux-plymouth.plymouth || true
+        update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth /usr/share/plymouth/themes/bgrt/bgrt.plymouth 150 || true
+        update-alternatives --set default.plymouth /usr/share/plymouth/themes/bgrt/bgrt.plymouth || true
+    fi
+    if [ -x "$(command -v plymouth-set-default-theme)" ]; then
+        plymouth-set-default-theme bgrt || true
     fi
 fi
 

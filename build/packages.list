@@ -9,6 +9,8 @@ grub-pc-bin
 shim-signed
 plymouth
 plymouth-themes
+plymouth-theme-spinner
+plymouth-label
 
 # Live Boot Essentials
 casper
