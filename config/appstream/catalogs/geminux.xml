@@ -64,4 +64,76 @@
     <url type="help">https://github.com/miguel7435987984/geminux</url>
     <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
   </component>
+  <component type="desktop-application">
+    <id>geminux-virtual-machine.desktop</id>
+    <pkgname>geminux-virtual-machine</pkgname>
+    <source_pkgname>geminux-virtual-machine</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Geminux Virtual Machine</name>
+    <summary>Gerenciador oficial de máquinas virtuais para Windows, Linux e macOS</summary>
+    <description>
+      <p>
+        O Geminux Virtual Machine é o aplicativo oficial de virtualização gráfica do Geminux OS.
+        Ele permite criar, gerenciar e executar máquinas virtuais de alta performance com facilidade,
+        aproveitando a aceleração de hardware nativa Linux KVM do processador do computador.
+      </p>
+      <p>
+        Destaques e Recursos:
+      </p>
+      <ul>
+        <li>Interface gráfica moderna e intuitiva integrada ao tema escuro e neon-cyan do Geminux OS</li>
+        <li>Perfis otimizados prontos para Windows (11, 10, 7), distribuições Linux e macOS</li>
+        <li>Aceleração KVM nativa com drivers VirtIO para gráficos, rede e discos de alta velocidade</li>
+        <li>Assistente visual para criar discos rígidos virtuais (.qcow2) e anexar imagens ISO facilmente</li>
+        <li>Controle completo de hardware: ajuste de núcleos de CPU (vCPUs), memória RAM e armazenamento</li>
+        <li>Segurança total: suas máquinas virtuais rodam em ambiente isolado sem afetar seu disco real</li>
+      </ul>
+    </description>
+    <screenshots>
+      <screenshot type="default">
+        <caption>Janela principal do Geminux Virtual Machine gerenciando sistemas virtuais</caption>
+        <image width="1280" height="720">https://raw.githubusercontent.com/miguel7435987984/geminux/main/branding/screenshots/geminux-vm.png</image>
+      </screenshot>
+    </screenshots>
+    <launchable type="desktop-id">geminux-virtual-machine.desktop</launchable>
+    <icon type="stock">geminux-vm</icon>
+    <provides>
+      <binary>geminux-vm</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>Emulator</category>
+      <category>Utility</category>
+    </categories>
+    <keywords>
+      <keyword>vm</keyword>
+      <keyword>virtual</keyword>
+      <keyword>machine</keyword>
+      <keyword>qemu</keyword>
+      <keyword>kvm</keyword>
+      <keyword>windows</keyword>
+      <keyword>linux</keyword>
+      <keyword>macos</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-08">
+        <size type="download">15360</size>
+        <size type="installed">49152</size>
+        <description>
+          <p>Lançamento oficial do Geminux Virtual Machine com suporte a Windows, Linux e macOS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.vm">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
 </components>

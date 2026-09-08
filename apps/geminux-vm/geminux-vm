@@ -1,0 +1,1065 @@
+#!/usr/bin/env python3
+"""
+Geminux Virtual Machine - Gerenciador Gráfico Oficial de Máquinas Virtuais
+Desenvolvido para o Geminux OS (Windows, Linux e macOS com aceleração KVM/QEMU)
+"""
+
+import sys
+import os
+import json
+import subprocess
+import signal
+import time
+import shutil
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+gi.require_version('GLib', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango
+
+# Paleta de Cores e Estilo Visual Geminux OS
+APP_NAME = "Geminux Virtual Machine"
+APP_VERSION = "1.0.0"
+ACCENT_CYAN = "#00d2ff"
+ACCENT_CYAN_HOVER = "#33dcff"
+BG_DARK = "#0b0f17"
+BG_CARD = "#141a24"
+BG_CARD_HOVER = "#1c2533"
+BG_INPUT = "#0e131d"
+BORDER_COLOR = "#222d3d"
+TEXT_PRIMARY = "#f0f6fc"
+TEXT_MUTED = "#8b949e"
+SUCCESS_GREEN = "#2ea043"
+DANGER_RED = "#f85149"
+
+CSS_STYLE = f"""
+* {{
+    font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}}
+
+window {{
+    background-color: {BG_DARK};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar {{
+    background-color: #0f141f;
+    border-bottom: 1px solid {BORDER_COLOR};
+    padding: 6px 12px;
+}}
+
+headerbar .title {{
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .subtitle {{
+    color: {ACCENT_CYAN};
+    font-size: 11px;
+}}
+
+.btn-primary {{
+    background: linear-gradient(135deg, #0099cc, #00d2ff);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 8px 16px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3);
+}}
+
+.btn-primary:hover {{
+    background: linear-gradient(135deg, #00aadd, #33dcff);
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.5);
+}}
+
+.btn-start {{
+    background: linear-gradient(135deg, #1f6feb, #00d2ff);
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 8px;
+    padding: 10px 24px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.35);
+}}
+
+.btn-start:hover {{
+    background: linear-gradient(135deg, #2b7fff, #33dcff);
+    box-shadow: 0 6px 16px rgba(0, 210, 255, 0.6);
+}}
+
+.btn-stop {{
+    background: linear-gradient(135deg, #b62324, #da3633);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 20px;
+    border: none;
+}}
+
+.btn-stop:hover {{
+    background: linear-gradient(135deg, #c92a2a, #e5484d);
+}}
+
+.btn-danger {{
+    color: {DANGER_RED};
+    background: transparent;
+    border: 1px solid rgba(248, 81, 73, 0.3);
+    border-radius: 8px;
+    padding: 8px 14px;
+}}
+
+.btn-danger:hover {{
+    background: rgba(248, 81, 73, 0.15);
+    border-color: {DANGER_RED};
+}}
+
+.btn-secondary {{
+    background-color: #1e2636;
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 8px 14px;
+}}
+
+.btn-secondary:hover {{
+    background-color: #263145;
+    border-color: {ACCENT_CYAN};
+}}
+
+.sidebar {{
+    background-color: #0d121c;
+    border-right: 1px solid {BORDER_COLOR};
+}}
+
+.vm-row {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 10px;
+    padding: 12px;
+    margin: 6px 10px;
+    transition: all 0.2s ease;
+}}
+
+.vm-row:hover {{
+    background-color: {BG_CARD_HOVER};
+    border-color: rgba(0, 210, 255, 0.4);
+}}
+
+.vm-row:selected {{
+    background-color: #182333;
+    border-color: {ACCENT_CYAN};
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+}}
+
+.card {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 12px;
+    padding: 18px;
+}}
+
+.card-title {{
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+    font-size: 15px;
+}}
+
+.badge {{
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+}}
+
+.badge-running {{
+    background-color: rgba(46, 160, 67, 0.2);
+    color: #3fb950;
+    border: 1px solid rgba(63, 185, 80, 0.4);
+}}
+
+.badge-stopped {{
+    background-color: rgba(139, 148, 158, 0.15);
+    color: {TEXT_MUTED};
+    border: 1px solid rgba(139, 148, 158, 0.3);
+}}
+
+.os-pill {{
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: #1a2230;
+    border: 1px solid #29354a;
+}}
+
+entry, spinbutton {{
+    background-color: {BG_INPUT};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 8px 12px;
+}}
+
+entry:focus, spinbutton:focus {{
+    border-color: {ACCENT_CYAN};
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+}}
+
+scale trough {{
+    background-color: #1b2230;
+    border-radius: 6px;
+    min-height: 8px;
+}}
+
+scale highlight {{
+    background: linear-gradient(90deg, #0099cc, {ACCENT_CYAN});
+    border-radius: 6px;
+}}
+"""
+
+CONFIG_DIR = os.path.expanduser("~/.config/geminux-vm")
+DATA_DIR = os.path.expanduser("~/.local/share/geminux-vm")
+DISKS_DIR = os.path.join(DATA_DIR, "disks")
+VMS_FILE = os.path.join(CONFIG_DIR, "vms.json")
+
+class VMManager:
+    """Gerencia a lista de configurações e processos de VMs"""
+    def __init__(self):
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        os.makedirs(DISKS_DIR, exist_ok=True)
+        self.vms = self.load_vms()
+        self.running_processes = {} # vm_id -> subprocess.Popen
+
+    def load_vms(self):
+        if os.path.exists(VMS_FILE):
+            try:
+                with open(VMS_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Erro ao carregar VMs: {e}")
+        return []
+
+    def save_vms(self):
+        try:
+            with open(VMS_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.vms, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"Erro ao salvar VMs: {e}")
+
+    def add_vm(self, vm_data):
+        self.vms.append(vm_data)
+        self.save_vms()
+
+    def remove_vm(self, vm_id, delete_disk=False):
+        vm = self.get_vm(vm_id)
+        if vm:
+            if self.is_running(vm_id):
+                self.stop_vm(vm_id, force=True)
+            if delete_disk and "disk_path" in vm and os.path.exists(vm["disk_path"]):
+                try:
+                    os.remove(vm["disk_path"])
+                except Exception as e:
+                    print(f"Erro ao deletar disco: {e}")
+            self.vms = [v for v in self.vms if v["id"] != vm_id]
+            self.save_vms()
+
+    def get_vm(self, vm_id):
+        for vm in self.vms:
+            if vm["id"] == vm_id:
+                return vm
+        return None
+
+    def update_vm(self, vm_id, new_data):
+        for i, vm in enumerate(self.vms):
+            if vm["id"] == vm_id:
+                self.vms[i].update(new_data)
+                self.save_vms()
+                break
+
+    def is_running(self, vm_id):
+        proc = self.running_processes.get(vm_id)
+        if proc:
+            if proc.poll() is None:
+                return True
+            else:
+                del self.running_processes[vm_id]
+        return False
+
+    def start_vm(self, vm_id):
+        if self.is_running(vm_id):
+            return True, "A máquina já está em execução."
+
+        vm = self.get_vm(vm_id)
+        if not vm:
+            return False, "Máquina virtual não encontrada."
+
+        # Monta os argumentos do QEMU com base no Sistema Operacional
+        os_type = vm.get("os_type", "linux").lower()
+        cmd = ["qemu-system-x86_64", "-enable-kvm"]
+
+        # Memória e CPUs
+        ram_mb = vm.get("ram_mb", 2048)
+        cpus = vm.get("cpus", 2)
+        cmd.extend(["-m", f"{ram_mb}M", "-smp", str(cpus)])
+
+        # Configurações Específicas por Sistema Operacional
+        if os_type == "windows":
+            # Otimizações de CPU e Hyper-V para Windows
+            cmd.extend([
+                "-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time",
+                "-vga", "virtio",
+                "-device", "usb-tablet"
+            ])
+            # Tenta encontrar firmware UEFI OVMF se disponível
+            ovmf_paths = [
+                "/usr/share/OVMF/OVMF_CODE.fd",
+                "/usr/share/qemu/OVMF.fd",
+                "/usr/share/ovmf/OVMF.fd"
+            ]
+            for p in ovmf_paths:
+                if os.path.exists(p):
+                    cmd.extend(["-bios", p])
+                    break
+        elif os_type == "macos":
+            # Configuração recomendada para macOS (q35, CPU compatível e placa de rede e1000)
+            cmd.extend([
+                "-machine", "q35",
+                "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                "-vga", "vmware",
+                "-device", "usb-tablet",
+                "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+            ])
+        else: # Linux
+            cmd.extend([
+                "-cpu", "host",
+                "-vga", "virtio",
+                "-device", "usb-tablet"
+            ])
+
+        # Interface gráfica
+        cmd.extend(["-display", "gtk"])
+
+        # Disco rígido virtual
+        disk_path = vm.get("disk_path")
+        if disk_path and os.path.exists(disk_path):
+            cmd.extend(["-drive", f"file={disk_path},format=qcow2,if=virtio" if os_type == "linux" else f"file={disk_path},format=qcow2"])
+
+        # Mídia de instalação ISO
+        iso_path = vm.get("iso_path")
+        if iso_path and os.path.exists(iso_path):
+            cmd.extend(["-cdrom", iso_path, "-boot", "d"])
+        else:
+            cmd.extend(["-boot", "c"])
+
+        # Áudio e Rede
+        cmd.extend([
+            "-nic", "user,model=virtio" if os_type == "linux" else "user,model=e1000",
+            "-audiodev", "pa,id=snd0" if os_type != "macos" else "pa,id=snd0",
+            "-device", "ich9-intel-hda",
+            "-device", "hda-output,audiodev=snd0"
+        ])
+
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            self.running_processes[vm_id] = proc
+            return True, "Máquina virtual iniciada com sucesso."
+        except Exception as e:
+            return False, f"Falha ao executar QEMU: {str(e)}"
+
+    def stop_vm(self, vm_id, force=False):
+        proc = self.running_processes.get(vm_id)
+        if proc and proc.poll() is None:
+            if force:
+                proc.kill()
+            else:
+                proc.terminate()
+            if vm_id in self.running_processes:
+                del self.running_processes[vm_id]
+            return True
+        return False
+
+
+class NewVMDialog(Gtk.Dialog):
+    """Janela de Criação de Nova Máquina Virtual"""
+    def __init__(self, parent):
+        super().__init__(
+            title="Criar Nova Máquina Virtual",
+            transient_for=parent,
+            modal=True,
+            destroy_with_parent=True
+        )
+        self.set_default_size(520, 560)
+        self.set_resizable(False)
+        self.selected_os = "linux"
+
+        box = self.get_content_area()
+        box.set_spacing(16)
+        box.set_margin_top(20)
+        box.set_margin_bottom(20)
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+
+        title_lbl = Gtk.Label()
+        title_lbl.set_markup("<span size='x-large' weight='bold'>Nova Máquina Virtual</span>")
+        title_lbl.set_halign(Gtk.Align.START)
+        box.pack_start(title_lbl, False, False, 0)
+
+        desc_lbl = Gtk.Label()
+        desc_lbl.set_text("Configure os detalhes e selecione o sistema operacional (Windows, Linux ou macOS).")
+        desc_lbl.set_line_wrap(True)
+        desc_lbl.set_halign(Gtk.Align.START)
+        desc_lbl.get_style_context().add_class("dim-label")
+        box.pack_start(desc_lbl, False, False, 0)
+
+        # 1. Nome da Máquina
+        name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        name_lbl = Gtk.Label(label="Nome da Máquina:")
+        name_lbl.set_halign(Gtk.Align.START)
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_placeholder_text("Ex: Windows 11 Pro, Ubuntu 26.04, macOS Sonoma")
+        name_box.pack_start(name_lbl, False, False, 0)
+        name_box.pack_start(self.name_entry, False, False, 0)
+        box.pack_start(name_box, False, False, 0)
+
+        # 2. Seleção de Sistema Operacional
+        os_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        os_lbl = Gtk.Label(label="Tipo de Sistema Operacional:")
+        os_lbl.set_halign(Gtk.Align.START)
+        os_box.pack_start(os_lbl, False, False, 0)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        btn_box.set_homogeneous(True)
+
+        self.btn_windows = Gtk.RadioButton.new_with_label(None, "🪟 Windows")
+        self.btn_windows.set_mode(False)
+        self.btn_windows.get_style_context().add_class("btn-secondary")
+
+        self.btn_linux = Gtk.RadioButton.new_with_label_from_widget(self.btn_windows, "🐧 Linux")
+        self.btn_linux.set_mode(False)
+        self.btn_linux.get_style_context().add_class("btn-secondary")
+        self.btn_linux.set_active(True)
+
+        self.btn_macos = Gtk.RadioButton.new_with_label_from_widget(self.btn_windows, "🍎 macOS")
+        self.btn_macos.set_mode(False)
+        self.btn_macos.get_style_context().add_class("btn-secondary")
+
+        btn_box.pack_start(self.btn_windows, True, True, 0)
+        btn_box.pack_start(self.btn_linux, True, True, 0)
+        btn_box.pack_start(self.btn_macos, True, True, 0)
+        os_box.pack_start(btn_box, False, False, 0)
+        box.pack_start(os_box, False, False, 0)
+
+        # 3. Arquivo de Imagem ISO
+        iso_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        iso_lbl = Gtk.Label(label="Imagem de Instalação (ISO):")
+        iso_lbl.set_halign(Gtk.Align.START)
+        self.iso_chooser = Gtk.FileChooserButton(
+            title="Selecione a Imagem ISO do Sistema",
+            action=Gtk.FileChooserAction.OPEN
+        )
+        filter_iso = Gtk.FileFilter()
+        filter_iso.set_name("Imagens de Disco (*.iso, *.img)")
+        filter_iso.add_pattern("*.iso")
+        filter_iso.add_pattern("*.img")
+        filter_all = Gtk.FileFilter()
+        filter_all.set_name("Todos os Arquivos")
+        filter_all.add_pattern("*")
+        self.iso_chooser.add_filter(filter_iso)
+        self.iso_chooser.add_filter(filter_all)
+
+        iso_box.pack_start(iso_lbl, False, False, 0)
+        iso_box.pack_start(self.iso_chooser, False, False, 0)
+        box.pack_start(iso_box, False, False, 0)
+
+        # 4. Recursos: RAM, CPUs e Disco
+        specs_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        specs_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        specs_card.get_style_context().add_class("card")
+
+        # Memória RAM Slider
+        ram_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        ram_lbl = Gtk.Label(label="Memória RAM:")
+        ram_lbl.set_halign(Gtk.Align.START)
+        self.ram_val_lbl = Gtk.Label(label="2048 MB (2.0 GB)")
+        self.ram_val_lbl.set_halign(Gtk.Align.END)
+        ram_box.pack_start(ram_lbl, True, True, 0)
+        ram_box.pack_start(self.ram_val_lbl, False, False, 0)
+        specs_card.pack_start(ram_box, False, False, 0)
+
+        self.ram_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1024, 16384, 512)
+        self.ram_scale.set_value(2048)
+        self.ram_scale.connect("value-changed", self.on_ram_changed)
+        specs_card.pack_start(self.ram_scale, False, False, 0)
+
+        # Processadores (vCPUs)
+        cpu_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        cpu_lbl = Gtk.Label(label="Núcleos de CPU (vCPUs):")
+        cpu_lbl.set_halign(Gtk.Align.START)
+        self.cpu_spin = Gtk.SpinButton.new_with_range(1, 16, 1)
+        self.cpu_spin.set_value(2)
+        cpu_box.pack_start(cpu_lbl, True, True, 0)
+        cpu_box.pack_start(self.cpu_spin, False, False, 0)
+        specs_card.pack_start(cpu_box, False, False, 0)
+
+        # Tamanho do Disco Virtual
+        disk_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        disk_lbl = Gtk.Label(label="Tamanho do Disco Virtual:")
+        disk_lbl.set_halign(Gtk.Align.START)
+        self.disk_val_lbl = Gtk.Label(label="30 GB (.qcow2)")
+        self.disk_val_lbl.set_halign(Gtk.Align.END)
+        disk_box.pack_start(disk_lbl, True, True, 0)
+        disk_box.pack_start(self.disk_val_lbl, False, False, 0)
+        specs_card.pack_start(disk_box, False, False, 0)
+
+        self.disk_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 10, 200, 5)
+        self.disk_scale.set_value(30)
+        self.disk_scale.connect("value-changed", self.on_disk_changed)
+        specs_card.pack_start(self.disk_scale, False, False, 0)
+
+        specs_box.pack_start(specs_card, False, False, 0)
+        box.pack_start(specs_box, False, False, 0)
+
+        # Botões de Ação do Dialog
+        self.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        create_btn = self.add_button("Criar Máquina", Gtk.ResponseType.OK)
+        create_btn.get_style_context().add_class("btn-primary")
+
+        # Conecta sinais após inicialização dos controles
+        self.btn_windows.connect("toggled", self.on_os_changed, "windows")
+        self.btn_linux.connect("toggled", self.on_os_changed, "linux")
+        self.btn_macos.connect("toggled", self.on_os_changed, "macos")
+
+        self.selected_os = "linux"
+        self.show_all()
+
+    def on_os_changed(self, button, os_type):
+        if button.get_active():
+            self.selected_os = os_type
+            if os_type == "windows":
+                self.ram_scale.set_value(4096)
+                self.disk_scale.set_value(64)
+                self.cpu_spin.set_value(2)
+                if not self.name_entry.get_text():
+                    self.name_entry.set_text("Windows 11")
+            elif os_type == "macos":
+                self.ram_scale.set_value(4096)
+                self.disk_scale.set_value(64)
+                self.cpu_spin.set_value(4)
+                if not self.name_entry.get_text():
+                    self.name_entry.set_text("macOS")
+            else: # linux
+                self.ram_scale.set_value(2048)
+                self.disk_scale.set_value(30)
+                self.cpu_spin.set_value(2)
+                if not self.name_entry.get_text():
+                    self.name_entry.set_text("Linux")
+
+    def on_ram_changed(self, scale):
+        val = int(scale.get_value())
+        gb = val / 1024.0
+        self.ram_val_lbl.set_text(f"{val} MB ({gb:.1f} GB)")
+
+    def on_disk_changed(self, scale):
+        val = int(scale.get_value())
+        self.disk_val_lbl.set_text(f"{val} GB (.qcow2)")
+
+    def get_data(self):
+        name = self.name_entry.get_text().strip()
+        if not name:
+            name = f"Nova VM ({self.selected_os.capitalize()})"
+        return {
+            "name": name,
+            "os_type": self.selected_os,
+            "ram_mb": int(self.ram_scale.get_value()),
+            "cpus": int(self.cpu_spin.get_value()),
+            "disk_gb": int(self.disk_scale.get_value()),
+            "iso_path": self.iso_chooser.get_filename() or ""
+        }
+
+
+class MainWindow(Gtk.Window):
+    """Janela Principal do Geminux Virtual Machine"""
+    def __init__(self):
+        super().__init__(title=APP_NAME)
+        self.set_default_size(960, 620)
+        self.set_position(Gtk.WindowPosition.CENTER)
+
+        self.manager = VMManager()
+        self.current_selected_vm_id = None
+
+        # Carrega Estilos CSS Customizados
+        self.apply_css()
+
+        # HeaderBar Oficial Geminux
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.props.title = APP_NAME
+        header.props.subtitle = "Gerenciador de Máquinas Virtuais (Windows, Linux, macOS)"
+        self.set_titlebar(header)
+
+        # Botão Nova Máquina
+        new_btn = Gtk.Button()
+        new_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        new_icon = Gtk.Image.new_from_icon_name("list-add-symbolic", Gtk.IconSize.BUTTON)
+        new_lbl = Gtk.Label(label="Nova Máquina")
+        new_box.pack_start(new_icon, False, False, 0)
+        new_box.pack_start(new_lbl, False, False, 0)
+        new_btn.add(new_box)
+        new_btn.get_style_context().add_class("btn-primary")
+        new_btn.connect("clicked", self.on_new_vm_clicked)
+        header.pack_start(new_btn)
+
+        # Botão Sobre
+        about_btn = Gtk.Button()
+        about_icon = Gtk.Image.new_from_icon_name("help-about-symbolic", Gtk.IconSize.BUTTON)
+        about_btn.add(about_icon)
+        about_btn.get_style_context().add_class("btn-secondary")
+        about_btn.connect("clicked", self.on_about_clicked)
+        header.pack_end(about_btn)
+
+        # Layout Principal com Barra Lateral (Sidebar) e Painel de Detalhes
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.add(main_box)
+
+        # --- BARRA LATERAL (LISTA DE VMS) ---
+        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        sidebar_box.set_size_request(320, -1)
+        sidebar_box.get_style_context().add_class("sidebar")
+
+        sidebar_title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        sidebar_title_box.set_margin_start(16)
+        sidebar_title_box.set_margin_end(16)
+        sidebar_title_box.set_margin_top(14)
+        sidebar_title_box.set_margin_bottom(8)
+
+        st_lbl = Gtk.Label(label="Suas Máquinas Virtuais")
+        st_lbl.get_style_context().add_class("card-title")
+        st_lbl.set_halign(Gtk.Align.START)
+        sidebar_title_box.pack_start(st_lbl, True, True, 0)
+        sidebar_box.pack_start(sidebar_title_box, False, False, 0)
+
+        # Lista de VMs
+        self.scrolled_list = Gtk.ScrolledWindow()
+        self.scrolled_list.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.vm_listbox = Gtk.ListBox()
+        self.vm_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.vm_listbox.connect("row-selected", self.on_vm_row_selected)
+        self.scrolled_list.add(self.vm_listbox)
+        sidebar_box.pack_start(self.scrolled_list, True, True, 0)
+
+        main_box.pack_start(sidebar_box, False, False, 0)
+
+        # --- PAINEL PRINCIPAL DE DETALHES ---
+        self.detail_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.detail_container.set_margin_start(24)
+        self.detail_container.set_margin_end(24)
+        self.detail_container.set_margin_top(20)
+        self.detail_container.set_margin_bottom(20)
+
+        # Estado Vazio (Quando nenhuma VM está selecionada ou criada)
+        self.empty_state_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.empty_state_box.set_valign(Gtk.Align.CENTER)
+        self.empty_state_box.set_halign(Gtk.Align.CENTER)
+
+        empty_icon = Gtk.Label()
+        empty_icon.set_markup("<span size='60000'>🖥️</span>")
+        empty_title = Gtk.Label()
+        empty_title.set_markup("<span size='x-large' weight='bold'>Nenhuma Máquina Selecionada</span>")
+        empty_sub = Gtk.Label()
+        empty_sub.set_markup("<span color='#8b949e'>Crie uma nova máquina virtual (Windows, Linux ou macOS) para começar.</span>")
+
+        empty_btn = Gtk.Button(label="+ Criar Primeira Máquina")
+        empty_btn.get_style_context().add_class("btn-primary")
+        empty_btn.connect("clicked", self.on_new_vm_clicked)
+
+        self.empty_state_box.pack_start(empty_icon, False, False, 0)
+        self.empty_state_box.pack_start(empty_title, False, False, 0)
+        self.empty_state_box.pack_start(empty_sub, False, False, 6)
+        self.empty_state_box.pack_start(empty_btn, False, False, 10)
+
+        self.detail_container.pack_start(self.empty_state_box, True, True, 0)
+
+        # Conteúdo de Detalhes da VM Selecionada
+        self.vm_content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.detail_container.pack_start(self.vm_content_box, True, True, 0)
+
+        self.build_detail_view()
+        main_box.pack_start(self.detail_container, True, True, 0)
+
+        # Atualiza a lista visual
+        self.refresh_vm_list()
+
+        # Timer para atualizar status de processos ativos a cada 2 segundos
+        GLib.timeout_add_seconds(2, self.on_status_timer)
+
+    def apply_css(self):
+        screen = Gdk.Screen.get_default()
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS_STYLE.encode("utf-8"))
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def build_detail_view(self):
+        # Header com Nome, Ícone e Status
+        top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+
+        self.header_icon_lbl = Gtk.Label()
+        self.header_icon_lbl.set_markup("<span size='xx-large'>🐧</span>")
+        top_bar.pack_start(self.header_icon_lbl, False, False, 0)
+
+        title_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self.vm_title_lbl = Gtk.Label()
+        self.vm_title_lbl.set_markup("<span size='x-large' weight='bold'>Nome da VM</span>")
+        self.vm_title_lbl.set_halign(Gtk.Align.START)
+
+        self.vm_os_lbl = Gtk.Label(label="Sistema: Linux")
+        self.vm_os_lbl.set_halign(Gtk.Align.START)
+        self.vm_os_lbl.get_style_context().add_class("dim-label")
+
+        title_vbox.pack_start(self.vm_title_lbl, False, False, 0)
+        title_vbox.pack_start(self.vm_os_lbl, False, False, 0)
+        top_bar.pack_start(title_vbox, True, True, 0)
+
+        self.status_badge = Gtk.Label(label="⚪ Desligada")
+        self.status_badge.get_style_context().add_class("badge")
+        self.status_badge.get_style_context().add_class("badge-stopped")
+        top_bar.pack_end(self.status_badge, False, False, 0)
+        self.vm_content_box.pack_start(top_bar, False, False, 0)
+
+        # Botões de Ação (Iniciar, Desligar, Excluir)
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+
+        self.start_btn = Gtk.Button()
+        start_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        start_icon = Gtk.Image.new_from_icon_name("media-playback-start-symbolic", Gtk.IconSize.BUTTON)
+        self.start_lbl = Gtk.Label(label="Iniciar Máquina")
+        start_box.pack_start(start_icon, False, False, 0)
+        start_box.pack_start(self.start_lbl, False, False, 0)
+        self.start_btn.add(start_box)
+        self.start_btn.get_style_context().add_class("btn-start")
+        self.start_btn.connect("clicked", self.on_start_vm_clicked)
+        action_bar.pack_start(self.start_btn, False, False, 0)
+
+        self.stop_btn = Gtk.Button()
+        stop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        stop_icon = Gtk.Image.new_from_icon_name("media-playback-stop-symbolic", Gtk.IconSize.BUTTON)
+        self.stop_lbl = Gtk.Label(label="Desligar")
+        stop_box.pack_start(stop_icon, False, False, 0)
+        stop_box.pack_start(self.stop_lbl, False, False, 0)
+        self.stop_btn.add(stop_box)
+        self.stop_btn.get_style_context().add_class("btn-stop")
+        self.stop_btn.connect("clicked", self.on_stop_vm_clicked)
+        action_bar.pack_start(self.stop_btn, False, False, 0)
+
+        self.delete_btn = Gtk.Button(label="Excluir VM")
+        self.delete_btn.get_style_context().add_class("btn-danger")
+        self.delete_btn.connect("clicked", self.on_delete_vm_clicked)
+        action_bar.pack_end(self.delete_btn, False, False, 0)
+
+        self.vm_content_box.pack_start(action_bar, False, False, 6)
+
+        # Cards de Especificações de Hardware e Mídia
+        specs_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        specs_card.get_style_context().add_class("card")
+
+        card_title = Gtk.Label()
+        card_title.set_markup("<span weight='bold' size='medium'>Especificações da Máquina</span>")
+        card_title.set_halign(Gtk.Align.START)
+        specs_card.pack_start(card_title, False, False, 0)
+
+        grid = Gtk.Grid()
+        grid.set_row_spacing(10)
+        grid.set_column_spacing(24)
+
+        # RAM
+        r_lbl = Gtk.Label(label="Memória RAM:")
+        r_lbl.set_halign(Gtk.Align.START)
+        r_lbl.get_style_context().add_class("dim-label")
+        self.val_ram = Gtk.Label(label="2048 MB")
+        self.val_ram.set_halign(Gtk.Align.START)
+        grid.attach(r_lbl, 0, 0, 1, 1)
+        grid.attach(self.val_ram, 1, 0, 1, 1)
+
+        # Processador
+        c_lbl = Gtk.Label(label="Processador:")
+        c_lbl.set_halign(Gtk.Align.START)
+        c_lbl.get_style_context().add_class("dim-label")
+        self.val_cpu = Gtk.Label(label="2 vCPUs (KVM Ativo)")
+        self.val_cpu.set_halign(Gtk.Align.START)
+        grid.attach(c_lbl, 0, 1, 1, 1)
+        grid.attach(self.val_cpu, 1, 1, 1, 1)
+
+        # Disco
+        d_lbl = Gtk.Label(label="Disco Virtual:")
+        d_lbl.set_halign(Gtk.Align.START)
+        d_lbl.get_style_context().add_class("dim-label")
+        self.val_disk = Gtk.Label(label="30 GB (.qcow2)")
+        self.val_disk.set_halign(Gtk.Align.START)
+        grid.attach(d_lbl, 0, 2, 1, 1)
+        grid.attach(self.val_disk, 1, 2, 1, 1)
+
+        # Imagem ISO
+        i_lbl = Gtk.Label(label="CD-ROM / Imagem ISO:")
+        i_lbl.set_halign(Gtk.Align.START)
+        i_lbl.get_style_context().add_class("dim-label")
+        self.val_iso = Gtk.Label(label="Nenhuma")
+        self.val_iso.set_halign(Gtk.Align.START)
+        self.val_iso.set_line_wrap(True)
+        grid.attach(i_lbl, 0, 3, 1, 1)
+        grid.attach(self.val_iso, 1, 3, 1, 1)
+
+        specs_card.pack_start(grid, False, False, 0)
+        self.vm_content_box.pack_start(specs_card, False, False, 0)
+
+        # Card Informativo sobre Aceleração
+        info_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        info_card.get_style_context().add_class("card")
+        i_icon = Gtk.Label()
+        i_icon.set_markup("<span size='large'>⚡</span>")
+        i_text = Gtk.Label()
+        i_text.set_markup("<span size='small' color='#8b949e'>Aceleração de hardware <b>Linux KVM</b> ativada automaticamente. Suporte total para rodar Windows 10/11, distribuições Linux e macOS com desempenho nativo.</span>")
+        i_text.set_line_wrap(True)
+        info_card.pack_start(i_icon, False, False, 0)
+        info_card.pack_start(i_text, True, True, 0)
+        self.vm_content_box.pack_start(info_card, False, False, 0)
+
+    def refresh_vm_list(self):
+        for child in self.vm_listbox.get_children():
+            self.vm_listbox.remove(child)
+
+        vms = self.manager.vms
+        if not vms:
+            self.empty_state_box.show()
+            self.vm_content_box.hide()
+            self.current_selected_vm_id = None
+            return
+
+        for vm in vms:
+            row = Gtk.ListBoxRow()
+            row.vm_id = vm["id"]
+            row.get_style_context().add_class("vm-row")
+
+            h_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+
+            os_type = vm.get("os_type", "linux")
+            icon_char = "🪟" if os_type == "windows" else ("🍎" if os_type == "macos" else "🐧")
+            icon_lbl = Gtk.Label()
+            icon_lbl.set_markup(f"<span size='x-large'>{icon_char}</span>")
+            h_box.pack_start(icon_lbl, False, False, 0)
+
+            v_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            name_lbl = Gtk.Label(label=vm.get("name", "VM"))
+            name_lbl.set_halign(Gtk.Align.START)
+            name_lbl.get_style_context().add_class("card-title")
+
+            sub_text = f"{os_type.capitalize()} • {vm.get('ram_mb', 2048)}MB RAM • {vm.get('disk_gb', 20)}GB"
+            sub_lbl = Gtk.Label(label=sub_text)
+            sub_lbl.set_halign(Gtk.Align.START)
+            sub_lbl.get_style_context().add_class("dim-label")
+
+            v_box.pack_start(name_lbl, False, False, 0)
+            v_box.pack_start(sub_lbl, False, False, 0)
+            h_box.pack_start(v_box, True, True, 0)
+
+            status_icon = Gtk.Label()
+            is_run = self.manager.is_running(vm["id"])
+            status_icon.set_text("🟢" if is_run else "⚪")
+            h_box.pack_end(status_icon, False, False, 0)
+
+            row.add(h_box)
+            self.vm_listbox.add(row)
+
+        self.vm_listbox.show_all()
+
+        # Seleciona o primeiro item por padrão se nenhum estiver selecionado
+        if self.current_selected_vm_id is None:
+            first_row = self.vm_listbox.get_row_at_index(0)
+            if first_row:
+                self.vm_listbox.select_row(first_row)
+        else:
+            # Mantém a seleção anterior
+            for row in self.vm_listbox.get_children():
+                if getattr(row, "vm_id", None) == self.current_selected_vm_id:
+                    self.vm_listbox.select_row(row)
+                    break
+
+    def on_vm_row_selected(self, listbox, row):
+        if not row:
+            self.empty_state_box.show()
+            self.vm_content_box.hide()
+            self.current_selected_vm_id = None
+            return
+
+        vm_id = row.vm_id
+        self.current_selected_vm_id = vm_id
+        vm = self.manager.get_vm(vm_id)
+        if not vm:
+            return
+
+        self.empty_state_box.hide()
+        self.vm_content_box.show()
+
+        os_type = vm.get("os_type", "linux")
+        icon_char = "🪟" if os_type == "windows" else ("🍎" if os_type == "macos" else "🐧")
+        self.header_icon_lbl.set_markup(f"<span size='xx-large'>{icon_char}</span>")
+        self.vm_title_lbl.set_markup(f"<span size='x-large' weight='bold'>{vm.get('name', 'Máquina Virtual')}</span>")
+        self.vm_os_lbl.set_text(f"Sistema Operacional: {os_type.capitalize()}")
+
+        self.val_ram.set_text(f"{vm.get('ram_mb', 2048)} MB ({vm.get('ram_mb', 2048)/1024:.1f} GB)")
+        self.val_cpu.set_text(f"{vm.get('cpus', 2)} vCPUs (KVM Hardware Acceleration)")
+        self.val_disk.set_text(f"{vm.get('disk_gb', 20)} GB ({os.path.basename(vm.get('disk_path', 'disco.qcow2'))})")
+        self.val_iso.set_text(vm.get("iso_path") if vm.get("iso_path") else "Nenhuma ISO montada (boot direto do disco)")
+
+        self.update_running_ui(vm_id)
+
+    def update_running_ui(self, vm_id):
+        is_run = self.manager.is_running(vm_id)
+        sc = self.status_badge.get_style_context()
+        if is_run:
+            self.status_badge.set_text("🟢 Em Execução")
+            sc.remove_class("badge-stopped")
+            sc.add_class("badge-running")
+            self.start_btn.set_sensitive(False)
+            self.stop_btn.set_sensitive(True)
+        else:
+            self.status_badge.set_text("⚪ Desligada")
+            sc.remove_class("badge-running")
+            sc.add_class("badge-stopped")
+            self.start_btn.set_sensitive(True)
+            self.stop_btn.set_sensitive(False)
+
+    def on_status_timer(self):
+        if self.current_selected_vm_id:
+            self.update_running_ui(self.current_selected_vm_id)
+        # Atualiza bolinhas da lista
+        for row in self.vm_listbox.get_children():
+            vm_id = getattr(row, "vm_id", None)
+            if vm_id:
+                is_run = self.manager.is_running(vm_id)
+                h_box = row.get_child()
+                status_lbl = h_box.get_children()[-1]
+                status_lbl.set_text("🟢" if is_run else "⚪")
+        return True
+
+    def on_new_vm_clicked(self, button):
+        dialog = NewVMDialog(self)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            data = dialog.get_data()
+            vm_id = f"vm_{int(time.time())}"
+            disk_filename = f"{vm_id}_{data['os_type']}.qcow2"
+            disk_path = os.path.join(DISKS_DIR, disk_filename)
+
+            # Cria o disco virtual .qcow2 via qemu-img
+            try:
+                subprocess.run(
+                    ["qemu-img", "create", "-f", "qcow2", disk_path, f"{data['disk_gb']}G"],
+                    check=True,
+                    capture_output=True
+                )
+            except Exception as e:
+                err_dlg = Gtk.MessageDialog(
+                    transient_for=self,
+                    flags=Gtk.DialogFlags.MODAL,
+                    type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="Erro ao criar disco virtual"
+                )
+                err_dlg.format_secondary_text(str(e))
+                err_dlg.run()
+                err_dlg.destroy()
+                dialog.destroy()
+                return
+
+            data["id"] = vm_id
+            data["disk_path"] = disk_path
+            self.manager.add_vm(data)
+            self.current_selected_vm_id = vm_id
+            self.refresh_vm_list()
+
+        dialog.destroy()
+
+    def on_start_vm_clicked(self, button):
+        if not self.current_selected_vm_id:
+            return
+        success, msg = self.manager.start_vm(self.current_selected_vm_id)
+        if not success:
+            err_dlg = Gtk.MessageDialog(
+                transient_for=self,
+                flags=Gtk.DialogFlags.MODAL,
+                type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Não foi possível iniciar a máquina virtual"
+            )
+            err_dlg.format_secondary_text(msg)
+            err_dlg.run()
+            err_dlg.destroy()
+        self.update_running_ui(self.current_selected_vm_id)
+
+    def on_stop_vm_clicked(self, button):
+        if not self.current_selected_vm_id:
+            return
+        self.manager.stop_vm(self.current_selected_vm_id)
+        self.update_running_ui(self.current_selected_vm_id)
+
+    def on_delete_vm_clicked(self, button):
+        if not self.current_selected_vm_id:
+            return
+        vm = self.manager.get_vm(self.current_selected_vm_id)
+        if not vm:
+            return
+
+        dlg = Gtk.MessageDialog(
+            transient_for=self,
+            flags=Gtk.DialogFlags.MODAL,
+            type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.NONE,
+            text=f"Excluir Máquina Virtual '{vm.get('name')}'?"
+        )
+        dlg.format_secondary_text("Esta ação removerá a máquina virtual da sua lista. Deseja também deletar o disco virtual para liberar espaço?")
+        dlg.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Manter Disco", Gtk.ResponseType.NO)
+        del_btn = dlg.add_button("Excluir Tudo", Gtk.ResponseType.YES)
+        del_btn.get_style_context().add_class("btn-danger")
+
+        res = dlg.run()
+        if res in (Gtk.ResponseType.YES, Gtk.ResponseType.NO):
+            delete_disk = (res == Gtk.ResponseType.YES)
+            self.manager.remove_vm(self.current_selected_vm_id, delete_disk=delete_disk)
+            self.current_selected_vm_id = None
+            self.refresh_vm_list()
+
+        dlg.destroy()
+
+    def on_about_clicked(self, button):
+        about = Gtk.AboutDialog(transient_for=self, modal=True)
+        about.set_program_name(APP_NAME)
+        about.set_version(APP_VERSION)
+        about.set_comments("Gerenciador Oficial de Máquinas Virtuais do Geminux OS.\nExecute Windows, Linux e macOS com aceleração nativa KVM.")
+        about.set_website("https://geminux.org")
+        about.set_website_label("Site Oficial Geminux OS")
+        about.set_authors(["Equipe Geminux OS", "miguel"])
+        about.set_logo_icon_name("geminux-virtual-machine")
+        about.run()
+        about.destroy()
+
+
+def main():
+    Gtk.init(sys.argv)
+    win = MainWindow()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

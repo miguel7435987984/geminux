@@ -99,3 +99,8 @@ btrfs-progs
 xfsprogs
 e2fsprogs
 efibootmgr
+
+# Virtualization & QEMU / KVM
+qemu-system-x86
+qemu-utils
+ovmf
