@@ -11,3 +11,5 @@ BUG_REPORT_URL="https://geminux.org/issues"
 PRIVACY_POLICY_URL="https://geminux.org/privacy"
 UBUNTU_CODENAME=resolute
 LOGO=geminux-logo
+VENDOR_NAME="Geminux OS Team"
+VENDOR_URL="https://geminux.org/"

@@ -27,6 +27,11 @@
   </screenshots>
   <launchable type="desktop-id">sober-fix.desktop</launchable>
   <icon type="stock">sober-fix</icon>
+  <provides>
+    <binary>sober-fix</binary>
+  </provides>
+  <project_group>Geminux</project_group>
+  <compulsory_for_desktop>GNOME</compulsory_for_desktop>
   <categories>
     <category>Game</category>
     <category>Utility</category>
@@ -52,4 +57,7 @@
     <name>Geminux OS Team</name>
   </developer>
   <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+  <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+  <url type="help">https://github.com/miguel7435987984/geminux</url>
+  <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
 </component>

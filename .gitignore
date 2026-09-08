@@ -2,3 +2,7 @@ build-workspace/
 *.iso
 *.squashfs
 *.zip
+*.qcow2
+**/build_deb/
+**/__pycache__/
+

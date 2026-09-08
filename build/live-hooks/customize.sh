@@ -109,11 +109,15 @@ if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
 fi
 
 # Install sober-fix utility (Roblox / Sober repair tool) & Geminux Store Metainfo
-if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix ]; then
-    install -d /usr/local/bin
+if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
+    dpkg -i /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/sober-fix /usr/local/bin/sober-fix 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/sober-fix/sober-fix ]; then
+    install -d /usr/bin /usr/local/bin
     install -d /usr/share/metainfo
     install -d /usr/share/applications
-    install -m 755 /tmp/geminux-build/apps/sober-fix/sober-fix /usr/local/bin/sober-fix
+    install -m 755 /tmp/geminux-build/apps/sober-fix/sober-fix /usr/bin/sober-fix
+    ln -sf /usr/bin/sober-fix /usr/local/bin/sober-fix 2>/dev/null || true
     if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix.desktop ]; then
         install -m 644 /tmp/geminux-build/apps/sober-fix/sober-fix.desktop /usr/share/applications/sober-fix.desktop
     fi
