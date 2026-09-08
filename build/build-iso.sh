@@ -51,7 +51,8 @@ for dep in $DEPS; do
 done
 
 # Prepare Workspace
-if [ -f "${IMAGE_DIR}/casper/filesystem.squashfs" ] && [ -f "${IMAGE_DIR}/casper/vmlinuz" ] && [ "${REBUILD_SQUASHFS:-0}" != "1" ] && [ "${CLEAN:-0}" != "1" ]; then
+REBUILD_SQUASHFS="${REBUILD_SQUASHFS:-1}"
+if [ -f "${IMAGE_DIR}/casper/filesystem.squashfs" ] && [ -f "${IMAGE_DIR}/casper/vmlinuz" ] && [ "${REBUILD_SQUASHFS}" != "1" ] && [ "${CLEAN:-0}" != "1" ]; then
     log_ok "Existing filesystem.squashfs and kernel found in ${IMAGE_DIR}/casper!"
     log "Reusing built rootfs and resuming directly at bootloader and ISO packaging..."
 else
