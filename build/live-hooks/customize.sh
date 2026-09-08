@@ -369,16 +369,50 @@ cat <<'EOF' > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf
 unmanaged-devices=none
 EOF
 
-# Prevent aggressive Wi-Fi powersaving that causes drops on laptop Wi-Fi cards
-cat <<'EOF' > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
-[connection]
-wifi.powersave=2
+# NetworkManager base configuration
+cat <<'EOF' > /etc/NetworkManager/NetworkManager.conf
+[main]
+plugins=ifupdown,keyfile
+dns=systemd-resolved
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=no
 EOF
 
-# Ensure NetworkManager and systemd-resolved are enabled
+# Prevent aggressive Wi-Fi powersaving and MAC randomization that drops Wi-Fi handshake on laptop cards
+cat <<'EOF' > /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
+[device]
+wifi.scan-rand-mac-address=no
+
+[connection]
+wifi.powersave=2
+wifi.cloned-mac-address=preserve
+ethernet.cloned-mac-address=preserve
+EOF
+
+# Allow unauthenticated NetworkManager actions on Live session & user session (Polkit)
+mkdir -p /etc/polkit-1/rules.d
+cat <<'EOF' > /etc/polkit-1/rules.d/99-geminux-networkmanager.rules
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
+# Ensure NetworkManager, systemd-resolved, and wpa_supplicant are enabled
 if [ -x "$(command -v systemctl)" ]; then
     systemctl enable NetworkManager || true
     systemctl enable systemd-resolved || true
+    systemctl enable wpa_supplicant || true
+fi
+
+# Enable PAM GNOME Keyring so Wi-Fi passwords unlock smoothly
+if [ -x "$(command -v pam-auth-update)" ]; then
+    pam-auth-update --package || true
 fi
 
 # Run netplan generate if netplan is installed
