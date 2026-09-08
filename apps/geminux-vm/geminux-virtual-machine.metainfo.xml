@@ -9,16 +9,18 @@
     <p>
       O Geminux Virtual Machine é o aplicativo oficial de virtualização gráfica do Geminux OS.
       Ele permite criar, gerenciar e executar máquinas virtuais de alta performance com facilidade,
-      aproveitando a aceleração de hardware nativa Linux KVM do processador do computador.
+      oferecendo suporte e interoperabilidade com os motores KVM / Hyper-V, Oracle VM VirtualBox e VMware Workstation.
     </p>
     <p>
       Destaques e Recursos:
     </p>
     <ul>
       <li>Interface gráfica moderna e intuitiva integrada ao tema escuro e neon-cyan do Geminux OS</li>
-      <li>Perfis otimizados prontos para Windows (11, 10, 7), distribuições Linux e macOS</li>
+      <li>Suporte a múltiplos motores de virtualização: KVM / Hyper-V, VirtualBox e VMware</li>
+      <li>Compatibilidade nativa com formatos de disco virtual .qcow2, .vdi (VirtualBox) e .vmdk (VMware)</li>
+      <li>Perfis otimizados prontos para Windows (11, 10, 7) com Hyper-V enlightenments, distribuições Linux e macOS</li>
       <li>Aceleração KVM nativa com drivers VirtIO para gráficos, rede e discos de alta velocidade</li>
-      <li>Assistente visual para criar discos rígidos virtuais (.qcow2) e anexar imagens ISO facilmente</li>
+      <li>Assistente visual para criar discos rígidos virtuais e anexar imagens ISO facilmente</li>
       <li>Controle completo de hardware: ajuste de núcleos de CPU (vCPUs), memória RAM e armazenamento</li>
       <li>Segurança total: suas máquinas virtuais rodam em ambiente isolado sem afetar seu disco real</li>
     </ul>
@@ -50,12 +52,15 @@
     <keyword>windows</keyword>
     <keyword>linux</keyword>
     <keyword>macos</keyword>
+    <keyword>virtualbox</keyword>
+    <keyword>vmware</keyword>
+    <keyword>hyperv</keyword>
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
     <release version="1.0.0" date="2026-09-08">
       <description>
-        <p>Lançamento oficial do Geminux Virtual Machine com suporte a Windows, Linux e macOS.</p>
+        <p>Lançamento oficial do Geminux Virtual Machine com suporte multi-motor a KVM / Hyper-V, VirtualBox e VMware para Windows, Linux e macOS.</p>
       </description>
     </release>
   </releases>

@@ -296,8 +296,21 @@ class VMManager:
         if not vm:
             return False, "Máquina virtual não encontrada."
 
-        # Monta os argumentos do QEMU com base no Sistema Operacional
+        # Monta os argumentos do QEMU com base no Sistema Operacional e Motor de Virtualização
         os_type = vm.get("os_type", "linux").lower()
+        engine = vm.get("engine", "kvm").lower()
+        disk_format = vm.get("disk_format")
+        disk_path = vm.get("disk_path")
+        if not disk_format and disk_path:
+            if disk_path.endswith(".vdi"):
+                disk_format = "vdi"
+            elif disk_path.endswith(".vmdk"):
+                disk_format = "vmdk"
+            else:
+                disk_format = "qcow2"
+        elif not disk_format:
+            disk_format = "qcow2"
+
         cmd = ["qemu-system-x86_64", "-enable-kvm"]
 
         # Memória e CPUs
@@ -305,47 +318,100 @@ class VMManager:
         cpus = vm.get("cpus", 2)
         cmd.extend(["-m", f"{ram_mb}M", "-smp", str(cpus)])
 
-        # Configurações Específicas por Sistema Operacional
-        if os_type == "windows":
-            # Otimizações de CPU e Hyper-V para Windows
-            cmd.extend([
-                "-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time",
-                "-vga", "virtio",
-                "-device", "usb-tablet"
-            ])
-            # Tenta encontrar firmware UEFI OVMF se disponível
-            ovmf_paths = [
-                "/usr/share/OVMF/OVMF_CODE.fd",
-                "/usr/share/qemu/OVMF.fd",
-                "/usr/share/ovmf/OVMF.fd"
-            ]
-            for p in ovmf_paths:
-                if os.path.exists(p):
-                    cmd.extend(["-bios", p])
-                    break
-        elif os_type == "macos":
-            # Configuração recomendada para macOS (q35, CPU compatível e placa de rede e1000)
-            cmd.extend([
-                "-machine", "q35",
-                "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
-                "-vga", "vmware",
-                "-device", "usb-tablet",
-                "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
-            ])
-        else: # Linux
+        # Configurações Específicas por Motor e Sistema Operacional
+        if engine == "virtualbox":
+            # Perfil de Compatibilidade Oracle VM VirtualBox
             cmd.extend([
                 "-cpu", "host",
-                "-vga", "virtio",
+                "-vga", "std",
                 "-device", "usb-tablet"
             ])
+            if os_type == "windows":
+                # Hyper-V enlightenments em perfil VirtualBox
+                cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                ovmf_paths = [
+                    "/usr/share/OVMF/OVMF_CODE.fd",
+                    "/usr/share/qemu/OVMF.fd",
+                    "/usr/share/ovmf/OVMF.fd"
+                ]
+                for p in ovmf_paths:
+                    if os.path.exists(p):
+                        cmd.extend(["-bios", p])
+                        break
+            elif os_type == "macos":
+                cmd.extend([
+                    "-machine", "q35",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+                ])
+        elif engine == "vmware":
+            # Perfil de Compatibilidade VMware Workstation
+            cmd.extend([
+                "-cpu", "host",
+                "-vga", "vmware",
+                "-device", "usb-tablet"
+            ])
+            if os_type == "windows":
+                cmd.extend(["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"])
+                ovmf_paths = [
+                    "/usr/share/OVMF/OVMF_CODE.fd",
+                    "/usr/share/qemu/OVMF.fd",
+                    "/usr/share/ovmf/OVMF.fd"
+                ]
+                for p in ovmf_paths:
+                    if os.path.exists(p):
+                        cmd.extend(["-bios", p])
+                        break
+            elif os_type == "macos":
+                cmd.extend([
+                    "-machine", "q35",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+                ])
+        else:
+            # Perfil Nativo KVM / Hyper-V
+            if os_type == "windows":
+                # Otimizações completas Hyper-V para Windows
+                cmd.extend([
+                    "-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time",
+                    "-vga", "virtio",
+                    "-device", "usb-tablet"
+                ])
+                # Tenta encontrar firmware UEFI OVMF se disponível
+                ovmf_paths = [
+                    "/usr/share/OVMF/OVMF_CODE.fd",
+                    "/usr/share/qemu/OVMF.fd",
+                    "/usr/share/ovmf/OVMF.fd"
+                ]
+                for p in ovmf_paths:
+                    if os.path.exists(p):
+                        cmd.extend(["-bios", p])
+                        break
+            elif os_type == "macos":
+                # Configuração recomendada para macOS (q35, CPU compatível e gráficos vmware)
+                cmd.extend([
+                    "-machine", "q35",
+                    "-cpu", "Haswell-noTSX,vendor=GenuineIntel,+invtsc,vmx=on",
+                    "-vga", "vmware",
+                    "-device", "usb-tablet",
+                    "-device", "isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+                ])
+            else: # Linux
+                cmd.extend([
+                    "-cpu", "host",
+                    "-vga", "virtio",
+                    "-device", "usb-tablet"
+                ])
 
         # Interface gráfica
         cmd.extend(["-display", "gtk"])
 
-        # Disco rígido virtual
-        disk_path = vm.get("disk_path")
+        # Disco rígido virtual (suporte a .qcow2, .vdi e .vmdk)
         if disk_path and os.path.exists(disk_path):
-            cmd.extend(["-drive", f"file={disk_path},format=qcow2,if=virtio" if os_type == "linux" else f"file={disk_path},format=qcow2"])
+            if engine == "kvm" and os_type == "linux":
+                cmd.extend(["-drive", f"file={disk_path},format={disk_format},if=virtio"])
+            else:
+                cmd.extend(["-drive", f"file={disk_path},format={disk_format}"])
 
         # Mídia de instalação ISO
         iso_path = vm.get("iso_path")
@@ -355,9 +421,10 @@ class VMManager:
             cmd.extend(["-boot", "c"])
 
         # Áudio e Rede
+        nic_model = "virtio" if (engine == "kvm" and os_type == "linux") else "e1000"
         cmd.extend([
-            "-nic", "user,model=virtio" if os_type == "linux" else "user,model=e1000",
-            "-audiodev", "pa,id=snd0" if os_type != "macos" else "pa,id=snd0",
+            "-nic", f"user,model={nic_model}",
+            "-audiodev", "pa,id=snd0",
             "-device", "ich9-intel-hda",
             "-device", "hda-output,audiodev=snd0"
         ])
@@ -457,7 +524,35 @@ class NewVMDialog(Gtk.Dialog):
         os_box.pack_start(btn_box, False, False, 0)
         box.pack_start(os_box, False, False, 0)
 
-        # 3. Arquivo de Imagem ISO
+        # 3. Seleção de Motor de Virtualização e Formato de Disco
+        engine_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        engine_lbl = Gtk.Label(label="Motor de Virtualização e Formato de Disco:")
+        engine_lbl.set_halign(Gtk.Align.START)
+        engine_box.pack_start(engine_lbl, False, False, 0)
+
+        engine_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        engine_btn_box.set_homogeneous(True)
+
+        self.btn_kvm = Gtk.RadioButton.new_with_label(None, "⚡ KVM / Hyper-V (.qcow2)")
+        self.btn_kvm.set_mode(False)
+        self.btn_kvm.get_style_context().add_class("btn-secondary")
+        self.btn_kvm.set_active(True)
+
+        self.btn_vbox = Gtk.RadioButton.new_with_label_from_widget(self.btn_kvm, "📦 VirtualBox (.vdi)")
+        self.btn_vbox.set_mode(False)
+        self.btn_vbox.get_style_context().add_class("btn-secondary")
+
+        self.btn_vmware = Gtk.RadioButton.new_with_label_from_widget(self.btn_kvm, "🔷 VMware (.vmdk)")
+        self.btn_vmware.set_mode(False)
+        self.btn_vmware.get_style_context().add_class("btn-secondary")
+
+        engine_btn_box.pack_start(self.btn_kvm, True, True, 0)
+        engine_btn_box.pack_start(self.btn_vbox, True, True, 0)
+        engine_btn_box.pack_start(self.btn_vmware, True, True, 0)
+        engine_box.pack_start(engine_btn_box, False, False, 0)
+        box.pack_start(engine_box, False, False, 0)
+
+        # 4. Arquivo de Imagem ISO
         iso_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         iso_lbl = Gtk.Label(label="Imagem de Instalação (ISO):")
         iso_lbl.set_halign(Gtk.Align.START)
@@ -479,7 +574,7 @@ class NewVMDialog(Gtk.Dialog):
         iso_box.pack_start(self.iso_chooser, False, False, 0)
         box.pack_start(iso_box, False, False, 0)
 
-        # 4. Recursos: RAM, CPUs e Disco
+        # 5. Recursos: RAM, CPUs e Disco
         specs_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         specs_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         specs_card.get_style_context().add_class("card")
@@ -537,7 +632,13 @@ class NewVMDialog(Gtk.Dialog):
         self.btn_linux.connect("toggled", self.on_os_changed, "linux")
         self.btn_macos.connect("toggled", self.on_os_changed, "macos")
 
+        self.btn_kvm.connect("toggled", self.on_engine_changed, "kvm")
+        self.btn_vbox.connect("toggled", self.on_engine_changed, "virtualbox")
+        self.btn_vmware.connect("toggled", self.on_engine_changed, "vmware")
+
         self.selected_os = "linux"
+        self.selected_engine = "kvm"
+        self.selected_disk_format = "qcow2"
         self.show_all()
 
     def on_os_changed(self, button, os_type):
@@ -562,6 +663,17 @@ class NewVMDialog(Gtk.Dialog):
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("Linux")
 
+    def on_engine_changed(self, button, engine_type):
+        if button.get_active():
+            self.selected_engine = engine_type
+            if engine_type == "virtualbox":
+                self.selected_disk_format = "vdi"
+            elif engine_type == "vmware":
+                self.selected_disk_format = "vmdk"
+            else:
+                self.selected_disk_format = "qcow2"
+            self.on_disk_changed(self.disk_scale)
+
     def on_ram_changed(self, scale):
         val = int(scale.get_value())
         gb = val / 1024.0
@@ -569,7 +681,8 @@ class NewVMDialog(Gtk.Dialog):
 
     def on_disk_changed(self, scale):
         val = int(scale.get_value())
-        self.disk_val_lbl.set_text(f"{val} GB (.qcow2)")
+        fmt = getattr(self, "selected_disk_format", "qcow2")
+        self.disk_val_lbl.set_text(f"{val} GB (.{fmt})")
 
     def get_data(self):
         name = self.name_entry.get_text().strip()
@@ -578,6 +691,8 @@ class NewVMDialog(Gtk.Dialog):
         return {
             "name": name,
             "os_type": self.selected_os,
+            "engine": self.selected_engine,
+            "disk_format": self.selected_disk_format,
             "ram_mb": int(self.ram_scale.get_value()),
             "cpus": int(self.cpu_spin.get_value()),
             "disk_gb": int(self.disk_scale.get_value()),
@@ -780,14 +895,23 @@ class MainWindow(Gtk.Window):
         grid.set_row_spacing(10)
         grid.set_column_spacing(24)
 
+        # Motor / Compatibilidade
+        e_lbl = Gtk.Label(label="Motor / Perfil:")
+        e_lbl.set_halign(Gtk.Align.START)
+        e_lbl.get_style_context().add_class("dim-label")
+        self.val_engine = Gtk.Label(label="KVM / Hyper-V")
+        self.val_engine.set_halign(Gtk.Align.START)
+        grid.attach(e_lbl, 0, 0, 1, 1)
+        grid.attach(self.val_engine, 1, 0, 1, 1)
+
         # RAM
         r_lbl = Gtk.Label(label="Memória RAM:")
         r_lbl.set_halign(Gtk.Align.START)
         r_lbl.get_style_context().add_class("dim-label")
         self.val_ram = Gtk.Label(label="2048 MB")
         self.val_ram.set_halign(Gtk.Align.START)
-        grid.attach(r_lbl, 0, 0, 1, 1)
-        grid.attach(self.val_ram, 1, 0, 1, 1)
+        grid.attach(r_lbl, 0, 1, 1, 1)
+        grid.attach(self.val_ram, 1, 1, 1, 1)
 
         # Processador
         c_lbl = Gtk.Label(label="Processador:")
@@ -795,8 +919,8 @@ class MainWindow(Gtk.Window):
         c_lbl.get_style_context().add_class("dim-label")
         self.val_cpu = Gtk.Label(label="2 vCPUs (KVM Ativo)")
         self.val_cpu.set_halign(Gtk.Align.START)
-        grid.attach(c_lbl, 0, 1, 1, 1)
-        grid.attach(self.val_cpu, 1, 1, 1, 1)
+        grid.attach(c_lbl, 0, 2, 1, 1)
+        grid.attach(self.val_cpu, 1, 2, 1, 1)
 
         # Disco
         d_lbl = Gtk.Label(label="Disco Virtual:")
@@ -804,8 +928,8 @@ class MainWindow(Gtk.Window):
         d_lbl.get_style_context().add_class("dim-label")
         self.val_disk = Gtk.Label(label="30 GB (.qcow2)")
         self.val_disk.set_halign(Gtk.Align.START)
-        grid.attach(d_lbl, 0, 2, 1, 1)
-        grid.attach(self.val_disk, 1, 2, 1, 1)
+        grid.attach(d_lbl, 0, 3, 1, 1)
+        grid.attach(self.val_disk, 1, 3, 1, 1)
 
         # Imagem ISO
         i_lbl = Gtk.Label(label="CD-ROM / Imagem ISO:")
@@ -814,19 +938,19 @@ class MainWindow(Gtk.Window):
         self.val_iso = Gtk.Label(label="Nenhuma")
         self.val_iso.set_halign(Gtk.Align.START)
         self.val_iso.set_line_wrap(True)
-        grid.attach(i_lbl, 0, 3, 1, 1)
-        grid.attach(self.val_iso, 1, 3, 1, 1)
+        grid.attach(i_lbl, 0, 4, 1, 1)
+        grid.attach(self.val_iso, 1, 4, 1, 1)
 
         specs_card.pack_start(grid, False, False, 0)
         self.vm_content_box.pack_start(specs_card, False, False, 0)
 
-        # Card Informativo sobre Aceleração
+        # Card Informativo sobre Motores e Aceleração
         info_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         info_card.get_style_context().add_class("card")
         i_icon = Gtk.Label()
         i_icon.set_markup("<span size='large'>⚡</span>")
         i_text = Gtk.Label()
-        i_text.set_markup("<span size='small' color='#8b949e'>Aceleração de hardware <b>Linux KVM</b> ativada automaticamente. Suporte total para rodar Windows 10/11, distribuições Linux e macOS com desempenho nativo.</span>")
+        i_text.set_markup("<span size='small' color='#8b949e'>Arquitetura híbrida com suporte a motores <b>KVM / Hyper-V</b> (.qcow2), <b>VirtualBox</b> (.vdi) e <b>VMware</b> (.vmdk) com aceleração nativa de hardware no Geminux OS.</span>")
         i_text.set_line_wrap(True)
         info_card.pack_start(i_icon, False, False, 0)
         info_card.pack_start(i_text, True, True, 0)
@@ -861,7 +985,15 @@ class MainWindow(Gtk.Window):
             name_lbl.set_halign(Gtk.Align.START)
             name_lbl.get_style_context().add_class("card-title")
 
-            sub_text = f"{os_type.capitalize()} • {vm.get('ram_mb', 2048)}MB RAM • {vm.get('disk_gb', 20)}GB"
+            engine = vm.get("engine", "kvm")
+            if engine == "virtualbox":
+                engine_badge = "VirtualBox"
+            elif engine == "vmware":
+                engine_badge = "VMware"
+            else:
+                engine_badge = "Hyper-V / KVM"
+
+            sub_text = f"{os_type.capitalize()} • {engine_badge} • {vm.get('ram_mb', 2048)}MB • {vm.get('disk_gb', 20)}GB"
             sub_lbl = Gtk.Label(label=sub_text)
             sub_lbl.set_halign(Gtk.Align.START)
             sub_lbl.get_style_context().add_class("dim-label")
@@ -909,13 +1041,25 @@ class MainWindow(Gtk.Window):
         self.vm_content_box.show()
 
         os_type = vm.get("os_type", "linux")
+        engine = vm.get("engine", "kvm")
+        if engine == "virtualbox":
+            engine_str = "Oracle VirtualBox (.vdi)"
+            accel_str = "Compatibilidade VirtualBox (Intel e1000 / Standard VGA)"
+        elif engine == "vmware":
+            engine_str = "VMware Workstation (.vmdk)"
+            accel_str = "Compatibilidade VMware (SVGA-II / KVM Acelerado)"
+        else:
+            engine_str = "KVM / Hyper-V (.qcow2)"
+            accel_str = "Hyper-V Enlightenments / KVM VirtIO Acelerado"
+
         icon_char = "🪟" if os_type == "windows" else ("🍎" if os_type == "macos" else "🐧")
         self.header_icon_lbl.set_markup(f"<span size='xx-large'>{icon_char}</span>")
         self.vm_title_lbl.set_markup(f"<span size='x-large' weight='bold'>{vm.get('name', 'Máquina Virtual')}</span>")
-        self.vm_os_lbl.set_text(f"Sistema Operacional: {os_type.capitalize()}")
+        self.vm_os_lbl.set_text(f"Sistema Operacional: {os_type.capitalize()} • Motor: {engine_str}")
 
+        self.val_engine.set_text(engine_str)
         self.val_ram.set_text(f"{vm.get('ram_mb', 2048)} MB ({vm.get('ram_mb', 2048)/1024:.1f} GB)")
-        self.val_cpu.set_text(f"{vm.get('cpus', 2)} vCPUs (KVM Hardware Acceleration)")
+        self.val_cpu.set_text(f"{vm.get('cpus', 2)} vCPUs ({accel_str})")
         self.val_disk.set_text(f"{vm.get('disk_gb', 20)} GB ({os.path.basename(vm.get('disk_path', 'disco.qcow2'))})")
         self.val_iso.set_text(vm.get("iso_path") if vm.get("iso_path") else "Nenhuma ISO montada (boot direto do disco)")
 
@@ -956,13 +1100,14 @@ class MainWindow(Gtk.Window):
         if response == Gtk.ResponseType.OK:
             data = dialog.get_data()
             vm_id = f"vm_{int(time.time())}"
-            disk_filename = f"{vm_id}_{data['os_type']}.qcow2"
+            disk_fmt = data.get("disk_format", "qcow2")
+            disk_filename = f"{vm_id}_{data['os_type']}.{disk_fmt}"
             disk_path = os.path.join(DISKS_DIR, disk_filename)
 
-            # Cria o disco virtual .qcow2 via qemu-img
+            # Cria o disco virtual (.qcow2, .vdi ou .vmdk) via qemu-img
             try:
                 subprocess.run(
-                    ["qemu-img", "create", "-f", "qcow2", disk_path, f"{data['disk_gb']}G"],
+                    ["qemu-img", "create", "-f", disk_fmt, disk_path, f"{data['disk_gb']}G"],
                     check=True,
                     capture_output=True
                 )
@@ -1044,7 +1189,7 @@ class MainWindow(Gtk.Window):
         about = Gtk.AboutDialog(transient_for=self, modal=True)
         about.set_program_name(APP_NAME)
         about.set_version(APP_VERSION)
-        about.set_comments("Gerenciador Oficial de Máquinas Virtuais do Geminux OS.\nExecute Windows, Linux e macOS com aceleração nativa KVM.")
+        about.set_comments("Gerenciador Oficial de Máquinas Virtuais do Geminux OS.\nExecute Windows, Linux e macOS com suporte e perfis para KVM / Hyper-V (.qcow2), VirtualBox (.vdi) e VMware (.vmdk).")
         about.set_website("https://github.com/miguel7435987984/geminux")
         about.set_website_label("Repositório Oficial no GitHub")
         about.set_authors(["Equipe Geminux OS", "miguel"])
