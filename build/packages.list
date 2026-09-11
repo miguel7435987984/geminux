@@ -104,4 +104,5 @@ efibootmgr
 qemu-system-x86
 qemu-system-gui
 qemu-utils
+seabios
 ovmf

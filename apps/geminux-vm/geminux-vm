@@ -432,15 +432,6 @@ class VMManager:
                     "-vga", "std",
                     "-device", "usb-tablet"
                 ])
-                ovmf_paths = [
-                    "/usr/share/OVMF/OVMF_CODE.fd",
-                    "/usr/share/qemu/OVMF.fd",
-                    "/usr/share/ovmf/OVMF.fd"
-                ]
-                for p in ovmf_paths:
-                    if os.path.exists(p):
-                        cmd.extend(["-bios", p])
-                        break
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
@@ -463,15 +454,6 @@ class VMManager:
                     "-vga", "vmware",
                     "-device", "usb-tablet"
                 ])
-                ovmf_paths = [
-                    "/usr/share/OVMF/OVMF_CODE.fd",
-                    "/usr/share/qemu/OVMF.fd",
-                    "/usr/share/ovmf/OVMF.fd"
-                ]
-                for p in ovmf_paths:
-                    if os.path.exists(p):
-                        cmd.extend(["-bios", p])
-                        break
             elif os_type == "macos":
                 cmd.extend([
                     "-machine", "q35",
@@ -495,15 +477,6 @@ class VMManager:
                     "-vga", "virtio",
                     "-device", "usb-tablet"
                 ])
-                ovmf_paths = [
-                    "/usr/share/OVMF/OVMF_CODE.fd",
-                    "/usr/share/qemu/OVMF.fd",
-                    "/usr/share/ovmf/OVMF.fd"
-                ]
-                for p in ovmf_paths:
-                    if os.path.exists(p):
-                        cmd.extend(["-bios", p])
-                        break
             elif os_type == "macos":
                 # Configuração recomendada para macOS (q35, CPU compatível e gráficos vmware)
                 cmd.extend([
@@ -519,6 +492,36 @@ class VMManager:
                     "-vga", "virtio",
                     "-device", "usb-tablet"
                 ])
+
+        # Configuração de Firmware / BIOS: SeaBIOS (x86 padrão / legado) vs UEFI (OVMF)
+        bios_type = vm.get("bios_type", "seabios").lower()
+        if bios_type in ("ovmf", "uefi"):
+            ovmf_paths = [
+                "/usr/share/OVMF/OVMF_CODE.fd",
+                "/usr/share/qemu/OVMF.fd",
+                "/usr/share/ovmf/OVMF.fd"
+            ]
+            ovmf_found = False
+            for p in ovmf_paths:
+                if os.path.exists(p):
+                    cmd.extend(["-bios", p])
+                    ovmf_found = True
+                    break
+            if not ovmf_found:
+                bios_type = "seabios"
+
+        if bios_type == "seabios":
+            # SeaBIOS: BIOS padrão e de máxima compatibilidade x86
+            seabios_paths = [
+                "/usr/share/seabios/bios-256k.bin",
+                "/usr/share/seabios/bios.bin",
+                "/usr/share/qemu/bios-256k.bin",
+                "/usr/share/qemu/bios.bin"
+            ]
+            for p in seabios_paths:
+                if os.path.exists(p):
+                    cmd.extend(["-bios", p])
+                    break
 
         # Identidade Visual e Interface Gráfica Geminux OS (Sem barra de menus do QEMU)
         vm_name = vm.get("name", "Máquina Virtual")
@@ -572,7 +575,8 @@ class VMManager:
 
         self.process_logs[vm_id] = []
         self.append_log(vm_id, f"=== Iniciando {vm_name} ({os_type.capitalize()}) no Geminux Virtual Machine ===")
-        self.append_log(vm_id, f"Motor: {engine.upper()} | RAM: {ram_mb}MB | CPUs: {cpus}")
+        firmware_label = "UEFI (OVMF)" if bios_type in ("ovmf", "uefi") else "SeaBIOS (x86 Padrão)"
+        self.append_log(vm_id, f"Motor: {engine.upper()} | Firmware: {firmware_label} | RAM: {ram_mb}MB | CPUs: {cpus}")
         self.append_log(vm_id, f"Aceleração KVM: {'Ativa (Hardware nativo)' if has_kvm else 'Desativada (Modo de emulação segura)'}")
         if disk_path:
             self.append_log(vm_id, f"Disco: {disk_path} ({disk_format})")
@@ -774,7 +778,9 @@ class VMConsoleWindow(Gtk.Window):
         meta_lbl = Gtk.Label()
         has_kvm = os.path.exists("/dev/kvm") and os.access("/dev/kvm", os.R_OK | os.W_OK)
         accel_text = "KVM Nativo" if has_kvm else "Emulação Segura"
-        meta_text = f"{os_type} • {engine_name} • {self.vm.get('ram_mb', 2048)}MB RAM • {self.vm.get('cpus', 2)} vCPUs • {accel_text}"
+        bios_type = self.vm.get("bios_type", "seabios").lower()
+        fw_text = "UEFI (OVMF)" if bios_type in ("ovmf", "uefi") else "SeaBIOS (x86)"
+        meta_text = f"{os_type} • {engine_name} • {fw_text} • {self.vm.get('ram_mb', 2048)}MB RAM • {self.vm.get('cpus', 2)} vCPUs • {accel_text}"
         meta_lbl.set_text(meta_text)
         meta_lbl.set_halign(Gtk.Align.START)
         meta_lbl.get_style_context().add_class("dim-label")
@@ -1121,7 +1127,32 @@ class NewVMDialog(Gtk.Dialog):
         iso_box.pack_start(self.iso_chooser, False, False, 0)
         box.pack_start(iso_box, False, False, 0)
 
-        # 5. Recursos: RAM, CPUs e Disco
+        # 5. Firmware / BIOS do Sistema (SeaBIOS x86 padrão vs UEFI)
+        bios_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        bios_lbl = Gtk.Label(label="Firmware / BIOS do Sistema:")
+        bios_lbl.set_halign(Gtk.Align.START)
+        bios_box.pack_start(bios_lbl, False, False, 0)
+
+        bios_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        bios_btn_box.set_homogeneous(True)
+
+        self.btn_seabios = Gtk.RadioButton.new_with_label(None, "💾 SeaBIOS (x86 Padrão)")
+        self.btn_seabios.set_mode(False)
+        self.btn_seabios.get_style_context().add_class("btn-secondary")
+        self.btn_seabios.set_active(True)
+        self.btn_seabios.set_tooltip_text("SeaBIOS: BIOS padrão x86 para inicialização clássica e máxima compatibilidade")
+
+        self.btn_uefi = Gtk.RadioButton.new_with_label_from_widget(self.btn_seabios, "🛡️ UEFI (OVMF)")
+        self.btn_uefi.set_mode(False)
+        self.btn_uefi.get_style_context().add_class("btn-secondary")
+        self.btn_uefi.set_tooltip_text("UEFI: Firmware moderno com suporte a GPT")
+
+        bios_btn_box.pack_start(self.btn_seabios, True, True, 0)
+        bios_btn_box.pack_start(self.btn_uefi, True, True, 0)
+        bios_box.pack_start(bios_btn_box, False, False, 0)
+        box.pack_start(bios_box, False, False, 0)
+
+        # 6. Recursos: RAM, CPUs e Disco
         specs_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         specs_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         specs_card.get_style_context().add_class("card")
@@ -1184,10 +1215,18 @@ class NewVMDialog(Gtk.Dialog):
         self.btn_vbox.connect("toggled", self.on_engine_changed, "virtualbox")
         self.btn_vmware.connect("toggled", self.on_engine_changed, "vmware")
 
+        self.btn_seabios.connect("toggled", self.on_bios_changed, "seabios")
+        self.btn_uefi.connect("toggled", self.on_bios_changed, "ovmf")
+
         self.selected_os = "linux"
         self.selected_engine = "kvm"
         self.selected_disk_format = "qcow2"
+        self.selected_bios = "seabios"
         self.show_all()
+
+    def on_bios_changed(self, button, bios_type):
+        if button.get_active():
+            self.selected_bios = bios_type
 
     def on_os_changed(self, button, os_type):
         if button.get_active():
@@ -1197,18 +1236,21 @@ class NewVMDialog(Gtk.Dialog):
                 self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(64)
                 self.cpu_spin.set_value(2)
+                self.btn_seabios.set_active(True)
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("Windows 11")
             elif os_type == "macos":
                 self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(64)
                 self.cpu_spin.set_value(2 if self.safe_ram["total"] <= 4096 else 4)
+                self.btn_uefi.set_active(True)
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("macOS")
             else: # linux
                 self.ram_scale.set_value(rec_ram)
                 self.disk_scale.set_value(30)
                 self.cpu_spin.set_value(2)
+                self.btn_seabios.set_active(True)
                 if not self.name_entry.get_text():
                     self.name_entry.set_text("Linux")
 
@@ -1241,6 +1283,7 @@ class NewVMDialog(Gtk.Dialog):
             "name": name,
             "os_type": self.selected_os,
             "engine": self.selected_engine,
+            "bios_type": getattr(self, "selected_bios", "seabios"),
             "disk_format": self.selected_disk_format,
             "ram_mb": int(self.ram_scale.get_value()),
             "cpus": int(self.cpu_spin.get_value()),
@@ -1503,6 +1546,15 @@ class MainWindow(Gtk.Window):
         grid.attach(i_lbl, 0, 4, 1, 1)
         grid.attach(self.val_iso, 1, 4, 1, 1)
 
+        # Firmware / BIOS
+        f_lbl = Gtk.Label(label="Firmware / BIOS:")
+        f_lbl.set_halign(Gtk.Align.START)
+        f_lbl.get_style_context().add_class("dim-label")
+        self.val_bios = Gtk.Label(label="SeaBIOS (x86 Padrão)")
+        self.val_bios.set_halign(Gtk.Align.START)
+        grid.attach(f_lbl, 0, 5, 1, 1)
+        grid.attach(self.val_bios, 1, 5, 1, 1)
+
         specs_card.pack_start(grid, False, False, 0)
         self.vm_content_box.pack_start(specs_card, False, False, 0)
 
@@ -1624,6 +1676,9 @@ class MainWindow(Gtk.Window):
         self.val_cpu.set_text(f"{vm.get('cpus', 2)} vCPUs ({accel_str})")
         self.val_disk.set_text(f"{vm.get('disk_gb', 20)} GB ({os.path.basename(vm.get('disk_path', 'disco.qcow2'))})")
         self.val_iso.set_text(vm.get("iso_path") if vm.get("iso_path") else "Nenhuma ISO montada (boot direto do disco)")
+        bios_type = vm.get("bios_type", "seabios").lower()
+        fw_str = "UEFI (OVMF Moderno)" if bios_type in ("ovmf", "uefi") else "SeaBIOS (x86 Padrão / Legado)"
+        self.val_bios.set_text(fw_str)
 
         self.update_running_ui(vm_id)
 

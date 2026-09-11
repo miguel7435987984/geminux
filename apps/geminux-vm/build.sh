@@ -45,7 +45,7 @@ Priority: optional
 Architecture: ${ARCH}
 Maintainer: Geminux OS Team <https://github.com/miguel7435987984/geminux>
 Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, qemu-system-x86, qemu-system-gui, qemu-utils
-Recommends: ovmf
+Recommends: seabios, ovmf
 Description: Gerenciador oficial de máquinas virtuais para Geminux OS
  O Geminux Virtual Machine é um gerenciador gráfico moderno que permite
  criar e executar máquinas virtuais de Windows, Linux e macOS com
