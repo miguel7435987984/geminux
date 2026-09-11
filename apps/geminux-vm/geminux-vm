@@ -11,12 +11,15 @@ import subprocess
 import signal
 import time
 import shutil
+import socket
+import threading
 import gi
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('GLib', '2.0')
-from gi.repository import Gtk, Gdk, GLib, Pango
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, GdkPixbuf
 
 # Paleta de Cores e Estilo Visual Geminux OS
 APP_NAME = "Geminux Virtual Machine"
@@ -218,6 +221,16 @@ scale highlight {{
     background: linear-gradient(90deg, #0099cc, {ACCENT_CYAN});
     border-radius: 6px;
 }}
+
+.console-view {{
+    background-color: #06090e;
+    color: {ACCENT_CYAN};
+    font-family: 'Ubuntu Mono', 'Fira Code', 'DejaVu Sans Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid {BORDER_COLOR};
+}}
 """
 
 CONFIG_DIR = os.path.expanduser("~/.config/geminux-vm")
@@ -232,6 +245,88 @@ class VMManager:
         os.makedirs(DISKS_DIR, exist_ok=True)
         self.vms = self.load_vms()
         self.running_processes = {} # vm_id -> subprocess.Popen
+        self.start_times = {} # vm_id -> float timestamp
+        self.is_paused = {} # vm_id -> bool
+        self.process_logs = {} # vm_id -> list of str
+        self.console_windows = {} # vm_id -> VMConsoleWindow
+
+    def append_log(self, vm_id, text):
+        if vm_id not in self.process_logs:
+            self.process_logs[vm_id] = []
+        self.process_logs[vm_id].append(text)
+
+    def get_logs(self, vm_id):
+        return self.process_logs.get(vm_id, [])
+
+    def qmp_command(self, vm_id, command, arguments=None):
+        sock_path = os.path.join(CONFIG_DIR, f"qmp_{vm_id}.sock")
+        if not os.path.exists(sock_path):
+            return False, "Soquete QMP não encontrado."
+        try:
+            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            s.settimeout(2.0)
+            s.connect(sock_path)
+            s.recv(2048) # greeting
+            s.sendall(json.dumps({"execute": "qmp_capabilities"}).encode() + b"\n")
+            s.recv(2048)
+            payload = {"execute": command}
+            if arguments:
+                payload["arguments"] = arguments
+            s.sendall(json.dumps(payload).encode() + b"\n")
+            res = json.loads(s.recv(4096).decode())
+            s.close()
+            return True, res
+        except Exception as e:
+            return False, str(e)
+
+    def pause_vm(self, vm_id):
+        ok, _ = self.qmp_command(vm_id, "stop")
+        if ok:
+            self.is_paused[vm_id] = True
+        return ok
+
+    def resume_vm(self, vm_id):
+        ok, _ = self.qmp_command(vm_id, "cont")
+        if ok:
+            self.is_paused[vm_id] = False
+        return ok
+
+    def reset_vm(self, vm_id):
+        return self.qmp_command(vm_id, "system_reset")[0]
+
+    def powerdown_vm(self, vm_id):
+        return self.qmp_command(vm_id, "system_powerdown")[0]
+
+    def send_ctrl_alt_del(self, vm_id):
+        return self.qmp_command(vm_id, "send-key", {
+            "keys": [
+                {"type": "qcode", "data": "ctrl"},
+                {"type": "qcode", "data": "alt"},
+                {"type": "qcode", "data": "delete"}
+            ]
+        })[0]
+
+    def take_screenshot(self, vm_id, dest_file):
+        ppm_file = os.path.join(CONFIG_DIR, f"temp_{vm_id}.ppm")
+        if os.path.exists(ppm_file):
+            try:
+                os.remove(ppm_file)
+            except Exception:
+                pass
+        ok, _ = self.qmp_command(vm_id, "screendump", {"filename": ppm_file})
+        if ok and os.path.exists(ppm_file):
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(ppm_file)
+                pixbuf.savev(dest_file, "png", [], [])
+                os.remove(ppm_file)
+                return True
+            except Exception:
+                try:
+                    shutil.move(ppm_file, dest_file)
+                    return True
+                except Exception:
+                    pass
+        return False
 
     def load_vms(self):
         if os.path.exists(VMS_FILE):
@@ -425,8 +520,21 @@ class VMManager:
                     "-device", "usb-tablet"
                 ])
 
-        # Interface gráfica
-        cmd.extend(["-display", "gtk"])
+        # Identidade Visual e Interface Gráfica Geminux OS (Sem barra de menus do QEMU)
+        vm_name = vm.get("name", "Máquina Virtual")
+        cmd.extend([
+            "-name", f"{vm_name} - Geminux Virtual Machine,process=geminux-vm",
+            "-display", "gtk,show-menubar=off,zoom-to-fit=on"
+        ])
+
+        # Soquete QMP para controle integrado de energia, teclas e snapshots
+        qmp_sock = os.path.join(CONFIG_DIR, f"qmp_{vm_id}.sock")
+        if os.path.exists(qmp_sock):
+            try:
+                os.remove(qmp_sock)
+            except Exception:
+                pass
+        cmd.extend(["-qmp", f"unix:{qmp_sock},server,nowait"])
 
         # Disco rígido virtual (suporte a .qcow2, .vdi e .vmdk)
         if disk_path and os.path.exists(disk_path):
@@ -462,39 +570,89 @@ class VMManager:
                 "-device", "hda-output,audiodev=snd0"
             ])
 
+        self.process_logs[vm_id] = []
+        self.append_log(vm_id, f"=== Iniciando {vm_name} ({os_type.capitalize()}) no Geminux Virtual Machine ===")
+        self.append_log(vm_id, f"Motor: {engine.upper()} | RAM: {ram_mb}MB | CPUs: {cpus}")
+        self.append_log(vm_id, f"Aceleração KVM: {'Ativa (Hardware nativo)' if has_kvm else 'Desativada (Modo de emulação segura)'}")
+        if disk_path:
+            self.append_log(vm_id, f"Disco: {disk_path} ({disk_format})")
+        if iso_path:
+            self.append_log(vm_id, f"Mídia ISO: {iso_path}")
+
         try:
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                bufsize=1
             )
-            # Aguarda um curto intervalo para verificar se o QEMU não abortou imediatamente
-            time.sleep(0.6)
+
+            # Leitura assíncrona de logs sem travar pipes
+            def stream_reader(pipe, is_err=False):
+                try:
+                    for line in iter(pipe.readline, ''):
+                        if not line:
+                            break
+                        clean_line = line.strip()
+                        if clean_line:
+                            prefix = "⚠️ " if is_err else "ℹ️ "
+                            self.append_log(vm_id, f"{prefix}{clean_line}")
+                except Exception:
+                    pass
+                finally:
+                    try:
+                        pipe.close()
+                    except Exception:
+                        pass
+
+            t_out = threading.Thread(target=stream_reader, args=(proc.stdout, False), daemon=True)
+            t_err = threading.Thread(target=stream_reader, args=(proc.stderr, True), daemon=True)
+            t_out.start()
+            t_err.start()
+
+            # Aguarda um curto intervalo para verificar inicialização
+            time.sleep(0.5)
             if proc.poll() is not None:
-                err_output = proc.stderr.read().strip()
-                if not err_output:
-                    err_output = proc.stdout.read().strip()
-                if not err_output:
-                    err_output = f"Código de encerramento do processo: {proc.returncode}"
+                err_output = "\n".join(self.process_logs.get(vm_id, []))
                 if "Cannot allocate memory" in err_output or "cannot set up guest memory" in err_output:
-                    err_output += "\n\n💡 Dica Geminux: A quantidade de memória RAM configurada para esta máquina virtual é superior à memória livre do computador hospedeiro. Experimente reduzir a RAM para 1024 MB ou 1536 MB."
-                return False, f"O motor de virtualização (QEMU) encerrou inesperadamente:\n\n{err_output}"
+                    err_output += "\n\n💡 Dica Geminux: A memória RAM configurada para esta máquina é superior à memória livre do computador. Experimente reduzir para 1024 MB ou 1536 MB."
+                return False, f"O motor de virtualização encerrou inesperadamente:\n\n{err_output}"
 
             self.running_processes[vm_id] = proc
+            self.start_times[vm_id] = time.time()
+            self.is_paused[vm_id] = False
+            self.append_log(vm_id, "🟢 Máquina virtual iniciada com sucesso.")
             return True, "Máquina virtual iniciada com sucesso."
         except Exception as e:
-            return False, f"Falha ao executar QEMU: {str(e)}"
+            return False, f"Falha ao executar máquina virtual: {str(e)}"
 
     def stop_vm(self, vm_id, force=False):
         proc = self.running_processes.get(vm_id)
         if proc and proc.poll() is None:
-            if force:
-                proc.kill()
-            else:
-                proc.terminate()
+            self.append_log(vm_id, "Desligando máquina virtual...")
+            if not force:
+                self.powerdown_vm(vm_id)
+                for _ in range(15):
+                    if proc.poll() is not None:
+                        break
+                    time.sleep(0.1)
+
+            if proc.poll() is None:
+                if force:
+                    proc.kill()
+                else:
+                    proc.terminate()
+
             if vm_id in self.running_processes:
                 del self.running_processes[vm_id]
+            self.append_log(vm_id, "⚪ Máquina virtual desligada.")
+            qmp_sock = os.path.join(CONFIG_DIR, f"qmp_{vm_id}.sock")
+            if os.path.exists(qmp_sock):
+                try:
+                    os.remove(qmp_sock)
+                except Exception:
+                    pass
             return True
         return False
 
@@ -517,6 +675,319 @@ def get_safe_system_ram():
         return {"total": total_ram_mb, "linux": 2048, "windows": 2048, "macos": 2048}
     else:
         return {"total": total_ram_mb, "linux": 2048, "windows": 4096, "macos": 4096}
+
+
+class VMConsoleWindow(Gtk.Window):
+    """Janela Oficial de Console e Execução do Geminux Virtual Machine"""
+    def __init__(self, manager, vm_id, parent=None):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.manager = manager
+        self.vm_id = vm_id
+        self.vm = manager.get_vm(vm_id) or {}
+        self.elapsed_seconds = int(time.time() - self.manager.start_times.get(vm_id, time.time()))
+        vm_name = self.vm.get("name", "Máquina Virtual")
+
+        self.set_title(f"{vm_name} - Geminux Virtual Machine")
+        self.set_wmclass("geminux-virtual-machine", "Geminux Virtual Machine")
+        self.set_default_size(780, 560)
+        self.set_position(Gtk.WindowPosition.CENTER)
+
+        # HeaderBar Oficial Geminux OS
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.set_title(vm_name)
+        os_type = self.vm.get("os_type", "linux").capitalize()
+        engine = self.vm.get("engine", "kvm")
+        engine_name = "VirtualBox" if engine == "virtualbox" else ("VMware" if engine == "vmware" else "Hyper-V / KVM")
+        header.set_subtitle(f"Geminux Virtual Machine • {os_type} ({engine_name})")
+        self.set_titlebar(header)
+
+        # Botão Pausar / Retomar
+        self.btn_pause = Gtk.Button()
+        self.btn_pause_icon = Gtk.Image.new_from_icon_name("media-playback-pause-symbolic", Gtk.IconSize.BUTTON)
+        self.btn_pause.add(self.btn_pause_icon)
+        self.btn_pause.set_tooltip_text("Pausar / Retomar Máquina Virtual")
+        self.btn_pause.get_style_context().add_class("btn-secondary")
+        self.btn_pause.connect("clicked", self.on_toggle_pause)
+        header.pack_start(self.btn_pause)
+
+        # Botão Reiniciar
+        self.btn_reset = Gtk.Button()
+        btn_reset_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.btn_reset.add(btn_reset_icon)
+        self.btn_reset.set_tooltip_text("Reiniciar Sistema Operacional")
+        self.btn_reset.get_style_context().add_class("btn-secondary")
+        self.btn_reset.connect("clicked", self.on_reset)
+        header.pack_start(self.btn_reset)
+
+        # Botão Ctrl+Alt+Del
+        self.btn_cad = Gtk.Button(label="Ctrl+Alt+Del")
+        self.btn_cad.set_tooltip_text("Enviar atalho Ctrl+Alt+Del para a máquina virtual")
+        self.btn_cad.get_style_context().add_class("btn-secondary")
+        self.btn_cad.connect("clicked", self.on_send_cad)
+        header.pack_start(self.btn_cad)
+
+        # Botão Captura de Tela
+        self.btn_snap = Gtk.Button()
+        btn_snap_icon = Gtk.Image.new_from_icon_name("camera-photo-symbolic", Gtk.IconSize.BUTTON)
+        self.btn_snap.add(btn_snap_icon)
+        self.btn_snap.set_tooltip_text("Capturar Tela da Máquina Virtual")
+        self.btn_snap.get_style_context().add_class("btn-secondary")
+        self.btn_snap.connect("clicked", self.on_screenshot)
+        header.pack_start(self.btn_snap)
+
+        # Botão Desligar
+        self.btn_power = Gtk.Button()
+        power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        power_icon = Gtk.Image.new_from_icon_name("system-shutdown-symbolic", Gtk.IconSize.BUTTON)
+        power_lbl = Gtk.Label(label="Desligar")
+        power_box.pack_start(power_icon, False, False, 0)
+        power_box.pack_start(power_lbl, False, False, 0)
+        self.btn_power.add(power_box)
+        self.btn_power.get_style_context().add_class("btn-stop")
+        self.btn_power.connect("clicked", self.on_poweroff)
+        header.pack_end(self.btn_power)
+
+        # Layout Principal da Janela
+        main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        main_vbox.set_margin_start(18)
+        main_vbox.set_margin_end(18)
+        main_vbox.set_margin_top(14)
+        main_vbox.set_margin_bottom(14)
+        self.add(main_vbox)
+
+        # Card Superior com Status da VM
+        status_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        status_card.get_style_context().add_class("card")
+
+        icon_char = "🪟" if os_type.lower() == "windows" else ("🍎" if os_type.lower() == "macos" else "🐧")
+        icon_lbl = Gtk.Label()
+        icon_lbl.set_markup(f"<span size='30000'>{icon_char}</span>")
+        status_card.pack_start(icon_lbl, False, False, 0)
+
+        info_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.status_title_lbl = Gtk.Label()
+        self.status_title_lbl.set_markup(f"<span size='large' weight='bold'>{vm_name}</span>")
+        self.status_title_lbl.set_halign(Gtk.Align.START)
+        info_vbox.pack_start(self.status_title_lbl, False, False, 0)
+
+        meta_lbl = Gtk.Label()
+        has_kvm = os.path.exists("/dev/kvm") and os.access("/dev/kvm", os.R_OK | os.W_OK)
+        accel_text = "KVM Nativo" if has_kvm else "Emulação Segura"
+        meta_text = f"{os_type} • {engine_name} • {self.vm.get('ram_mb', 2048)}MB RAM • {self.vm.get('cpus', 2)} vCPUs • {accel_text}"
+        meta_lbl.set_text(meta_text)
+        meta_lbl.set_halign(Gtk.Align.START)
+        meta_lbl.get_style_context().add_class("dim-label")
+        info_vbox.pack_start(meta_lbl, False, False, 0)
+        status_card.pack_start(info_vbox, True, True, 0)
+
+        right_status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        right_status_box.set_halign(Gtk.Align.END)
+        self.badge_lbl = Gtk.Label(label="🟢 Em Execução")
+        self.badge_lbl.get_style_context().add_class("badge")
+        self.badge_lbl.get_style_context().add_class("badge-running")
+        right_status_box.pack_start(self.badge_lbl, False, False, 0)
+
+        self.timer_lbl = Gtk.Label(label="⏱️ 00:00:00")
+        self.timer_lbl.get_style_context().add_class("dim-label")
+        right_status_box.pack_start(self.timer_lbl, False, False, 0)
+        status_card.pack_end(right_status_box, False, False, 0)
+
+        main_vbox.pack_start(status_card, False, False, 0)
+
+        # Banner de Ação de Exibição
+        display_banner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        display_banner.get_style_context().add_class("card")
+        d_icon = Gtk.Label()
+        d_icon.set_markup("<span size='large'>🖥️</span>")
+        display_banner.pack_start(d_icon, False, False, 0)
+
+        d_text = Gtk.Label()
+        d_text.set_markup("<span><b>Tela da Máquina Virtual Geminux Ativa.</b> O ambiente gráfico está em execução com aceleração e mouse integrado.</span>")
+        d_text.set_halign(Gtk.Align.START)
+        d_text.set_line_wrap(True)
+        display_banner.pack_start(d_text, True, True, 0)
+
+        btn_show_display = Gtk.Button(label="Focar Tela da VM")
+        btn_show_display.get_style_context().add_class("btn-primary")
+        btn_show_display.connect("clicked", self.on_focus_display)
+        display_banner.pack_end(btn_show_display, False, False, 0)
+        main_vbox.pack_start(display_banner, False, False, 0)
+
+        # Notebook com Abas: Console de Eventos & Captura de Tela
+        notebook = Gtk.Notebook()
+        main_vbox.pack_start(notebook, True, True, 0)
+
+        # Aba 1: Console / Terminal de Diagnóstico
+        console_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        console_box.set_margin_top(8)
+
+        scrolled_text = Gtk.ScrolledWindow()
+        scrolled_text.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.text_view = Gtk.TextView()
+        self.text_view.set_editable(False)
+        self.text_view.set_cursor_visible(False)
+        self.text_view.set_monospace(True)
+        self.text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.text_view.get_style_context().add_class("console-view")
+        self.text_buffer = self.text_view.get_buffer()
+        scrolled_text.add(self.text_view)
+        console_box.pack_start(scrolled_text, True, True, 0)
+
+        notebook.append_page(console_box, Gtk.Label(label="📋 Log do Sistema & Eventos"))
+
+        # Aba 2: Captura de Tela (Preview)
+        preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        preview_box.set_margin_top(8)
+
+        self.preview_image = Gtk.Image()
+        self.preview_image.set_size_request(400, 240)
+        preview_box.pack_start(self.preview_image, True, True, 0)
+
+        preview_btn_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_refresh_prev = Gtk.Button(label="🔄 Atualizar Captura")
+        btn_refresh_prev.get_style_context().add_class("btn-secondary")
+        btn_refresh_prev.connect("clicked", self.on_refresh_preview)
+        preview_btn_bar.pack_start(btn_refresh_prev, False, False, 0)
+
+        btn_save_prev = Gtk.Button(label="💾 Salvar Imagem")
+        btn_save_prev.get_style_context().add_class("btn-secondary")
+        btn_save_prev.connect("clicked", self.on_save_preview)
+        preview_btn_bar.pack_start(btn_save_prev, False, False, 0)
+        preview_box.pack_start(preview_btn_bar, False, False, 0)
+
+        notebook.append_page(preview_box, Gtk.Label(label="📸 Prévia da Tela"))
+
+        # Preenche logs existentes
+        self.last_log_idx = 0
+        self.update_logs()
+
+        # Oculta a janela ao fechar em vez de destruir, para permitir reabrir
+        self.connect("delete-event", self.on_delete_event)
+
+        # Timer para atualizar cronômetro e logs a cada 1 segundo
+        self.timer_id = GLib.timeout_add_seconds(1, self.on_timer_tick)
+
+    def on_delete_event(self, widget, event):
+        self.hide()
+        return True
+
+    def on_toggle_pause(self, button):
+        is_paused = self.manager.is_paused.get(self.vm_id, False)
+        if is_paused:
+            if self.manager.resume_vm(self.vm_id):
+                self.btn_pause_icon.set_from_icon_name("media-playback-pause-symbolic", Gtk.IconSize.BUTTON)
+                self.manager.append_log(self.vm_id, "▶️ Máquina virtual retomada.")
+        else:
+            if self.manager.pause_vm(self.vm_id):
+                self.btn_pause_icon.set_from_icon_name("media-playback-start-symbolic", Gtk.IconSize.BUTTON)
+                self.manager.append_log(self.vm_id, "⏸️ Máquina virtual pausada.")
+
+    def on_reset(self, button):
+        if self.manager.reset_vm(self.vm_id):
+            self.manager.append_log(self.vm_id, "🔄 Comando de reinicialização enviado para a máquina virtual.")
+
+    def on_send_cad(self, button):
+        if self.manager.send_ctrl_alt_del(self.vm_id):
+            self.manager.append_log(self.vm_id, "⌨️ Atalho Ctrl+Alt+Del enviado.")
+
+    def on_screenshot(self, button):
+        save_dir = os.path.expanduser("~/Imagens/GeminuxVM")
+        os.makedirs(save_dir, exist_ok=True)
+        filename = f"screenshot_{self.vm_id}_{int(time.time())}.png"
+        filepath = os.path.join(save_dir, filename)
+        if self.manager.take_screenshot(self.vm_id, filepath):
+            self.manager.append_log(self.vm_id, f"📸 Captura de tela salva em: {filepath}")
+            self.on_refresh_preview(None)
+
+    def on_refresh_preview(self, button):
+        temp_file = os.path.join(CONFIG_DIR, f"preview_{self.vm_id}.png")
+        if self.manager.take_screenshot(self.vm_id, temp_file):
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(temp_file, 480, 300, True)
+                self.preview_image.set_from_pixbuf(pixbuf)
+            except Exception:
+                pass
+
+    def on_save_preview(self, button):
+        self.on_screenshot(button)
+
+    def on_poweroff(self, button):
+        dlg = Gtk.MessageDialog(
+            transient_for=self,
+            flags=Gtk.DialogFlags.MODAL,
+            type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.NONE,
+            text=f"Desligar '{self.vm.get('name')}'?"
+        )
+        dlg.format_secondary_text("Deseja desligar a máquina virtual de forma segura?")
+        dlg.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Desligamento ACPI", Gtk.ResponseType.OK)
+        dlg.add_button("Forçar Encerramento", Gtk.ResponseType.REJECT)
+
+        resp = dlg.run()
+        dlg.destroy()
+
+        if resp == Gtk.ResponseType.OK:
+            self.manager.stop_vm(self.vm_id, force=False)
+        elif resp == Gtk.ResponseType.REJECT:
+            self.manager.stop_vm(self.vm_id, force=True)
+
+    def on_focus_display(self, button):
+        vm_name = self.vm.get("name", "Máquina Virtual")
+        target_title = f"{vm_name} - Geminux Virtual Machine"
+        try:
+            subprocess.run(["wmctrl", "-a", target_title], capture_output=True)
+        except Exception:
+            pass
+
+    def update_logs(self):
+        logs = self.manager.get_logs(self.vm_id)
+        if len(logs) > self.last_log_idx:
+            new_lines = "\n".join(logs[self.last_log_idx:]) + "\n"
+            end_iter = self.text_buffer.get_end_iter()
+            self.text_buffer.insert(end_iter, new_lines)
+            self.last_log_idx = len(logs)
+            end_iter = self.text_buffer.get_end_iter()
+            self.text_view.scroll_to_iter(end_iter, 0.0, False, 0.0, 1.0)
+
+    def on_timer_tick(self):
+        is_run = self.manager.is_running(self.vm_id)
+        is_paused = self.manager.is_paused.get(self.vm_id, False)
+
+        sc = self.badge_lbl.get_style_context()
+        if is_run:
+            if is_paused:
+                self.badge_lbl.set_text("🟡 Pausada")
+                sc.remove_class("badge-running")
+                sc.remove_class("badge-stopped")
+            else:
+                self.badge_lbl.set_text("🟢 Em Execução")
+                sc.remove_class("badge-stopped")
+                sc.add_class("badge-running")
+                self.elapsed_seconds += 1
+
+            hours = self.elapsed_seconds // 3600
+            mins = (self.elapsed_seconds % 3600) // 60
+            secs = self.elapsed_seconds % 60
+            self.timer_lbl.set_text(f"⏱️ {hours:02d}:{mins:02d}:{secs:02d}")
+            self.btn_pause.set_sensitive(True)
+            self.btn_reset.set_sensitive(True)
+            self.btn_cad.set_sensitive(True)
+            self.btn_snap.set_sensitive(True)
+            self.btn_power.set_sensitive(True)
+        else:
+            self.badge_lbl.set_text("⚪ Desligada")
+            sc.remove_class("badge-running")
+            sc.add_class("badge-stopped")
+            self.btn_pause.set_sensitive(False)
+            self.btn_reset.set_sensitive(False)
+            self.btn_cad.set_sensitive(False)
+            self.btn_snap.set_sensitive(False)
+            self.btn_power.set_sensitive(False)
+
+        self.update_logs()
+        return True
 
 
 class NewVMDialog(Gtk.Dialog):
@@ -787,6 +1258,7 @@ class MainWindow(Gtk.Window):
 
         self.manager = VMManager()
         self.current_selected_vm_id = None
+        self.console_windows = {}
 
         # Carrega Estilos CSS Customizados
         self.apply_css()
@@ -952,6 +1424,18 @@ class MainWindow(Gtk.Window):
         self.stop_btn.get_style_context().add_class("btn-stop")
         self.stop_btn.connect("clicked", self.on_stop_vm_clicked)
         action_bar.pack_start(self.stop_btn, False, False, 0)
+
+        # Botão Abrir Console / Painel de Controle da VM
+        self.console_btn = Gtk.Button()
+        console_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        console_icon = Gtk.Image.new_from_icon_name("utilities-system-monitor-symbolic", Gtk.IconSize.BUTTON)
+        self.console_lbl = Gtk.Label(label="Console / Janela da VM")
+        console_box.pack_start(console_icon, False, False, 0)
+        console_box.pack_start(self.console_lbl, False, False, 0)
+        self.console_btn.add(console_box)
+        self.console_btn.get_style_context().add_class("btn-secondary")
+        self.console_btn.connect("clicked", self.on_open_console_clicked)
+        action_bar.pack_start(self.console_btn, False, False, 0)
 
         self.delete_btn = Gtk.Button(label="Excluir VM")
         self.delete_btn.get_style_context().add_class("btn-danger")
@@ -1158,6 +1642,7 @@ class MainWindow(Gtk.Window):
             sc.add_class("badge-stopped")
             self.start_btn.set_sensitive(True)
             self.stop_btn.set_sensitive(False)
+        self.console_btn.set_sensitive(True)
 
     def on_status_timer(self):
         if self.current_selected_vm_id:
@@ -1226,7 +1711,24 @@ class MainWindow(Gtk.Window):
             err_dlg.format_secondary_text(msg)
             err_dlg.run()
             err_dlg.destroy()
+        else:
+            self.open_vm_console(self.current_selected_vm_id)
         self.update_running_ui(self.current_selected_vm_id)
+
+    def on_open_console_clicked(self, button):
+        if not self.current_selected_vm_id:
+            return
+        self.open_vm_console(self.current_selected_vm_id)
+
+    def open_vm_console(self, vm_id):
+        if vm_id in self.console_windows:
+            win = self.console_windows[vm_id]
+            win.present()
+        else:
+            win = VMConsoleWindow(self.manager, vm_id, parent=self)
+            self.console_windows[vm_id] = win
+            win.show_all()
+            win.present()
 
     def on_stop_vm_clicked(self, button):
         if not self.current_selected_vm_id:
@@ -1257,6 +1759,12 @@ class MainWindow(Gtk.Window):
         res = dlg.run()
         if res in (Gtk.ResponseType.YES, Gtk.ResponseType.NO):
             delete_disk = (res == Gtk.ResponseType.YES)
+            if self.current_selected_vm_id in self.console_windows:
+                try:
+                    self.console_windows[self.current_selected_vm_id].destroy()
+                except Exception:
+                    pass
+                del self.console_windows[self.current_selected_vm_id]
             self.manager.remove_vm(self.current_selected_vm_id, delete_disk=delete_disk)
             self.current_selected_vm_id = None
             self.refresh_vm_list()
