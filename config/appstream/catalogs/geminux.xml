@@ -158,7 +158,8 @@
         <li>Interface conversacional moderna integrada ao tema Geminux Dark Neon</li>
         <li>Base de conhecimento offline para comandos, atalhos e configurações do sistema</li>
         <li>Atalhos rápidos para verificar memória RAM, discos, rede e atualizações</li>
-        <li>Conexão opcional com modelos avançados na nuvem (Google Gemini)</li>
+        <li>Módulo <b>Codef</b> integrado para criar aplicativos Android, iOS, Web e Geminux OS</li>
+        <li>Suporte a múltiplos motores de IA: Google Gemini, DeepSeek, Qwen (Alibaba) e OpenAI</li>
         <li>Segurança e privacidade garantidas pela Geminux Ltda.</li>
       </ul>
     </description>
@@ -176,9 +177,15 @@
     </categories>
     <keywords>
       <keyword>ai</keyword>
+      <keyword>codef</keyword>
       <keyword>assistant</keyword>
       <keyword>chat</keyword>
       <keyword>gemini</keyword>
+      <keyword>deepseek</keyword>
+      <keyword>qwen</keyword>
+      <keyword>openai</keyword>
+      <keyword>android</keyword>
+      <keyword>ios</keyword>
       <keyword>terminal</keyword>
       <keyword>linux</keyword>
       <keyword>geminux</keyword>

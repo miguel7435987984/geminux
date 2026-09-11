@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Geminux AI - Official Intelligent Assistant for Geminux OS
+Geminux AI & Codef - Official Intelligent Assistant & App Studio for Geminux OS
 Created by Geminux Ltda.
-Provides Linux command assistance, system diagnostics, code help, and interactive chat.
+Features:
+- Geminux AI: System assistant, diagnostics, and Linux terminal help.
+- Codef: Dedicated app creator for Android, iOS, Web, and Geminux Desktop.
+Supports Google Gemini, DeepSeek, Qwen (Alibaba), OpenAI-compatible APIs, and Native Offline Mode.
 """
 
 import sys
 import os
 import json
+import re
 import threading
 import urllib.request
 import urllib.error
@@ -15,7 +19,8 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, Pango
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, GdkPixbuf
 
 APP_NAME = "Geminux AI"
 APP_VERSION = "1.0.0"
@@ -25,26 +30,137 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.json")
 # Visual Identity Palette - Geminux Dark Neon
 ACCENT_CYAN = "#00d2ff"
 ACCENT_BLUE = "#0072ff"
+ACCENT_PURPLE = "#8a2be2"
 BG_MAIN = "#0b0f17"
 BG_SIDEBAR = "#0d131f"
 BG_CARD = "#131b29"
 BG_CHAT_USER = "#1a2a44"
 BG_CHAT_AI = "#111827"
+BG_CHAT_CODEF = "#15162c"
 TEXT_PRIMARY = "#f0f6fc"
 TEXT_MUTED = "#8b949e"
 BORDER_COLOR = "#1f293d"
 
+PROVIDERS = {
+    "gemini": {
+        "name": "Google Gemini",
+        "icon": "💎",
+        "models": ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        "default_model": "gemini-2.5-flash",
+        "help": "Obtenha sua chave gratuita em https://aistudio.google.com"
+    },
+    "deepseek": {
+        "name": "DeepSeek",
+        "icon": "🐋",
+        "models": ["deepseek-chat", "deepseek-reasoner"],
+        "default_model": "deepseek-chat",
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "help": "Obtenha sua chave em https://platform.deepseek.com"
+    },
+    "qwen": {
+        "name": "Qwen (Alibaba Cloud)",
+        "icon": "⚡",
+        "models": ["qwen-plus", "qwen-turbo", "qwen-max", "qwen2.5-72b-instruct"],
+        "default_model": "qwen-plus",
+        "endpoint": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+        "help": "Obtenha sua chave em https://dashscope.console.aliyun.com"
+    },
+    "openai_compat": {
+        "name": "OpenAI / Compatível (Groq, OpenRouter)",
+        "icon": "🌐",
+        "models": ["gpt-4o-mini", "llama-3.3-70b-versatile", "mistral-large"],
+        "default_model": "gpt-4o-mini",
+        "endpoint": "https://api.openai.com/v1/chat/completions",
+        "help": "Compatível com endpoints OpenAI, Groq, OpenRouter ou Ollama."
+    },
+    "offline": {
+        "name": "Modo Offline (Geminux OS)",
+        "icon": "🛡️",
+        "models": ["offline-builtin"],
+        "default_model": "offline-builtin",
+        "help": "Funciona 100% offline, sem internet e sem precisar de chave."
+    }
+}
+
 OFFLINE_KNOWLEDGE_BASE = {
-    "terminal": "O terminal padrão do Geminux OS é o **Prius Terminal** (atalho Ctrl+Alt+T). Você também pode usar o **Geminux Terminal** clássico.",
-    "atualizar": "Para atualizar o Geminux OS, abra o **Prius Terminal** e digite:\n```bash\nsudo apt update && sudo apt upgrade -y\n```",
-    "vm": "O **Geminux Virtual Machine** permite criar máquinas virtuais de Windows, Linux e macOS com aceleração KVM e perfis VirtualBox (.vdi) e VMware (.vmdk).",
-    "roblox": "Para jogar Roblox no Geminux OS, use o aplicativo nativo **Sober Fix** disponível na Geminux Store para aplicar correções de compatibilidade.",
-    "memoria": "Para verificar o consumo de memória RAM, use o comando `free -h` ou abra o **Monitor do Sistema** pelo menu.",
-    "disco": "Para checar o espaço livre no disco, use o comando `df -h` ou abra o aplicativo **Discos**.",
-    "ip": "Para ver seu endereço IP de rede local, digite no terminal:\n```bash\nip a\n```",
-    "desligar": "Para desligar o computador pelo terminal com segurança:\n```bash\nsudo shutdown now\n```",
-    "reiniciar": "Para reiniciar o computador pelo terminal:\n```bash\nsudo reboot\n```",
-    "limpar": "Para limpar arquivos temporários e pacotes antigos do cache:\n```bash\nsudo apt autoremove -y && sudo apt clean\n```"
+    "terminal": "O terminal padrão do Geminux OS é o <b>Prius Terminal</b> (atalho Ctrl+Alt+T). Você também pode usar o <b>Geminux Terminal</b> clássico.",
+    "atualizar": "Para atualizar o Geminux OS, abra o <b>Prius Terminal</b> e digite:\n<tt>sudo apt update &amp;&amp; sudo apt upgrade -y</tt>",
+    "vm": "O <b>Geminux Virtual Machine</b> permite criar máquinas virtuais de Windows, Linux e macOS com aceleração KVM e perfis VirtualBox (.vdi) e VMware (.vmdk).",
+    "roblox": "Para jogar Roblox no Geminux OS, use o utilitário nativo <b>Sober Fix</b> disponível na Geminux Store.",
+    "memoria": "Para checar a memória RAM, use o comando <tt>free -h</tt> ou abra o <b>Monitor do Sistema</b> no menu.",
+    "disco": "Para verificar o espaço em disco, use <tt>df -h</tt> ou abra o utilitário <b>Discos</b>.",
+    "ip": "Para ver seu endereço de rede local:\n<tt>ip a</tt>",
+    "desligar": "Para desligar o computador pelo terminal:\n<tt>sudo shutdown now</tt>",
+    "reiniciar": "Para reiniciar o computador pelo terminal:\n<tt>sudo reboot</tt>",
+    "limpar": "Para limpar cache e pacotes velhos:\n<tt>sudo apt autoremove -y &amp;&amp; sudo apt clean</tt>"
+}
+
+OFFLINE_CODEF_TEMPLATES = {
+    "android": (
+        "<b>📱 Estrutura de App Android (Kotlin + Jetpack Compose):</b>\n\n"
+        "<tt>app/src/main/java/com/geminux/myapp/MainActivity.kt</tt>\n"
+        "<tt>package com.geminux.myapp\n\n"
+        "import android.os.Bundle\n"
+        "import androidx.activity.ComponentActivity\n"
+        "import androidx.activity.compose.setContent\n"
+        "import androidx.compose.material3.*\n"
+        "import androidx.compose.runtime.*\n\n"
+        "class MainActivity : ComponentActivity() {\n"
+        "    override fun onCreate(savedInstanceState: Bundle?) {\n"
+        "        super.onCreate(savedInstanceState)\n"
+        "        setContent {\n"
+        "            MaterialTheme {\n"
+        "                Surface { Greeting(\"Usuário Geminux\") }\n"
+        "            }\n"
+        "        }\n"
+        "    }\n"
+        "}\n\n"
+        "@Composable\n"
+        "fun Greeting(name: String) {\n"
+        "    Text(text = \"Olá, $name! App criado no Codef!\")\n"
+        "}</tt>\n\n"
+        "<i>💡 Dica: Conecte uma chave Gemini, DeepSeek ou Qwen para gerar o app completo de acordo com o seu pedido!</i>"
+    ),
+    "ios": (
+        "<b>🍎 Estrutura de App iOS (SwiftUI):</b>\n\n"
+        "<tt>ContentView.swift</tt>\n"
+        "<tt>import SwiftUI\n\n"
+        "struct ContentView: View {\n"
+        "    @State private var counter = 0\n\n"
+        "    var body: some View {\n"
+        "        VStack(spacing: 20) {\n"
+        "            Text(\"Meu App iOS - Codef\")\n"
+        "                .font(.largeTitle)\n"
+        "                .fontWeight(.bold)\n"
+        "            Button(\"Cliques: \\(counter)\") {\n"
+        "                counter += 1\n"
+        "            }\n"
+        "            .buttonStyle(.borderedProminent)\n"
+        "        }\n"
+        "        .padding()\n"
+        "    }\n"
+        "}</tt>\n\n"
+        "<i>💡 Dica: Conecte uma chave Gemini, DeepSeek ou Qwen para gerar apps iOS completos com navegação e banco de dados!</i>"
+    ),
+    "geminux": (
+        "<b>🐧 App Nativo para Geminux OS (Python 3 + GTK 3):</b>\n\n"
+        "<tt>main.py</tt>\n"
+        "<tt>#!/usr/bin/env python3\n"
+        "import gi\n"
+        "gi.require_version('Gtk', '3.0')\n"
+        "from gi.repository import Gtk\n\n"
+        "class GeminuxApp(Gtk.Window):\n"
+        "    def __init__(self):\n"
+        "        super().__init__(title=\"Meu App Geminux\")\n"
+        "        self.set_default_size(400, 200)\n"
+        "        btn = Gtk.Button(label=\"Clique Aqui!\")\n"
+        "        btn.connect(\"clicked\", lambda b: print(\"Olá do Geminux!\"))\n"
+        "        self.add(btn)\n\n"
+        "win = GeminuxApp()\n"
+        "win.connect(\"destroy\", Gtk.main_quit)\n"
+        "win.show_all()\n"
+        "Gtk.main()</tt>"
+    )
 }
 
 def load_settings():
@@ -57,9 +173,10 @@ def load_settings():
         except Exception:
             pass
     return {
+        "provider": "gemini",
         "api_key": "",
-        "provider": "offline",
-        "model": "gemini-2.5-flash"
+        "model": "gemini-2.5-flash",
+        "custom_endpoint": ""
     }
 
 def save_settings(data):
@@ -71,11 +188,26 @@ def save_settings(data):
     except Exception as e:
         print(f"Erro ao salvar configurações: {e}")
 
+def markdown_to_pango(text):
+    """Converte markdown simples para tags Pango compatíveis com GTK Label."""
+    if not text:
+        return ""
+    safe = GLib.markup_escape_text(text)
+    # Blocos de código ```codigo``` -> <tt>codigo</tt>
+    safe = re.sub(r'```(?:[a-zA-Z0-9_\-]+)?\n?(.*?)```', r'<tt>\1</tt>', safe, flags=re.DOTALL)
+    # Inline code `cmd` -> <tt>cmd</tt>
+    safe = re.sub(r'`(.*?)`', r'<tt>\1</tt>', safe)
+    # Negrito **texto** -> <b>texto</b>
+    safe = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', safe)
+    # Itálico *texto* -> <i>texto</i>
+    safe = re.sub(r'\*(.*?)\*', r'<i>\1</i>', safe)
+    return safe
+
 
 class GeminuxAIWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title=APP_NAME)
-        self.set_default_size(840, 600)
+        self.set_default_size(900, 650)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.settings = load_settings()
 
@@ -113,6 +245,15 @@ class GeminuxAIWindow(Gtk.Window):
             margin-bottom: 12px;
             color: {TEXT_PRIMARY};
         }}
+        .chat-msg-codef {{
+            background-color: {BG_CHAT_CODEF};
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            border-left: 3px solid {ACCENT_PURPLE};
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            color: {TEXT_PRIMARY};
+        }}
         .chat-msg-user {{
             background-color: {BG_CHAT_USER};
             border: 1px solid rgba(0, 210, 255, 0.4);
@@ -120,6 +261,22 @@ class GeminuxAIWindow(Gtk.Window):
             padding: 12px 16px;
             margin-bottom: 12px;
             color: {TEXT_PRIMARY};
+        }}
+        .thinking-bubble {{
+            background-color: #101726;
+            border: 1px solid rgba(0, 210, 255, 0.5);
+            border-left: 4px solid {ACCENT_CYAN};
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+        }}
+        .thinking-bubble-codef {{
+            background-color: #17132e;
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            border-left: 4px solid {ACCENT_PURPLE};
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
         }}
         .quick-btn {{
             background-color: {BG_CARD};
@@ -133,6 +290,19 @@ class GeminuxAIWindow(Gtk.Window):
         .quick-btn:hover {{
             background-color: #1a2335;
             border-color: {ACCENT_CYAN};
+        }}
+        .codef-btn {{
+            background-color: #1b1633;
+            color: {TEXT_PRIMARY};
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }}
+        .codef-btn:hover {{
+            background-color: #271f47;
+            border-color: {ACCENT_PURPLE};
         }}
         entry {{
             background-color: {BG_CARD};
@@ -154,8 +324,13 @@ class GeminuxAIWindow(Gtk.Window):
             border-radius: 8px;
             padding: 8px 18px;
         }}
-        .send-btn:hover {{
-            opacity: 0.9;
+        .send-btn-codef {{
+            background: linear-gradient(135deg, {ACCENT_PURPLE}, {ACCENT_BLUE});
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
         }}
         """
         provider = Gtk.CssProvider()
@@ -167,26 +342,47 @@ class GeminuxAIWindow(Gtk.Window):
         )
 
     def build_ui(self):
-        # HeaderBar
+        # HeaderBar com seletor de abas (Chat / Codef)
         header = Gtk.HeaderBar()
         header.set_show_close_button(True)
-        header.props.title = f"💎 {APP_NAME}"
-        header.props.subtitle = "Assistente Inteligente Oficial do Geminux OS"
         self.set_titlebar(header)
 
-        # Botão de Configurações (Chave de API / Modo)
+        # Gtk.Stack para alternar entre Geminux AI Chat e Codef App Studio
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(200)
+
+        switcher = Gtk.StackSwitcher()
+        switcher.set_stack(self.stack)
+        header.set_custom_title(switcher)
+
+        # Botão de Configurações da IA
         cfg_btn = Gtk.Button()
         cfg_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.BUTTON)
         cfg_btn.add(cfg_icon)
-        cfg_btn.set_tooltip_text("Configurações da Inteligência Artificial")
+        cfg_btn.set_tooltip_text("Configurar Provedor de IA (Gemini, DeepSeek, Qwen)")
         cfg_btn.connect("clicked", self.open_settings_dialog)
         header.pack_end(cfg_btn)
 
-        # Layout Principal Horizontal (Barra Lateral de Atalhos + Área de Chat)
-        h_paned = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        self.add(h_paned)
+        # Container Principal
+        self.add(self.stack)
 
-        # Barra Lateral
+        # ==========================================
+        # ABA 1: 💬 GEMINUX AI CHAT
+        # ==========================================
+        chat_page = self.build_chat_page()
+        self.stack.add_titled(chat_page, "chat", "💬 Chat Geral")
+
+        # ==========================================
+        # ABA 2: 🚀 CODEF (CRIADOR DE APPS)
+        # ==========================================
+        codef_page = self.build_codef_page()
+        self.stack.add_titled(codef_page, "codef", "⚡ Codef (Criar Apps)")
+
+    def build_chat_page(self):
+        h_paned = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+
+        # Barra Lateral Chat
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         sidebar.get_style_context().add_class("sidebar")
         sidebar.set_size_request(240, -1)
@@ -198,70 +394,165 @@ class GeminuxAIWindow(Gtk.Window):
         sidebar.pack_start(side_title, False, False, 0)
 
         quick_actions = [
-            ("🔄 Como atualizar o sistema?", "Como atualizar o Geminux OS?"),
+            ("🔄 Atualizar o Sistema", "Como atualizar o Geminux OS?"),
             ("🖥️ Máquinas Virtuais (VMs)", "Como funciona o Geminux Virtual Machine?"),
-            ("📊 Ver uso de Memória RAM", "Como verificar o uso de memória RAM?"),
-            ("💾 Ver espaço em disco", "Como verificar o espaço em disco no Linux?"),
-            ("🌐 Descobrir meu IP", "Como ver meu endereço IP local no terminal?"),
-            ("🧹 Limpar cache e arquivos", "Como limpar o cache e pacotes velhos?")
+            ("📊 Ver Memória RAM", "Como verificar o uso de memória RAM?"),
+            ("💾 Espaço em Disco", "Como verificar o espaço em disco no Linux?"),
+            ("🌐 Meu Endereço IP", "Como ver meu endereço IP local no terminal?"),
+            ("🧹 Limpar Cache", "Como limpar o cache e pacotes velhos?")
         ]
 
         for label, query in quick_actions:
             btn = Gtk.Button(label=label)
             btn.get_style_context().add_class("quick-btn")
             btn.set_alignment(0.0, 0.5)
-            btn.connect("clicked", lambda b, q=query: self.send_message(q))
+            btn.connect("clicked", lambda b, q=query: self.send_chat_message(q))
             sidebar.pack_start(btn, False, False, 0)
 
-        sidebar_status = Gtk.Label()
-        mode_text = "Modo Conectado (API)" if self.settings.get("api_key") else "Modo Especialista Offline"
-        sidebar_status.set_markup(f"<small><span foreground='{TEXT_MUTED}'>Status: {mode_text}</span></small>")
-        sidebar_status.set_valign(Gtk.Align.END)
-        sidebar.pack_end(sidebar_status, False, False, 8)
-        self.sidebar_status = sidebar_status
+        self.chat_status_lbl = Gtk.Label()
+        self.update_status_labels()
+        self.chat_status_lbl.set_valign(Gtk.Align.END)
+        sidebar.pack_end(self.chat_status_lbl, False, False, 8)
 
-        # Área Central de Chat
+        # Área de Chat
         chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         chat_box.get_style_context().add_class("chat-area")
         h_paned.pack_start(chat_box, True, True, 0)
 
-        # Scrolled Window para as Mensagens
-        self.scrolled = Gtk.ScrolledWindow()
-        self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scrolled.set_vexpand(True)
-        chat_box.pack_start(self.scrolled, True, True, 0)
+        self.chat_scrolled = Gtk.ScrolledWindow()
+        self.chat_scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.chat_scrolled.set_vexpand(True)
+        chat_box.pack_start(self.chat_scrolled, True, True, 0)
 
-        self.messages_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.scrolled.add(self.messages_box)
+        self.chat_messages_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.chat_scrolled.add(self.chat_messages_box)
 
-        # Mensagem Inicial de Boas-vindas
         welcome_text = (
             "<b>Olá! Eu sou a Geminux AI</b>, sua assistente inteligente oficial do sistema.\n\n"
-            "Posso te ajudar a:\n"
-            "• Aprender comandos do Linux e atalhos do Geminux OS;\n"
-            "• Configurar máquinas virtuais no <b>Geminux Virtual Machine</b>;\n"
-            "• Diagnosticar problemas de rede, áudio ou aplicativos;\n"
-            "• Escrever scripts e códigos para o <b>Prius Terminal</b>.\n\n"
-            "Como posso te ajudar hoje?"
+            "Suporte integrado a múltiplos motores:\n"
+            "• 💎 <b>Google Gemini</b> (Gemini 2.5 Flash / 1.5 Pro)\n"
+            "• 🐋 <b>DeepSeek</b> (DeepSeek-V3 e R1 Reasoner)\n"
+            "• ⚡ <b>Qwen</b> (Alibaba Cloud / DashScope)\n"
+            "• 🛡️ <b>Modo Offline Nativo</b> (sem internet)\n\n"
+            "<i>💡 Quer criar aplicativos para Android, iOS ou Web? Clique na aba <b>Codef</b> acima!</i>"
         )
-        self.add_message_bubble("ai", welcome_text)
+        self.add_message_bubble(self.chat_messages_box, self.chat_scrolled, "ai", welcome_text, mode="ai")
 
-        # Área Inferior de Input de Mensagem
         input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         input_box.set_margin_top(10)
         chat_box.pack_start(input_box, False, False, 0)
 
-        self.entry = Gtk.Entry()
-        self.entry.set_placeholder_text("Digite sua pergunta para a Geminux AI...")
-        self.entry.connect("activate", lambda w: self.on_send_clicked(None))
-        input_box.pack_start(self.entry, True, True, 0)
+        self.chat_entry = Gtk.Entry()
+        self.chat_entry.set_placeholder_text("Digite sua pergunta para a Geminux AI...")
+        self.chat_entry.connect("activate", lambda w: self.on_send_chat(None))
+        input_box.pack_start(self.chat_entry, True, True, 0)
 
         send_btn = Gtk.Button(label="Enviar ➤")
         send_btn.get_style_context().add_class("send-btn")
-        send_btn.connect("clicked", self.on_send_clicked)
+        send_btn.connect("clicked", self.on_send_chat)
         input_box.pack_start(send_btn, False, False, 0)
 
-    def add_message_bubble(self, sender, text):
+        return h_paned
+
+    def build_codef_page(self):
+        h_paned = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+
+        # Barra Lateral do Codef
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sidebar.get_style_context().add_class("sidebar")
+        sidebar.set_size_request(240, -1)
+        h_paned.pack_start(sidebar, False, False, 0)
+
+        side_title = Gtk.Label()
+        side_title.set_markup("<span foreground='#b175ff'><b>🚀 Codef App Studio</b></span>")
+        side_title.set_halign(Gtk.Align.START)
+        sidebar.pack_start(side_title, False, False, 0)
+
+        desc = Gtk.Label()
+        desc.set_markup(f"<small><span foreground='{TEXT_MUTED}'>Criador de Apps Android, iOS, Web e Geminux</span></small>")
+        desc.set_halign(Gtk.Align.START)
+        sidebar.pack_start(desc, False, False, 0)
+
+        codef_actions = [
+            ("📱 Criar App Android", "Crie a estrutura completa de um aplicativo Android moderno com Kotlin e Jetpack Compose."),
+            ("🍎 Criar App iOS", "Crie a estrutura completa de um aplicativo iOS moderno usando SwiftUI."),
+            ("🌐 Criar App Híbrido (Flutter)", "Crie um aplicativo completo em Flutter compatível com Android e iOS ao mesmo tempo."),
+            ("🐧 Criar App para Geminux OS", "Crie um aplicativo desktop com interface gráfica moderna GTK3 para o Geminux OS."),
+            ("🛒 App de Loja / E-commerce", "Crie um aplicativo de loja virtual / e-commerce com lista de produtos e carrinho."),
+            ("🎮 Criar Joguinho 2D", "Crie o código completo de um jogo 2D interativo com controles.")
+        ]
+
+        for label, query in codef_actions:
+            btn = Gtk.Button(label=label)
+            btn.get_style_context().add_class("codef-btn")
+            btn.set_alignment(0.0, 0.5)
+            btn.connect("clicked", lambda b, q=query: self.send_codef_message(q))
+            sidebar.pack_start(btn, False, False, 0)
+
+        self.codef_status_lbl = Gtk.Label()
+        self.update_status_labels()
+        self.codef_status_lbl.set_valign(Gtk.Align.END)
+        sidebar.pack_end(self.codef_status_lbl, False, False, 8)
+
+        # Área de Criação de Apps (Codef Chat)
+        codef_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        codef_box.get_style_context().add_class("chat-area")
+        h_paned.pack_start(codef_box, True, True, 0)
+
+        self.codef_scrolled = Gtk.ScrolledWindow()
+        self.codef_scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.codef_scrolled.set_vexpand(True)
+        codef_box.pack_start(self.codef_scrolled, True, True, 0)
+
+        self.codef_messages_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.codef_scrolled.add(self.codef_messages_box)
+
+        welcome_codef = (
+            "<b>Bem-vindo ao Codef!</b> 🚀📱\n\n"
+            "Eu sou o módulo criador de aplicativos do Geminux OS. Posso criar para você:\n\n"
+            "• 📱 <b>Aplicativos Android</b> (Kotlin, Jetpack Compose ou Java);\n"
+            "• 🍎 <b>Aplicativos iOS</b> (Swift, SwiftUI);\n"
+            "• 🌐 <b>Multiplataforma</b> (Flutter / React Native);\n"
+            "• 🐧 <b>Aplicativos Nativos para Geminux OS</b> (Python, GTK3, C++);\n"
+            "• 🎮 <b>Jogos e Ferramentas Web</b>.\n\n"
+            "Diga qual aplicativo você quer construir hoje!"
+        )
+        self.add_message_bubble(self.codef_messages_box, self.codef_scrolled, "codef", welcome_codef, mode="codef")
+
+        input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        input_box.set_margin_top(10)
+        codef_box.pack_start(input_box, False, False, 0)
+
+        self.codef_entry = Gtk.Entry()
+        self.codef_entry.set_placeholder_text("Ex: Crie um app de previsão do tempo para Android e iOS...")
+        self.codef_entry.connect("activate", lambda w: self.on_send_codef(None))
+        input_box.pack_start(self.codef_entry, True, True, 0)
+
+        send_codef_btn = Gtk.Button(label="Criar App ⚡")
+        send_codef_btn.get_style_context().add_class("send-btn-codef")
+        send_codef_btn.connect("clicked", self.on_send_codef)
+        input_box.pack_start(send_codef_btn, False, False, 0)
+
+        return h_paned
+
+    def update_status_labels(self):
+        prov_key = self.settings.get("provider", "gemini")
+        prov_info = PROVIDERS.get(prov_key, PROVIDERS["gemini"])
+        api_key = self.settings.get("api_key", "").strip()
+        model = self.settings.get("model", prov_info["default_model"])
+
+        if prov_key == "offline" or not api_key:
+            txt = "🛡️ Modo Offline"
+        else:
+            txt = f"{prov_info['icon']} {prov_info['name']}\n<small>{model}</small>"
+
+        status_text = f"<small><span foreground='{TEXT_MUTED}'>Motor IA Ativo:</span>\n{txt}</small>"
+        if hasattr(self, 'chat_status_lbl'):
+            self.chat_status_lbl.set_markup(status_text)
+        if hasattr(self, 'codef_status_lbl'):
+            self.codef_status_lbl.set_markup(status_text)
+
+    def add_message_bubble(self, target_box, target_scrolled, sender, text, mode="ai"):
         row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         bubble = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
@@ -272,121 +563,308 @@ class GeminuxAIWindow(Gtk.Window):
             header_lbl.set_markup("<b>Você</b>")
             header_lbl.set_halign(Gtk.Align.START)
             bubble.pack_start(header_lbl, False, False, 0)
+        elif sender == "codef":
+            bubble.get_style_context().add_class("chat-msg-codef")
+            row.set_halign(Gtk.Align.START)
+            header_lbl = Gtk.Label()
+            header_lbl.set_markup(f"<span foreground='#b175ff'><b>🚀 Codef Studio</b></span>")
+            header_lbl.set_halign(Gtk.Align.START)
+            bubble.pack_start(header_lbl, False, False, 0)
         else:
             bubble.get_style_context().add_class("chat-msg-ai")
             row.set_halign(Gtk.Align.START)
             header_lbl = Gtk.Label()
-            header_lbl.set_markup(f"<span foreground='{ACCENT_CYAN}'><b>💎 Geminux AI</b></span>")
+            prov_key = self.settings.get("provider", "gemini")
+            prov_icon = PROVIDERS.get(prov_key, {}).get("icon", "💎")
+            header_lbl.set_markup(f"<span foreground='{ACCENT_CYAN}'><b>{prov_icon} Geminux AI</b></span>")
             header_lbl.set_halign(Gtk.Align.START)
             bubble.pack_start(header_lbl, False, False, 0)
 
         content_lbl = Gtk.Label()
-        content_lbl.set_markup(text)
+        try:
+            content_lbl.set_markup(markdown_to_pango(text))
+        except Exception:
+            content_lbl.set_text(text)
+
         content_lbl.set_line_wrap(True)
         content_lbl.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
-        content_lbl.set_max_width_chars(65)
+        content_lbl.set_max_width_chars(75)
         content_lbl.set_halign(Gtk.Align.START)
         content_lbl.set_selectable(True)
         bubble.pack_start(content_lbl, True, True, 0)
 
         row.pack_start(bubble, True, True, 0)
-        self.messages_box.pack_start(row, False, False, 0)
-        self.messages_box.show_all()
+        target_box.pack_start(row, False, False, 0)
+        target_box.show_all()
 
-        # Rola suavemente para a última mensagem
-        GLib.idle_add(self.scroll_to_bottom)
+        GLib.idle_add(self.scroll_to_bottom, target_scrolled)
 
-    def scroll_to_bottom(self):
-        adj = self.scrolled.get_vadjustment()
+    def scroll_to_bottom(self, scrolled_window):
+        adj = scrolled_window.get_vadjustment()
         adj.set_value(adj.get_upper() - adj.get_page_size())
         return False
 
-    def on_send_clicked(self, _btn):
-        text = self.entry.get_text().strip()
+    def get_geminux_icon(self, size=24):
+        paths = [
+            "/usr/share/icons/hicolor/scalable/apps/geminux-ai.svg",
+            "/usr/share/pixmaps/geminux-ai.svg",
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../branding/icons/geminux-ai.svg"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../branding/icons/geminux-logo.svg"),
+            os.path.expanduser("~/Documentos/Geminux system Linux/branding/icons/geminux-ai.svg"),
+            os.path.expanduser("~/Documentos/Geminux system Linux/branding/icons/geminux-logo.svg")
+        ]
+        for p in paths:
+            if os.path.exists(p):
+                try:
+                    return GdkPixbuf.Pixbuf.new_from_file_at_scale(p, size, size, True)
+                except Exception:
+                    pass
+        return None
+
+    def create_thinking_widget(self, mode="ai"):
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.set_halign(Gtk.Align.START)
+
+        if mode == "codef":
+            box.get_style_context().add_class("thinking-bubble-codef")
+        else:
+            box.get_style_context().add_class("thinking-bubble")
+
+        # Ícone visual oficial do Geminux
+        icon_pixbuf = self.get_geminux_icon(24)
+        if icon_pixbuf:
+            img = Gtk.Image.new_from_pixbuf(icon_pixbuf)
+            box.pack_start(img, False, False, 0)
+        else:
+            fallback = Gtk.Label()
+            fallback.set_markup("💎")
+            box.pack_start(fallback, False, False, 0)
+
+        # Spinner animado nativo
+        spinner = Gtk.Spinner()
+        spinner.start()
+        box.pack_start(spinner, False, False, 0)
+        box.spinner = spinner
+
+        # Rótulo com o motor ativo pensando
+        lbl = Gtk.Label()
+        if mode == "codef":
+            lbl.set_markup("<span foreground='#b175ff'><b>Codef Studio</b></span> <i>está projetando o aplicativo...</i>")
+        else:
+            prov_key = self.settings.get("provider", "gemini")
+            prov_info = PROVIDERS.get(prov_key, PROVIDERS["gemini"])
+            api_key = self.settings.get("api_key", "").strip()
+            if prov_key == "offline" or not api_key:
+                motor_name = "Geminux Offline"
+            else:
+                motor_name = prov_info.get("name", "Geminux AI")
+            lbl.set_markup(f"<span foreground='{ACCENT_CYAN}'><b>{motor_name}</b></span> <i>está pensando...</i>")
+
+        box.pack_start(lbl, False, False, 0)
+        return box
+
+    def on_send_chat(self, _btn):
+        text = self.chat_entry.get_text().strip()
         if not text:
             return
-        self.entry.set_text("")
-        self.send_message(text)
+        self.chat_entry.set_text("")
+        self.send_chat_message(text)
 
-    def send_message(self, text):
-        self.add_message_bubble("user", GLib.markup_escape_text(text))
+    def send_chat_message(self, text):
+        self.add_message_bubble(self.chat_messages_box, self.chat_scrolled, "user", text)
 
-        # Indicador de digitação
-        thinking_bubble = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        thinking_bubble.get_style_context().add_class("chat-msg-ai")
-        t_lbl = Gtk.Label()
-        t_lbl.set_markup(f"<i>Geminux AI está pensando...</i>")
-        thinking_bubble.pack_start(t_lbl, False, False, 0)
-        self.messages_box.pack_start(thinking_bubble, False, False, 0)
-        self.messages_box.show_all()
-        self.scroll_to_bottom()
+        thinking_widget = self.create_thinking_widget(mode="ai")
+        self.chat_messages_box.pack_start(thinking_widget, False, False, 0)
+        self.chat_messages_box.show_all()
+        self.scroll_to_bottom(self.chat_scrolled)
 
-        threading.Thread(target=self.process_ai_response, args=(text, thinking_bubble), daemon=True).start()
+        threading.Thread(target=self.process_chat_response, args=(text, thinking_widget), daemon=True).start()
 
-    def process_ai_response(self, prompt, thinking_widget):
+    def process_chat_response(self, prompt, thinking_widget):
+        provider = self.settings.get("provider", "gemini")
         api_key = self.settings.get("api_key", "").strip()
+        model = self.settings.get("model", "gemini-2.5-flash")
 
-        if api_key:
-            response = self.query_online_gemini(prompt, api_key)
+        system_prompt = (
+            "Você é a Geminux AI, assistente inteligente oficial do sistema operacional Geminux OS. "
+            "Ajude o usuário com comandos de terminal Linux, atalhos do Prius Terminal, "
+            "diagnósticos e dúvidas gerais com respostas claras e amigáveis em português."
+        )
+
+        if provider == "offline" or not api_key:
+            response = self.query_offline_knowledge(prompt)
+        elif provider == "gemini":
+            response = self.query_gemini(prompt, api_key, model, system_prompt)
+        elif provider == "deepseek":
+            endpoint = PROVIDERS["deepseek"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "DeepSeek", system_prompt)
+        elif provider == "qwen":
+            endpoint = self.settings.get("custom_endpoint") or PROVIDERS["qwen"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "Qwen", system_prompt)
+        elif provider == "openai_compat":
+            endpoint = self.settings.get("custom_endpoint") or PROVIDERS["openai_compat"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "OpenAI", system_prompt)
         else:
             response = self.query_offline_knowledge(prompt)
 
-        GLib.idle_add(self.finish_response, thinking_widget, response)
+        GLib.idle_add(self.finish_chat_response, thinking_widget, response)
 
-    def finish_response(self, thinking_widget, response_text):
-        self.messages_box.remove(thinking_widget)
-        self.add_message_bubble("ai", response_text)
+    def finish_chat_response(self, thinking_widget, response_text):
+        if hasattr(thinking_widget, "spinner"):
+            thinking_widget.spinner.stop()
+        self.chat_messages_box.remove(thinking_widget)
+        self.add_message_bubble(self.chat_messages_box, self.chat_scrolled, "ai", response_text)
+
+    def on_send_codef(self, _btn):
+        text = self.codef_entry.get_text().strip()
+        if not text:
+            return
+        self.codef_entry.set_text("")
+        self.send_codef_message(text)
+
+    def send_codef_message(self, text):
+        self.add_message_bubble(self.codef_messages_box, self.codef_scrolled, "user", text)
+
+        thinking_widget = self.create_thinking_widget(mode="codef")
+        self.codef_messages_box.pack_start(thinking_widget, False, False, 0)
+        self.codef_messages_box.show_all()
+        self.scroll_to_bottom(self.codef_scrolled)
+
+        threading.Thread(target=self.process_codef_response, args=(text, thinking_widget), daemon=True).start()
+
+    def process_codef_response(self, prompt, thinking_widget):
+        provider = self.settings.get("provider", "gemini")
+        api_key = self.settings.get("api_key", "").strip()
+        model = self.settings.get("model", "gemini-2.5-flash")
+
+        system_prompt = (
+            "Você é o Codef, estúdio e arquiteto de aplicativos inteligente integrado ao Geminux OS. "
+            "Sua especialidade exclusiva é criar, programar e arquitetar aplicativos para Android (Kotlin, Jetpack Compose), "
+            "iOS (Swift, SwiftUI), Multiplataforma (Flutter / React Native), Web e Geminux OS Desktop (Python/GTK3). "
+            "Forneça a estrutura organizada de pastas do projeto, código fonte completo pronto para uso e as instruções "
+            "passo a passo para compilar e testar."
+        )
+
+        if provider == "offline" or not api_key:
+            response = self.query_offline_codef(prompt)
+        elif provider == "gemini":
+            response = self.query_gemini(prompt, api_key, model, system_prompt)
+        elif provider == "deepseek":
+            endpoint = PROVIDERS["deepseek"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "DeepSeek Codef", system_prompt)
+        elif provider == "qwen":
+            endpoint = self.settings.get("custom_endpoint") or PROVIDERS["qwen"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "Qwen Codef", system_prompt)
+        elif provider == "openai_compat":
+            endpoint = self.settings.get("custom_endpoint") or PROVIDERS["openai_compat"]["endpoint"]
+            response = self.query_openai_compatible(prompt, api_key, model, endpoint, "Codef Studio", system_prompt)
+        else:
+            response = self.query_offline_codef(prompt)
+
+        GLib.idle_add(self.finish_codef_response, thinking_widget, response)
+
+    def finish_codef_response(self, thinking_widget, response_text):
+        if hasattr(thinking_widget, "spinner"):
+            thinking_widget.spinner.stop()
+        self.codef_messages_box.remove(thinking_widget)
+        self.add_message_bubble(self.codef_messages_box, self.codef_scrolled, "codef", response_text)
 
     def query_offline_knowledge(self, prompt):
         p_lower = prompt.lower()
         for key, ans in OFFLINE_KNOWLEDGE_BASE.items():
             if key in p_lower:
-                return (
-                    f"{ans}\n\n"
-                    f"<small><span foreground='{TEXT_MUTED}'>💡 Resposta do Motor Offline do Geminux OS. "
-                    f"Para respostas gerais na nuvem, configure sua chave de API nas configurações.</span></small>"
-                )
+                return f"{ans}\n\n<small><span foreground='{TEXT_MUTED}'>💡 Resposta offline do Geminux OS.</span></small>"
 
-        # Resposta padrão inteligente do modo offline
         return (
-            f"Comando ou dúvida reconhecida no Geminux OS:\n\n"
-            f"• Você pode executar e testar tarefas usando o <b>Prius Terminal</b>.\n"
-            f"• Para gerenciar pacotes: <code>sudo apt install &lt;pacote&gt;</code>\n"
-            f"• Para virtualizar outros sistemas: abra o <b>Geminux Virtual Machine</b>.\n\n"
-            f"<i>Dica: Você pode conectar a API do Gemini ou Groq no botão de configurações no topo para respostas ilimitadas de IA na nuvem!</i>"
+            "Comando ou dúvida reconhecida no Geminux OS:\n\n"
+            "• Execute comandos no terminal padrão: <b>Prius Terminal</b> (Ctrl+Alt+T);\n"
+            "• Para atualizar pacotes: <tt>sudo apt update &amp;&amp; sudo apt upgrade -y</tt>;\n"
+            "• Para virtualizar outros sistemas: abra o <b>Geminux Virtual Machine</b>.\n\n"
+            "<i>💡 Conecte sua chave Gemini, DeepSeek ou Qwen nas configurações para respostas completas!</i>"
         )
 
-    def query_online_gemini(self, prompt, api_key):
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    def query_offline_codef(self, prompt):
+        p_lower = prompt.lower()
+        if "ios" in p_lower or "swift" in p_lower or "apple" in p_lower:
+            return OFFLINE_CODEF_TEMPLATES["ios"]
+        elif "geminux" in p_lower or "linux" in p_lower or "desktop" in p_lower:
+            return OFFLINE_CODEF_TEMPLATES["geminux"]
+        else:
+            return OFFLINE_CODEF_TEMPLATES["android"]
+
+    def query_gemini(self, prompt, api_key, model, system_prompt):
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
         payload = {
             "contents": [{
-                "parts": [{"text": f"Você é a Geminux AI, assistente inteligente oficial do sistema operacional Geminux OS. Responda de forma clara, amigável e precisa em português:\n\nPergunta: {prompt}"}]
+                "parts": [{"text": f"{system_prompt}\n\nUsuário solicitou:\n{prompt}"}]
             }]
         }
 
         try:
             req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 candidates = data.get("candidates", [])
                 if candidates:
                     parts = candidates[0].get("content", {}).get("parts", [])
                     if parts:
-                        return GLib.markup_escape_text(parts[0].get("text", "")).replace("\n", "\n")
-            return "Recebi uma resposta vazia dos servidores da nuvem."
+                        return parts[0].get("text", "")
+            return "Nenhuma resposta recebida do servidor Gemini."
         except urllib.error.HTTPError as e:
-            return f"<b>Erro de Conexão com a API:</b> Código {e.code}. Verifique se a sua chave de API é válida nas configurações."
+            err_msg = self.extract_error_detail(e)
+            return f"<b>Erro no Google Gemini (HTTP {e.code}):</b>\n{err_msg}\n\nVerifique sua chave de API nas configurações."
         except Exception as e:
-            return f"<b>Falha de conexão:</b> {str(e)}\n\nUsando base de conhecimento offline do Geminux."
+            return f"<b>Falha de conexão com Gemini:</b> {str(e)}"
+
+    def query_openai_compatible(self, prompt, api_key, model, endpoint, provider_name, system_prompt):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "stream": False
+        }
+
+        try:
+            req = urllib.request.Request(endpoint, data=json.dumps(payload).encode('utf-8'), headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                choices = data.get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "")
+            return f"Nenhuma resposta recebida do servidor {provider_name}."
+        except urllib.error.HTTPError as e:
+            err_msg = self.extract_error_detail(e)
+            return f"<b>Erro no {provider_name} (HTTP {e.code}):</b>\n{err_msg}\n\nVerifique sua chave de API nas configurações."
+        except Exception as e:
+            return f"<b>Falha de conexão com {provider_name}:</b> {str(e)}"
+
+    def extract_error_detail(self, http_error):
+        try:
+            body = http_error.read().decode('utf-8', errors='ignore')
+            data = json.loads(body)
+            if "error" in data:
+                err = data["error"]
+                if isinstance(err, dict) and "message" in err:
+                    return err["message"]
+                return str(err)
+            return body[:200]
+        except Exception:
+            return "Erro desconhecido na resposta do servidor."
 
     def open_settings_dialog(self, _btn):
-        dialog = Gtk.Dialog(title="Configurações da Geminux AI", transient_for=self, modal=True)
-        dialog.set_default_size(480, 260)
+        dialog = Gtk.Dialog(title="Configurações da Inteligência Artificial", transient_for=self, modal=True)
+        dialog.set_default_size(520, 360)
         dialog.set_position(Gtk.WindowPosition.CENTER)
 
         content = dialog.get_content_area()
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         box.set_margin_top(16)
         box.set_margin_bottom(16)
         box.set_margin_start(20)
@@ -394,26 +872,85 @@ class GeminuxAIWindow(Gtk.Window):
         content.pack_start(box, True, True, 0)
 
         title = Gtk.Label()
-        title.set_markup("<b>Provedor de Inteligência Artificial</b>")
+        title.set_markup("<b>Provedor de Inteligência Artificial (Geminux AI &amp; Codef)</b>")
         title.set_halign(Gtk.Align.START)
         box.pack_start(title, False, False, 0)
 
-        desc = Gtk.Label()
-        desc.set_markup(
-            f"<span foreground='{TEXT_MUTED}'>"
-            "A Geminux AI funciona 100% offline para comandos e dúvidas do sistema. "
-            "Se desejar respostas ilimitadas com modelos avançados na nuvem (Google Gemini), "
-            "insira sua Chave de API abaixo:</span>"
-        )
-        desc.set_line_wrap(True)
-        desc.set_halign(Gtk.Align.START)
-        box.pack_start(desc, False, False, 0)
+        prov_store = Gtk.ListStore(str, str)
+        prov_combo = Gtk.ComboBox.new_with_model(prov_store)
+        renderer = Gtk.CellRendererText()
+        prov_combo.pack_start(renderer, True)
+        prov_combo.add_attribute(renderer, "text", 1)
+
+        provider_order = ["gemini", "deepseek", "qwen", "openai_compat", "offline"]
+        active_idx = 0
+        current_prov = self.settings.get("provider", "gemini")
+
+        for idx, key in enumerate(provider_order):
+            info = PROVIDERS[key]
+            prov_store.append([key, f"{info['icon']} {info['name']}"])
+            if key == current_prov:
+                active_idx = idx
+
+        prov_combo.set_active(active_idx)
+        box.pack_start(prov_combo, False, False, 0)
+
+        model_label = Gtk.Label()
+        model_label.set_markup("<b>Modelo:</b>")
+        model_label.set_halign(Gtk.Align.START)
+        box.pack_start(model_label, False, False, 0)
+
+        model_entry = Gtk.Entry()
+        model_entry.set_text(self.settings.get("model", "gemini-2.5-flash"))
+        box.pack_start(model_entry, False, False, 0)
+
+        key_label = Gtk.Label()
+        key_label.set_markup("<b>Chave de API:</b>")
+        key_label.set_halign(Gtk.Align.START)
+        box.pack_start(key_label, False, False, 0)
 
         key_entry = Gtk.Entry()
-        key_entry.set_placeholder_text("Chave de API (ex: AIzaSy...)")
         key_entry.set_text(self.settings.get("api_key", ""))
+        key_entry.set_placeholder_text("Insira sua chave de API aqui...")
         key_entry.set_visibility(False)
         box.pack_start(key_entry, False, False, 0)
+
+        endpoint_label = Gtk.Label()
+        endpoint_label.set_markup("<b>Endpoint Customizado (Opcional):</b>")
+        endpoint_label.set_halign(Gtk.Align.START)
+        box.pack_start(endpoint_label, False, False, 0)
+
+        endpoint_entry = Gtk.Entry()
+        endpoint_entry.set_text(self.settings.get("custom_endpoint", ""))
+        endpoint_entry.set_placeholder_text("Ex: https://api.deepseek.com/chat/completions")
+        box.pack_start(endpoint_entry, False, False, 0)
+
+        help_label = Gtk.Label()
+        help_label.set_line_wrap(True)
+        help_label.set_halign(Gtk.Align.START)
+        box.pack_start(help_label, False, False, 4)
+
+        def on_provider_changed(combo):
+            tree_iter = combo.get_active_iter()
+            if tree_iter:
+                p_id = prov_store[tree_iter][0]
+                p_info = PROVIDERS.get(p_id, {})
+                help_label.set_markup(f"<small><span foreground='{TEXT_MUTED}'>{p_info.get('help', '')}</span></small>")
+                if p_id == "offline":
+                    key_entry.set_sensitive(False)
+                    model_entry.set_sensitive(False)
+                    endpoint_entry.set_sensitive(False)
+                else:
+                    key_entry.set_sensitive(True)
+                    model_entry.set_sensitive(True)
+                    endpoint_entry.set_sensitive(True)
+                    if p_id in PROVIDERS:
+                        model_entry.set_text(p_info.get("default_model", ""))
+                        if "endpoint" in p_info and not endpoint_entry.get_text():
+                            endpoint_entry.set_text(p_info["endpoint"])
+
+        prov_combo.connect("changed", on_provider_changed)
+        on_provider_changed(prov_combo)
 
         dialog.add_button("Cancelar", Gtk.ResponseType.CANCEL)
         dialog.add_button("Salvar Configurações", Gtk.ResponseType.OK)
@@ -421,10 +958,16 @@ class GeminuxAIWindow(Gtk.Window):
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
+            tree_iter = prov_combo.get_active_iter()
+            if tree_iter:
+                sel_prov = prov_store[tree_iter][0]
+                self.settings["provider"] = sel_prov
+            self.settings["model"] = model_entry.get_text().strip()
             self.settings["api_key"] = key_entry.get_text().strip()
+            self.settings["custom_endpoint"] = endpoint_entry.get_text().strip()
             save_settings(self.settings)
-            mode_text = "Modo Conectado (API)" if self.settings.get("api_key") else "Modo Especialista Offline"
-            self.sidebar_status.set_markup(f"<small><span foreground='{TEXT_MUTED}'>Status: {mode_text}</span></small>")
+            self.update_status_labels()
+
         dialog.destroy()
 
 
