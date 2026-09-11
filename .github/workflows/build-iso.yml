@@ -10,6 +10,8 @@ jobs:
     name: Build Geminux Live ISO
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Geminux Repository
@@ -48,22 +50,25 @@ jobs:
           path: geminux-1.0-amd64.iso
           retention-days: 14
 
-      - name: Create GitHub Release
+      - name: Update GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           files: geminux-1.0-amd64.iso
           tag_name: v1.0
           name: Geminux OS 1.0 LTS (Resolute)
+          make_latest: true
           body: |
-            ## 🚀 Geminux OS 1.0 LTS Release
-            Official Live ISO Image for Geminux OS.
+            ## 🚀 Geminux OS 1.0 LTS (Resolute) - Atualização Oficial
+            Imagem Live ISO oficial do Geminux OS 1.0 LTS mantida pela **Geminux OS Team**.
 
-            - **Base:** Ubuntu 26.04 LTS (Resolute)
-            - **Default Browser:** Mozilla Firefox with uBlock Origin
-            - **Default Terminal:** Prius Terminal (Python 3 + GTK3/VTE)
-            - **Desktop Environment:** GNOME Minimal Dark
-            - **Installer:** Calamares
-            - **Boot:** Plymouth + GRUB UEFI/BIOS
+            ### 💎 Novidades e Recursos Desta Edição:
+            - **Geminux AI Integrado:** Assistente nativo inteligente com Dark Neon, modo offline e suporte a Google Gemini 3.8, DeepSeek e Qwen (Alibaba).
+            - **Codef Studio Integrado:** Aba exclusiva para projetar e criar aplicativos para Android (Kotlin/Compose), iOS (SwiftUI), Web e Geminux OS Desktop.
+            - **Geminux Virtual Machine:** Gerenciador multi-motor (KVM, Hyper-V, VirtualBox, VMware) com alocação dinâmica de RAM e suporte corrigido para macOS e Windows.
+            - **Prius Terminal:** Terminal padrão de alta velocidade e customização fixado na dock do sistema.
+            - **Sober Fix (Roblox Cleaner):** Utilitário oficial para reparo de cache e estabilidade do Sober / Roblox.
+            - **Geminux Store:** Catálogo de aplicativos AppStream nativo com repositório próprio verificado.
+            - **Base:** Ubuntu 26.04 LTS (Resolute) com kernel Linux estável e suporte até outubro de 2030.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
