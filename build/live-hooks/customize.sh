@@ -75,12 +75,15 @@ if [ -d /tmp/geminux-build/branding ]; then
     cp /tmp/geminux-build/branding/icons/sober-fix.svg /usr/share/pixmaps/sober-fix.svg || true
     cp /tmp/geminux-build/branding/icons/geminux-vm.svg /usr/share/pixmaps/geminux-vm.svg || true
     cp /tmp/geminux-build/branding/icons/geminux-vm.png /usr/share/pixmaps/geminux-vm.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-ai.svg /usr/share/icons/hicolor/scalable/apps/ || true
+    cp /tmp/geminux-build/branding/icons/geminux-ai.svg /usr/share/pixmaps/geminux-ai.svg || true
     mkdir -p /usr/share/icons/Yaru/scalable/apps
     cp /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/vmware.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/sober-fix.svg /usr/share/icons/Yaru/scalable/apps/ || true
     cp /tmp/geminux-build/branding/icons/geminux-vm.svg /usr/share/icons/Yaru/scalable/apps/ || true
+    cp /tmp/geminux-build/branding/icons/geminux-ai.svg /usr/share/icons/Yaru/scalable/apps/ || true
 
     # GNOME Settings (About Page) & GDM Login Screen Pixmaps & Logos
     cp /tmp/geminux-build/branding/icons/geminux-logo.svg /usr/share/pixmaps/ubuntu-logo.svg || true
@@ -130,6 +133,9 @@ if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
 fi
 if [ -f /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine_1.0.0_all.deb ]; then
     cp /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine_1.0.0_all.deb /var/lib/geminux/repo/
+fi
+if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb ]; then
+    cp /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb /var/lib/geminux/repo/
 fi
 if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb ]; then
     cp /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb /var/lib/geminux/repo/
@@ -203,6 +209,24 @@ elif [ -f /tmp/geminux-build/apps/geminux-vm/geminux-vm ]; then
     fi
     if [ -f /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.metainfo.xml ]; then
         install -m 644 /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.metainfo.xml /usr/share/metainfo/geminux-virtual-machine.metainfo.xml
+    fi
+fi
+
+# Install Geminux AI (Official Intelligent Assistant for Geminux OS)
+if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb ]; then
+    dpkg -i /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-ai /usr/local/bin/geminux-ai 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai ]; then
+    install -d /usr/bin /usr/local/bin
+    install -d /usr/share/metainfo
+    install -d /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/geminux-ai/geminux-ai /usr/bin/geminux-ai
+    ln -sf /usr/bin/geminux-ai /usr/local/bin/geminux-ai 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-ai/geminux-ai.desktop /usr/share/applications/geminux-ai.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-ai/geminux-ai.metainfo.xml /usr/share/metainfo/geminux-ai.metainfo.xml
     fi
 fi
 

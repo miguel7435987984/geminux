@@ -139,4 +139,65 @@
     <url type="help">https://github.com/miguel7435987984/geminux</url>
     <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
   </component>
+
+  <component type="desktop-application">
+    <id>org.geminux.ai</id>
+    <pkgname>geminux-ai</pkgname>
+    <source_pkgname>geminux-ai</source_pkgname>
+    <name>Geminux AI</name>
+    <summary>Assistente Inteligente Oficial do Geminux OS</summary>
+    <description>
+      <p>
+        O Geminux AI é o assistente inteligente oficial desenvolvido para o Geminux OS,
+        trazendo suporte nativo para comandos do Linux, scripts, diagnósticos e automação.
+      </p>
+      <p>
+        Principais Recursos:
+      </p>
+      <ul>
+        <li>Interface conversacional moderna integrada ao tema Geminux Dark Neon</li>
+        <li>Base de conhecimento offline para comandos, atalhos e configurações do sistema</li>
+        <li>Atalhos rápidos para verificar memória RAM, discos, rede e atualizações</li>
+        <li>Conexão opcional com modelos avançados na nuvem (Google Gemini)</li>
+        <li>Segurança e privacidade garantidas pela Geminux Ltda.</li>
+      </ul>
+    </description>
+    <launchable type="desktop-id">geminux-ai.desktop</launchable>
+    <icon type="stock">geminux-ai</icon>
+    <provides>
+      <binary>geminux-ai</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>Utility</category>
+      <category>Development</category>
+      <category>System</category>
+    </categories>
+    <keywords>
+      <keyword>ai</keyword>
+      <keyword>assistant</keyword>
+      <keyword>chat</keyword>
+      <keyword>gemini</keyword>
+      <keyword>terminal</keyword>
+      <keyword>linux</keyword>
+      <keyword>geminux</keyword>
+      <keyword>help</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-08">
+        <description>
+          <p>Lançamento inicial do Geminux AI como assistente inteligente oficial do Geminux OS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.ai">
+      <name>Geminux Ltda.</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
 </components>

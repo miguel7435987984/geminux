@@ -33,6 +33,8 @@ jobs:
           chmod +x build/build-iso.sh
           chmod +x apps/prius-terminal/prius
           chmod +x apps/prius-terminal/install.sh
+          chmod +x apps/geminux-vm/geminux-vm
+          chmod +x apps/geminux-ai/geminux-ai
           chmod +x build/live-hooks/customize.sh
 
       - name: Build Geminux ISO Image

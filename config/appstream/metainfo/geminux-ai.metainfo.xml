@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.geminux.ai</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>Geminux AI</name>
+  <summary>Assistente Inteligente Oficial para Geminux OS</summary>
+  <description>
+    <p>
+      O Geminux AI é o assistente oficial do Geminux OS, projetado para auxiliar usuários
+      e desenvolvedores com comandos de terminal, diagnóstico do sistema, escrita de scripts
+      e respostas inteligentes integradas ao desktop.
+    </p>
+    <ul>
+      <li>Respostas rápidas para comandos do Linux e Prius Terminal</li>
+      <li>Modo offline de diagnóstico e resolução de problemas do sistema</li>
+      <li>Integração opcional com modelos de inteligência artificial de ponta na nuvem</li>
+      <li>Interface moderna com tema Dark Neon nativo do Geminux OS</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">geminux-ai.desktop</launchable>
+  <icon type="stock">geminux-ai</icon>
+  <categories>
+    <category>Utility</category>
+    <category>Development</category>
+    <category>System</category>
+  </categories>
+  <developer_name>Geminux Ltda.</developer_name>
+</component>

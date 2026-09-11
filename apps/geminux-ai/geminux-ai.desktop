@@ -1,0 +1,21 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Geminux AI
+GenericName=Intelligent System Assistant
+GenericName[pt_BR]=Assistente Inteligente do Sistema
+Comment=Assistente inteligente oficial para comandos, scripts e diagnósticos no Geminux OS
+Comment[en]=Official intelligent assistant for Linux commands, scripting, and system diagnostics
+Exec=geminux-ai
+Icon=geminux-ai
+Terminal=false
+Categories=Utility;Development;System;
+Keywords=ai;assistant;chat;gemini;terminal;linux;geminux;help;diagnostics;
+StartupNotify=true
+StartupWMClass=Geminux AI
+Actions=NewChat;
+
+[Desktop Action NewChat]
+Name=New Chat
+Name[pt_BR]=Nova Conversa
+Exec=geminux-ai

@@ -1,0 +1,438 @@
+#!/usr/bin/env python3
+"""
+Geminux AI - Official Intelligent Assistant for Geminux OS
+Created by Geminux Ltda.
+Provides Linux command assistance, system diagnostics, code help, and interactive chat.
+"""
+
+import sys
+import os
+import json
+import threading
+import urllib.request
+import urllib.error
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk, GLib, Pango
+
+APP_NAME = "Geminux AI"
+APP_VERSION = "1.0.0"
+CONFIG_DIR = os.path.expanduser("~/.config/geminux-ai")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.json")
+
+# Visual Identity Palette - Geminux Dark Neon
+ACCENT_CYAN = "#00d2ff"
+ACCENT_BLUE = "#0072ff"
+BG_MAIN = "#0b0f17"
+BG_SIDEBAR = "#0d131f"
+BG_CARD = "#131b29"
+BG_CHAT_USER = "#1a2a44"
+BG_CHAT_AI = "#111827"
+TEXT_PRIMARY = "#f0f6fc"
+TEXT_MUTED = "#8b949e"
+BORDER_COLOR = "#1f293d"
+
+OFFLINE_KNOWLEDGE_BASE = {
+    "terminal": "O terminal padrão do Geminux OS é o **Prius Terminal** (atalho Ctrl+Alt+T). Você também pode usar o **Geminux Terminal** clássico.",
+    "atualizar": "Para atualizar o Geminux OS, abra o **Prius Terminal** e digite:\n```bash\nsudo apt update && sudo apt upgrade -y\n```",
+    "vm": "O **Geminux Virtual Machine** permite criar máquinas virtuais de Windows, Linux e macOS com aceleração KVM e perfis VirtualBox (.vdi) e VMware (.vmdk).",
+    "roblox": "Para jogar Roblox no Geminux OS, use o aplicativo nativo **Sober Fix** disponível na Geminux Store para aplicar correções de compatibilidade.",
+    "memoria": "Para verificar o consumo de memória RAM, use o comando `free -h` ou abra o **Monitor do Sistema** pelo menu.",
+    "disco": "Para checar o espaço livre no disco, use o comando `df -h` ou abra o aplicativo **Discos**.",
+    "ip": "Para ver seu endereço IP de rede local, digite no terminal:\n```bash\nip a\n```",
+    "desligar": "Para desligar o computador pelo terminal com segurança:\n```bash\nsudo shutdown now\n```",
+    "reiniciar": "Para reiniciar o computador pelo terminal:\n```bash\nsudo reboot\n```",
+    "limpar": "Para limpar arquivos temporários e pacotes antigos do cache:\n```bash\nsudo apt autoremove -y && sudo apt clean\n```"
+}
+
+def load_settings():
+    if not os.path.exists(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "api_key": "",
+        "provider": "offline",
+        "model": "gemini-2.5-flash"
+    }
+
+def save_settings(data):
+    if not os.path.exists(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+    try:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erro ao salvar configurações: {e}")
+
+
+class GeminuxAIWindow(Gtk.Window):
+    def __init__(self):
+        super().__init__(title=APP_NAME)
+        self.set_default_size(840, 600)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.settings = load_settings()
+
+        self.apply_styles()
+        self.build_ui()
+
+    def apply_styles(self):
+        css = f"""
+        window {{
+            background-color: {BG_MAIN};
+            color: {TEXT_PRIMARY};
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Ubuntu", sans-serif;
+        }}
+        headerbar {{
+            background-color: {BG_SIDEBAR};
+            border-bottom: 1px solid {BORDER_COLOR};
+            color: {TEXT_PRIMARY};
+            padding: 4px 10px;
+        }}
+        .sidebar {{
+            background-color: {BG_SIDEBAR};
+            border-right: 1px solid {BORDER_COLOR};
+            padding: 16px;
+        }}
+        .chat-area {{
+            background-color: {BG_MAIN};
+            padding: 20px;
+        }}
+        .chat-msg-ai {{
+            background-color: {BG_CHAT_AI};
+            border: 1px solid {BORDER_COLOR};
+            border-left: 3px solid {ACCENT_CYAN};
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            color: {TEXT_PRIMARY};
+        }}
+        .chat-msg-user {{
+            background-color: {BG_CHAT_USER};
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            color: {TEXT_PRIMARY};
+        }}
+        .quick-btn {{
+            background-color: {BG_CARD};
+            color: {TEXT_PRIMARY};
+            border: 1px solid {BORDER_COLOR};
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }}
+        .quick-btn:hover {{
+            background-color: #1a2335;
+            border-color: {ACCENT_CYAN};
+        }}
+        entry {{
+            background-color: {BG_CARD};
+            color: {TEXT_PRIMARY};
+            border: 1px solid {BORDER_COLOR};
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+        }}
+        entry:focus {{
+            border-color: {ACCENT_CYAN};
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
+        }}
+        .send-btn {{
+            background: linear-gradient(135deg, {ACCENT_CYAN}, {ACCENT_BLUE});
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+        }}
+        .send-btn:hover {{
+            opacity: 0.9;
+        }}
+        """
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def build_ui(self):
+        # HeaderBar
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.props.title = f"💎 {APP_NAME}"
+        header.props.subtitle = "Assistente Inteligente Oficial do Geminux OS"
+        self.set_titlebar(header)
+
+        # Botão de Configurações (Chave de API / Modo)
+        cfg_btn = Gtk.Button()
+        cfg_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.BUTTON)
+        cfg_btn.add(cfg_icon)
+        cfg_btn.set_tooltip_text("Configurações da Inteligência Artificial")
+        cfg_btn.connect("clicked", self.open_settings_dialog)
+        header.pack_end(cfg_btn)
+
+        # Layout Principal Horizontal (Barra Lateral de Atalhos + Área de Chat)
+        h_paned = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.add(h_paned)
+
+        # Barra Lateral
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sidebar.get_style_context().add_class("sidebar")
+        sidebar.set_size_request(240, -1)
+        h_paned.pack_start(sidebar, False, False, 0)
+
+        side_title = Gtk.Label()
+        side_title.set_markup("<b>⚡ Atalhos do Geminux</b>")
+        side_title.set_halign(Gtk.Align.START)
+        sidebar.pack_start(side_title, False, False, 0)
+
+        quick_actions = [
+            ("🔄 Como atualizar o sistema?", "Como atualizar o Geminux OS?"),
+            ("🖥️ Máquinas Virtuais (VMs)", "Como funciona o Geminux Virtual Machine?"),
+            ("📊 Ver uso de Memória RAM", "Como verificar o uso de memória RAM?"),
+            ("💾 Ver espaço em disco", "Como verificar o espaço em disco no Linux?"),
+            ("🌐 Descobrir meu IP", "Como ver meu endereço IP local no terminal?"),
+            ("🧹 Limpar cache e arquivos", "Como limpar o cache e pacotes velhos?")
+        ]
+
+        for label, query in quick_actions:
+            btn = Gtk.Button(label=label)
+            btn.get_style_context().add_class("quick-btn")
+            btn.set_alignment(0.0, 0.5)
+            btn.connect("clicked", lambda b, q=query: self.send_message(q))
+            sidebar.pack_start(btn, False, False, 0)
+
+        sidebar_status = Gtk.Label()
+        mode_text = "Modo Conectado (API)" if self.settings.get("api_key") else "Modo Especialista Offline"
+        sidebar_status.set_markup(f"<small><span foreground='{TEXT_MUTED}'>Status: {mode_text}</span></small>")
+        sidebar_status.set_valign(Gtk.Align.END)
+        sidebar.pack_end(sidebar_status, False, False, 8)
+        self.sidebar_status = sidebar_status
+
+        # Área Central de Chat
+        chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        chat_box.get_style_context().add_class("chat-area")
+        h_paned.pack_start(chat_box, True, True, 0)
+
+        # Scrolled Window para as Mensagens
+        self.scrolled = Gtk.ScrolledWindow()
+        self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scrolled.set_vexpand(True)
+        chat_box.pack_start(self.scrolled, True, True, 0)
+
+        self.messages_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.scrolled.add(self.messages_box)
+
+        # Mensagem Inicial de Boas-vindas
+        welcome_text = (
+            "<b>Olá! Eu sou a Geminux AI</b>, sua assistente inteligente oficial do sistema.\n\n"
+            "Posso te ajudar a:\n"
+            "• Aprender comandos do Linux e atalhos do Geminux OS;\n"
+            "• Configurar máquinas virtuais no <b>Geminux Virtual Machine</b>;\n"
+            "• Diagnosticar problemas de rede, áudio ou aplicativos;\n"
+            "• Escrever scripts e códigos para o <b>Prius Terminal</b>.\n\n"
+            "Como posso te ajudar hoje?"
+        )
+        self.add_message_bubble("ai", welcome_text)
+
+        # Área Inferior de Input de Mensagem
+        input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        input_box.set_margin_top(10)
+        chat_box.pack_start(input_box, False, False, 0)
+
+        self.entry = Gtk.Entry()
+        self.entry.set_placeholder_text("Digite sua pergunta para a Geminux AI...")
+        self.entry.connect("activate", lambda w: self.on_send_clicked(None))
+        input_box.pack_start(self.entry, True, True, 0)
+
+        send_btn = Gtk.Button(label="Enviar ➤")
+        send_btn.get_style_context().add_class("send-btn")
+        send_btn.connect("clicked", self.on_send_clicked)
+        input_box.pack_start(send_btn, False, False, 0)
+
+    def add_message_bubble(self, sender, text):
+        row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        bubble = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        if sender == "user":
+            bubble.get_style_context().add_class("chat-msg-user")
+            row.set_halign(Gtk.Align.END)
+            header_lbl = Gtk.Label()
+            header_lbl.set_markup("<b>Você</b>")
+            header_lbl.set_halign(Gtk.Align.START)
+            bubble.pack_start(header_lbl, False, False, 0)
+        else:
+            bubble.get_style_context().add_class("chat-msg-ai")
+            row.set_halign(Gtk.Align.START)
+            header_lbl = Gtk.Label()
+            header_lbl.set_markup(f"<span foreground='{ACCENT_CYAN}'><b>💎 Geminux AI</b></span>")
+            header_lbl.set_halign(Gtk.Align.START)
+            bubble.pack_start(header_lbl, False, False, 0)
+
+        content_lbl = Gtk.Label()
+        content_lbl.set_markup(text)
+        content_lbl.set_line_wrap(True)
+        content_lbl.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        content_lbl.set_max_width_chars(65)
+        content_lbl.set_halign(Gtk.Align.START)
+        content_lbl.set_selectable(True)
+        bubble.pack_start(content_lbl, True, True, 0)
+
+        row.pack_start(bubble, True, True, 0)
+        self.messages_box.pack_start(row, False, False, 0)
+        self.messages_box.show_all()
+
+        # Rola suavemente para a última mensagem
+        GLib.idle_add(self.scroll_to_bottom)
+
+    def scroll_to_bottom(self):
+        adj = self.scrolled.get_vadjustment()
+        adj.set_value(adj.get_upper() - adj.get_page_size())
+        return False
+
+    def on_send_clicked(self, _btn):
+        text = self.entry.get_text().strip()
+        if not text:
+            return
+        self.entry.set_text("")
+        self.send_message(text)
+
+    def send_message(self, text):
+        self.add_message_bubble("user", GLib.markup_escape_text(text))
+
+        # Indicador de digitação
+        thinking_bubble = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        thinking_bubble.get_style_context().add_class("chat-msg-ai")
+        t_lbl = Gtk.Label()
+        t_lbl.set_markup(f"<i>Geminux AI está pensando...</i>")
+        thinking_bubble.pack_start(t_lbl, False, False, 0)
+        self.messages_box.pack_start(thinking_bubble, False, False, 0)
+        self.messages_box.show_all()
+        self.scroll_to_bottom()
+
+        threading.Thread(target=self.process_ai_response, args=(text, thinking_bubble), daemon=True).start()
+
+    def process_ai_response(self, prompt, thinking_widget):
+        api_key = self.settings.get("api_key", "").strip()
+
+        if api_key:
+            response = self.query_online_gemini(prompt, api_key)
+        else:
+            response = self.query_offline_knowledge(prompt)
+
+        GLib.idle_add(self.finish_response, thinking_widget, response)
+
+    def finish_response(self, thinking_widget, response_text):
+        self.messages_box.remove(thinking_widget)
+        self.add_message_bubble("ai", response_text)
+
+    def query_offline_knowledge(self, prompt):
+        p_lower = prompt.lower()
+        for key, ans in OFFLINE_KNOWLEDGE_BASE.items():
+            if key in p_lower:
+                return (
+                    f"{ans}\n\n"
+                    f"<small><span foreground='{TEXT_MUTED}'>💡 Resposta do Motor Offline do Geminux OS. "
+                    f"Para respostas gerais na nuvem, configure sua chave de API nas configurações.</span></small>"
+                )
+
+        # Resposta padrão inteligente do modo offline
+        return (
+            f"Comando ou dúvida reconhecida no Geminux OS:\n\n"
+            f"• Você pode executar e testar tarefas usando o <b>Prius Terminal</b>.\n"
+            f"• Para gerenciar pacotes: <code>sudo apt install &lt;pacote&gt;</code>\n"
+            f"• Para virtualizar outros sistemas: abra o <b>Geminux Virtual Machine</b>.\n\n"
+            f"<i>Dica: Você pode conectar a API do Gemini ou Groq no botão de configurações no topo para respostas ilimitadas de IA na nuvem!</i>"
+        )
+
+    def query_online_gemini(self, prompt, api_key):
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"Você é a Geminux AI, assistente inteligente oficial do sistema operacional Geminux OS. Responda de forma clara, amigável e precisa em português:\n\nPergunta: {prompt}"}]
+            }]
+        }
+
+        try:
+            req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return GLib.markup_escape_text(parts[0].get("text", "")).replace("\n", "\n")
+            return "Recebi uma resposta vazia dos servidores da nuvem."
+        except urllib.error.HTTPError as e:
+            return f"<b>Erro de Conexão com a API:</b> Código {e.code}. Verifique se a sua chave de API é válida nas configurações."
+        except Exception as e:
+            return f"<b>Falha de conexão:</b> {str(e)}\n\nUsando base de conhecimento offline do Geminux."
+
+    def open_settings_dialog(self, _btn):
+        dialog = Gtk.Dialog(title="Configurações da Geminux AI", transient_for=self, modal=True)
+        dialog.set_default_size(480, 260)
+        dialog.set_position(Gtk.WindowPosition.CENTER)
+
+        content = dialog.get_content_area()
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+        content.pack_start(box, True, True, 0)
+
+        title = Gtk.Label()
+        title.set_markup("<b>Provedor de Inteligência Artificial</b>")
+        title.set_halign(Gtk.Align.START)
+        box.pack_start(title, False, False, 0)
+
+        desc = Gtk.Label()
+        desc.set_markup(
+            f"<span foreground='{TEXT_MUTED}'>"
+            "A Geminux AI funciona 100% offline para comandos e dúvidas do sistema. "
+            "Se desejar respostas ilimitadas com modelos avançados na nuvem (Google Gemini), "
+            "insira sua Chave de API abaixo:</span>"
+        )
+        desc.set_line_wrap(True)
+        desc.set_halign(Gtk.Align.START)
+        box.pack_start(desc, False, False, 0)
+
+        key_entry = Gtk.Entry()
+        key_entry.set_placeholder_text("Chave de API (ex: AIzaSy...)")
+        key_entry.set_text(self.settings.get("api_key", ""))
+        key_entry.set_visibility(False)
+        box.pack_start(key_entry, False, False, 0)
+
+        dialog.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Salvar Configurações", Gtk.ResponseType.OK)
+        dialog.show_all()
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.settings["api_key"] = key_entry.get_text().strip()
+            save_settings(self.settings)
+            mode_text = "Modo Conectado (API)" if self.settings.get("api_key") else "Modo Especialista Offline"
+            self.sidebar_status.set_markup(f"<small><span foreground='{TEXT_MUTED}'>Status: {mode_text}</span></small>")
+        dialog.destroy()
+
+
+def main():
+    win = GeminuxAIWindow()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()
