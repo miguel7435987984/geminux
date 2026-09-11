@@ -160,7 +160,7 @@
         <li>Atalhos rápidos para verificar memória RAM, discos, rede e atualizações</li>
         <li>Módulo <b>Codef</b> integrado para criar aplicativos Android, iOS, Web e Geminux OS</li>
         <li>Suporte a múltiplos motores de IA: Google Gemini, DeepSeek, Qwen (Alibaba) e OpenAI</li>
-        <li>Segurança e privacidade garantidas pela Geminux Ltda.</li>
+        <li>Segurança e privacidade garantidas pela Geminux OS Team.</li>
       </ul>
     </description>
     <launchable type="desktop-id">geminux-ai.desktop</launchable>
@@ -200,7 +200,7 @@
       </release>
     </releases>
     <developer id="org.geminux.ai">
-      <name>Geminux Ltda.</name>
+      <name>Geminux OS Team</name>
     </developer>
     <url type="homepage">https://github.com/miguel7435987984/geminux</url>
     <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>

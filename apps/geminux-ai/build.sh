@@ -38,7 +38,7 @@ Version: ${VERSION}
 Section: utils
 Priority: optional
 Architecture: ${ARCH}
-Maintainer: Geminux Ltda. <https://github.com/miguel7435987984/geminux>
+Maintainer: Geminux OS Team <https://github.com/miguel7435987984/geminux>
 Depends: python3, python3-gi, gir1.2-gtk-3.0
 Description: Assistente inteligente oficial para Geminux OS
  O Geminux AI é um assistente moderno com inteligência artificial
