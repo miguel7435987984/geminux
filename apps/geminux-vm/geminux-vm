@@ -1838,12 +1838,29 @@ class MainWindow(Gtk.Window):
         about.run()
         about.destroy()
 
+    def auto_start_vm(self, vm_id):
+        for row in self.vm_listbox.get_children():
+            if getattr(row, "vm_id", None) == vm_id:
+                self.vm_listbox.select_row(row)
+                self.on_start_vm_clicked(None)
+                break
+        return False
+
 
 def main():
     Gtk.init(sys.argv)
+    start_vm_id = None
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ("--start", "-s") and len(sys.argv) > 2:
+            start_vm_id = sys.argv[2]
+        elif not sys.argv[1].startswith("-"):
+            start_vm_id = sys.argv[1]
+
     win = MainWindow()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
+    if start_vm_id:
+        GLib.idle_add(lambda: win.auto_start_vm(start_vm_id))
     Gtk.main()
 
 
