@@ -59,6 +59,10 @@ if [ ! -f "${ROOTFS_DIR}/bin/bash" ]; then
     rm -rf "${ROOTFS_DIR}"
     mkdir -p "${ROOTFS_DIR}"
     log "Passo: Executando debootstrap para Ubuntu 25.10 (${CODENAME}) com chaveiro oficial..."
+    if [ ! -e "/usr/share/debootstrap/scripts/${CODENAME}" ]; then
+        log "Criando script debootstrap para ${CODENAME} -> gutsy..."
+        ln -sf gutsy "/usr/share/debootstrap/scripts/${CODENAME}" || true
+    fi
     debootstrap --arch=amd64 --variant=minbase --keyring="${KEYRING}" "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"
 else
     log_ok "Rootfs pré-existente encontrado em ${ROOTFS_DIR}. Pulando debootstrap..."
