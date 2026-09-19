@@ -98,6 +98,9 @@ mkdir -p "${ROOTFS_DIR}/tmp/geminux-build"
 cp -r "${SCRIPT_DIR}/apps" "${ROOTFS_DIR}/tmp/geminux-build/"
 cp -r "${SCRIPT_DIR}/branding" "${ROOTFS_DIR}/tmp/geminux-build/"
 cp -r "${SCRIPT_DIR}/config" "${ROOTFS_DIR}/tmp/geminux-build/"
+if [ -d "${SCRIPT_DIR}/installer" ]; then
+    cp -r "${SCRIPT_DIR}/installer" "${ROOTFS_DIR}/tmp/geminux-build/"
+fi
 cp "${SCRIPT_DIR}/build/customize.sh" "${ROOTFS_DIR}/tmp/geminux-build/customize.sh"
 chmod +x "${ROOTFS_DIR}/tmp/geminux-build/customize.sh"
 

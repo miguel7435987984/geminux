@@ -23,7 +23,7 @@ picture-uri='file:///usr/share/backgrounds/geminux/geminux-default.png'
 
 # Regra de Interface: Prius Terminal como padrão na barra de tarefas (taskbar)
 [org.gnome.shell]
-favorite-apps=['firefox.desktop', 'geminux-terminal.desktop', 'prius-terminal.desktop', 'geminux-ai.desktop', 'geminux-store.desktop', 'geminux-virtual-machine.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.SystemMonitor.desktop']
+favorite-apps=['calamares.desktop', 'firefox.desktop', 'geminux-terminal.desktop', 'prius-terminal.desktop', 'geminux-ai.desktop', 'geminux-store.desktop', 'geminux-virtual-machine.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.SystemMonitor.desktop']
 
 [org.gnome.shell.ubuntu]
 color-scheme='prefer-dark'

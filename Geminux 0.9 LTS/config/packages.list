@@ -69,6 +69,23 @@ gir1.2-gtk-3.0
 gir1.2-gtk-4.0
 gir1.2-vte-2.91
 
+# Instalador do Sistema (Calamares) & Ferramentas de Disco
+calamares
+calamares-settings-ubuntu-common-data
+gparted
+polkitd
+pkexec
+qml6-module-qtquick
+qml6-module-qtquick-controls
+rsync
+squashfs-tools
+dosfstools
+mtools
+btrfs-progs
+xfsprogs
+e2fsprogs
+efibootmgr
+
 # Navegação e Utilitários Padrão
 software-properties-common
 apt-transport-https

@@ -290,6 +290,86 @@ alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
 alias geminux-info='fastfetch -c /etc/fastfetch/config.jsonc'
 EOF_BASHRC
 
+# 6.5 Instalador Oficial do Geminux OS (Calamares)
+echo "==> Configurando Instalador Oficial do Geminux (Calamares)..."
+mkdir -p /etc/calamares/branding/geminux /etc/calamares/modules
+if [ -d /tmp/geminux-build/installer/calamares ]; then
+    cp /tmp/geminux-build/installer/calamares/settings.conf /etc/calamares/settings.conf || true
+    cp -r /tmp/geminux-build/installer/calamares/branding/geminux/* /etc/calamares/branding/geminux/ || true
+    if [ -d /tmp/geminux-build/installer/calamares/modules ]; then
+        cp -r /tmp/geminux-build/installer/calamares/modules/* /etc/calamares/modules/ || true
+    fi
+    if [ -f /tmp/geminux-build/installer/calamares/geminux-installer ]; then
+        install -m 755 /tmp/geminux-build/installer/calamares/geminux-installer /usr/local/bin/geminux-installer
+    fi
+fi
+
+# Polkit policies para execução do instalador sem pedir senha de root no Live CD
+mkdir -p /usr/share/polkit-1/actions
+cat <<'EOF_POLKIT_CALA' > /usr/share/polkit-1/actions/com.github.calamares.calamares.policy
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="com.github.calamares.calamares">
+    <description>Run Calamares Installer</description>
+    <message>Authentication is required to install Geminux</message>
+    <defaults>
+      <allow_any>yes</allow_any>
+      <allow_inactive>yes</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/calamares</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>
+EOF_POLKIT_CALA
+
+cat <<'EOF_POLKIT_GEM' > /usr/share/polkit-1/actions/org.geminux.installer.policy
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="org.geminux.installer">
+    <description>Run Geminux Installer</description>
+    <message>Authentication is required to run installer</message>
+    <defaults>
+      <allow_any>yes</allow_any>
+      <allow_inactive>yes</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/geminux-installer</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>
+EOF_POLKIT_GEM
+
+# Regra sudoers para usuário live executar instalador
+mkdir -p /etc/sudoers.d
+echo "ALL ALL=(ALL) NOPASSWD: /usr/bin/calamares, /usr/local/bin/geminux-installer" > /etc/sudoers.d/99-geminux-installer
+chmod 440 /etc/sudoers.d/99-geminux-installer
+
+# Atalho do Calamares no menu e na área de trabalho
+mkdir -p /usr/share/applications /etc/skel/Desktop
+cat <<'EOF_DESK_CALA' > /usr/share/applications/calamares.desktop
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install Geminux OS
+GenericName=Live Installer
+Comment=Install the operating system to disk
+Exec=/usr/local/bin/geminux-installer
+Icon=calamares
+Terminal=false
+Categories=System;Qt;
+StartupNotify=true
+EOF_DESK_CALA
+chmod 644 /usr/share/applications/calamares.desktop
+cp /usr/share/applications/calamares.desktop /etc/skel/Desktop/calamares.desktop
+chmod +x /etc/skel/Desktop/calamares.desktop || true
+
 # Atualizar caches do sistema
 if [ -x "$(command -v update-desktop-database)" ]; then
     update-desktop-database /usr/share/applications || true
