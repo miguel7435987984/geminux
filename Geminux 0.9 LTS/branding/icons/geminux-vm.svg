@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="vm-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1329"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+
+    <!-- Cyan Glow & Accent -->
+    <linearGradient id="vm-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#00a8ff"/>
+    </linearGradient>
+
+    <!-- Emerald / Linux Accent -->
+    <linearGradient id="vm-screen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a101d"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+
+    <!-- Glass / Hologram Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- App Rounded Base -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#vm-bg)" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Outer Glowing Monitor Bezel -->
+  <rect x="20" y="22" width="88" height="66" rx="10" fill="url(#vm-screen)" stroke="#00d2ff" stroke-width="2.5" filter="url(#glow)"/>
+
+  <!-- Monitor Stand -->
+  <path d="M54 88 L50 102 L78 102 L74 88 Z" fill="#1e293b" stroke="#00d2ff" stroke-width="1.5"/>
+  <rect x="42" y="102" width="44" height="4" rx="2" fill="#00d2ff"/>
+
+  <!-- Layer 1: Virtual OS Windows (Background layer) -->
+  <rect x="30" y="32" width="30" height="20" rx="3" fill="#0284c7" opacity="0.4" stroke="#38bdf8" stroke-width="1"/>
+  <!-- Windows 4-tiles subtle grid -->
+  <rect x="34" y="36" width="9" height="5" fill="#38bdf8" opacity="0.8"/>
+  <rect x="45" y="36" width="9" height="5" fill="#38bdf8" opacity="0.8"/>
+  <rect x="34" y="43" width="9" height="5" fill="#38bdf8" opacity="0.8"/>
+  <rect x="45" y="43" width="9" height="5" fill="#38bdf8" opacity="0.8"/>
+
+  <!-- Layer 2: Virtual OS macOS (Side subtle layer) -->
+  <rect x="68" y="32" width="30" height="20" rx="3" fill="#475569" opacity="0.4" stroke="#94a3b8" stroke-width="1"/>
+  <!-- Apple minimal logo silhouette -->
+  <path d="M83 37 C82 36 84 35 85 35 C86 36 85 37 83 37 Z M80 43 C80 40 82 39 84 39 C85 39 86 40 87 40 C88 40 89 39 90 39 C91 40 92 41 91 43 C91 45 89 48 88 48 C87 48 87 47 85 47 C84 47 83 48 83 48 C81 48 80 45 80 43 Z" fill="#e2e8f0" opacity="0.85"/>
+
+  <!-- Layer 3: Main Front Virtual OS (Geminux / Linux) with Twin Crystals & Pulse -->
+  <rect x="36" y="44" width="56" height="36" rx="6" fill="#0b132b" stroke="#00f2fe" stroke-width="2" filter="url(#glow)"/>
+
+  <!-- Front Window Header with 3 dots -->
+  <circle cx="42" cy="50" r="1.8" fill="#f87171"/>
+  <circle cx="47" cy="50" r="1.8" fill="#facc15"/>
+  <circle cx="52" cy="50" r="1.8" fill="#4ade80"/>
+
+  <!-- Central Geminux Twin Crystals -->
+  <polygon points="58,56 64,61 58,74 52,65" fill="url(#vm-cyan)"/>
+  <polygon points="70,56 76,65 70,74 64,61" fill="url(#vm-cyan)" opacity="0.9"/>
+  <polygon points="64,61 67,65 64,69 61,65" fill="#ffffff"/>
+
+  <!-- Speed / Hardware Acceleration Lightning Badge -->
+  <circle cx="98" cy="24" r="10" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M98 17 L93 25 L97 25 L96 31 L102 23 L98 23 Z" fill="#fef08a"/>
+</svg>

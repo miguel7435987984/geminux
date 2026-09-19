@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="gemGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+    <linearGradient id="gemGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+    <filter id="gemGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Glowing outer orbit rings -->
+  <ellipse cx="250" cy="250" rx="210" ry="110" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.3" transform="rotate(-30 250 250)"/>
+  <ellipse cx="250" cy="250" rx="210" ry="110" fill="none" stroke="#4facfe" stroke-width="2" stroke-opacity="0.3" transform="rotate(30 250 250)"/>
+
+  <!-- Twin Diamond Core (Gemini / Geminux) -->
+  <!-- Left Diamond -->
+  <polygon points="190,140 250,210 190,360 130,250" fill="url(#gemGrad1)" opacity="0.9" filter="url(#gemGlow)"/>
+
+  <!-- Right Diamond -->
+  <polygon points="310,140 370,250 310,360 250,210" fill="url(#gemGrad2)" opacity="0.9" filter="url(#gemGlow)"/>
+
+  <!-- Central Nexus Core -->
+  <polygon points="250,210 280,250 250,290 220,250" fill="#ffffff" filter="url(#gemGlow)"/>
+
+  <!-- Orbital Particles -->
+  <circle cx="90" cy="200" r="6" fill="#00f2fe" filter="url(#gemGlow)"/>
+  <circle cx="410" cy="300" r="6" fill="#00c6ff" filter="url(#gemGlow)"/>
+  <circle cx="250" cy="80" r="5" fill="#ffffff" filter="url(#gemGlow)"/>
+</svg>

@@ -1,0 +1,70 @@
+# ==============================================================================
+# Geminux OS 0.9 LTS (Ubuntu 25.10 Kanguru) - Lista Oficial de Pacotes
+# ==============================================================================
+
+# Kernel & Inicialização
+linux-generic
+casper
+discover
+laptop-detect
+os-prober
+
+# Ambiente Desktop GNOME & Shell
+ubuntu-desktop-minimal
+gnome-shell
+gnome-terminal
+gnome-control-center
+gnome-tweaks
+gnome-system-monitor
+nautilus
+gsettings-desktop-schemas
+yaru-theme-gtk
+yaru-theme-icon
+yaru-theme-gnome-shell
+
+# Rede & Conectividade
+network-manager
+network-manager-gnome
+wpasupplicant
+iw
+iproute2
+curl
+wget
+ca-certificates
+
+# Multimídia & Áudio (PipeWire nativo do Ubuntu 25.10)
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+
+# Gráficos & Aceleração
+mesa-utils
+mesa-va-drivers
+mesa-vulkan-drivers
+xwayland
+plymouth
+plymouth-themes
+
+# Ferramentas do Sistema & Virtualização
+qemu-system-x86
+qemu-utils
+pciutils
+usbutils
+htop
+fastfetch
+git
+python3
+python3-pip
+python3-gi
+python3-gi-cairo
+gir1.2-gtk-3.0
+gir1.2-gtk-4.0
+
+# Navegação e Utilitários Padrão
+firefox
+software-properties-common
+apt-transport-https
+sudo
+locales
+nano

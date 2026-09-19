@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b111e"/>
+      <stop offset="50%" stop-color="#070c16"/>
+      <stop offset="100%" stop-color="#03060a"/>
+    </linearGradient>
+
+    <!-- Cyan Neon Gradient -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+
+    <!-- Emerald / Android Cyber Green-Cyan Gradient -->
+    <linearGradient id="droidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ffcc"/>
+      <stop offset="50%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#0066ff"/>
+    </linearGradient>
+
+    <!-- Purple Cyber Accent -->
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+
+    <!-- Metallic Armor Plate Gradient -->
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#162235"/>
+      <stop offset="100%" stop-color="#0d1522"/>
+    </linearGradient>
+
+    <!-- Glow Filters -->
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base Canvas -->
+  <rect x="30" y="30" width="440" height="440" rx="95" fill="url(#bgGrad)" stroke="#1a273b" stroke-width="6"/>
+  <rect x="38" y="38" width="424" height="424" rx="87" fill="none" stroke="url(#cyanGrad)" stroke-width="2" stroke-opacity="0.4"/>
+
+  <!-- High-Tech Circuit Traces in Corners -->
+  <!-- Top Left -->
+  <path d="M65 130 L115 130 L145 160" fill="none" stroke="#00d2ff" stroke-width="2.5" stroke-opacity="0.45"/>
+  <circle cx="65" cy="130" r="4.5" fill="#00d2ff"/>
+  <circle cx="145" cy="160" r="3" fill="#00d2ff"/>
+
+  <!-- Top Right -->
+  <path d="M435 130 L385 130 L355 160" fill="none" stroke="#00d2ff" stroke-width="2.5" stroke-opacity="0.45"/>
+  <circle cx="435" cy="130" r="4.5" fill="#00d2ff"/>
+  <circle cx="355" cy="160" r="3" fill="#00d2ff"/>
+
+  <!-- Bottom Left -->
+  <path d="M65 370 L115 370 L140 345" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-opacity="0.4"/>
+  <circle cx="65" cy="370" r="4.5" fill="#c084fc"/>
+
+  <!-- Bottom Right -->
+  <path d="M435 370 L385 370 L360 345" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-opacity="0.4"/>
+  <circle cx="435" cy="370" r="4.5" fill="#c084fc"/>
+
+  <!-- Central Ambient Glow Ring -->
+  <circle cx="250" cy="225" r="140" fill="none" stroke="url(#cyanGrad)" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="8 12"/>
+  <circle cx="250" cy="225" r="160" fill="none" stroke="#7c3aed" stroke-width="1" stroke-opacity="0.15"/>
+
+  <!-- ======================================================================== -->
+  <!-- BRIDROID ROBOT CORE                                                      -->
+  <!-- ======================================================================== -->
+
+  <!-- Cyber Antennas -->
+  <line x1="195" y1="135" x2="160" y2="85" stroke="url(#droidGrad)" stroke-width="6" stroke-linecap="round" filter="url(#subtleGlow)"/>
+  <circle cx="160" cy="85" r="7" fill="#00ffcc" filter="url(#neonGlow)"/>
+  <circle cx="160" cy="85" r="3" fill="#ffffff"/>
+
+  <line x1="305" y1="135" x2="340" y2="85" stroke="url(#droidGrad)" stroke-width="6" stroke-linecap="round" filter="url(#subtleGlow)"/>
+  <circle cx="340" cy="85" r="7" fill="#00ffcc" filter="url(#neonGlow)"/>
+  <circle cx="340" cy="85" r="3" fill="#ffffff"/>
+
+  <!-- Droid Head Armor (Arch) -->
+  <path d="M140 215 C140 145, 190 115, 250 115 C310 115, 360 145, 360 215 Z" fill="url(#plateGrad)" stroke="url(#droidGrad)" stroke-width="4"/>
+
+  <!-- Cyber Visor / Eye Bridge ("BriDroid Bridge") -->
+  <path d="M165 190 Q250 205 335 190 L335 205 Q250 220 165 205 Z" fill="#00263d" stroke="#00d2ff" stroke-width="2" filter="url(#subtleGlow)"/>
+
+  <!-- Glowing Droid Eyes (Geminux Dual Diamond Inspired) -->
+  <!-- Left Eye -->
+  <polygon points="200,185 212,197 200,209 188,197" fill="#00ffcc" filter="url(#neonGlow)"/>
+  <polygon points="200,190 207,197 200,204 193,197" fill="#ffffff"/>
+
+  <!-- Right Eye -->
+  <polygon points="300,185 312,197 300,209 288,197" fill="#00ffcc" filter="url(#neonGlow)"/>
+  <polygon points="300,190 307,197 300,204 293,197" fill="#ffffff"/>
+
+  <!-- Sub-head Cyber Neck Gap -->
+  <rect x="190" y="222" width="120" height="6" rx="3" fill="#00d2ff" fill-opacity="0.8" filter="url(#subtleGlow)"/>
+
+  <!-- Droid Body / Armor Chest Plate -->
+  <path d="M145 238 L355 238 L345 335 C345 350, 330 365, 310 365 L190 365 C170 365, 155 350, 155 335 Z" fill="url(#plateGrad)" stroke="url(#droidGrad)" stroke-width="4"/>
+
+  <!-- Geometric Chest Seams -->
+  <path d="M155 275 L215 275 L235 305" fill="none" stroke="#00d2ff" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M345 275 L285 275 L265 305" fill="none" stroke="#00d2ff" stroke-width="2" stroke-opacity="0.5"/>
+
+  <!-- Geminux Heart / Power Reactor Core inside BriDroid -->
+  <g transform="translate(0, 5)">
+    <!-- Outer Core Ring -->
+    <circle cx="250" cy="300" r="32" fill="#0a1220" stroke="url(#cyanGrad)" stroke-width="3" filter="url(#subtleGlow)"/>
+    <!-- Twin Diamond Power Crest -->
+    <polygon points="238,285 250,296 238,315 226,296" fill="url(#cyanGrad)" filter="url(#neonGlow)"/>
+    <polygon points="262,285 274,296 262,315 250,296" fill="url(#cyanGrad)" filter="url(#neonGlow)"/>
+    <polygon points="250,296 256,303 250,310 244,303" fill="#ffffff"/>
+  </g>
+
+  <!-- Left Robot Arm Shoulder -->
+  <path d="M125 242 C115 242, 108 250, 108 260 L108 310 C108 320, 115 328, 125 328 L133 328 L133 242 Z" fill="url(#plateGrad)" stroke="url(#droidGrad)" stroke-width="3"/>
+  <circle cx="120" cy="285" r="4" fill="#00ffcc" filter="url(#subtleGlow)"/>
+
+  <!-- Right Robot Arm Shoulder -->
+  <path d="M375 242 C385 242, 392 250, 392 260 L392 310 C392 320, 385 328, 375 328 L367 328 L367 242 Z" fill="url(#plateGrad)" stroke="url(#droidGrad)" stroke-width="3"/>
+  <circle cx="380" cy="285" r="4" fill="#00ffcc" filter="url(#subtleGlow)"/>
+
+  <!-- ======================================================================== -->
+  <!-- TYPOGRAPHY & BADGE                                                       -->
+  <!-- ======================================================================== -->
+  <text x="250" y="416" text-anchor="middle" font-family="'Ubuntu', 'Inter', 'Segoe UI', system-ui, sans-serif" font-weight="900" font-size="28" letter-spacing="8" fill="#00f2fe" filter="url(#subtleGlow)">BRIDROID</text>
+  <text x="250" y="438" text-anchor="middle" font-family="'Ubuntu', 'Inter', 'Segoe UI', system-ui, sans-serif" font-weight="700" font-size="11" letter-spacing="4" fill="#7c3aed">ANDROID × PC OS</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="vmware-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0095d9"/>
+      <stop offset="100%" stop-color="#006499"/>
+    </linearGradient>
+    <linearGradient id="vmware-cube1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="vmware-cube2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded Base Background -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#vmware-bg)"/>
+
+  <!-- VMware Virtualization Cube Geometric Emblem -->
+  <!-- Top Left Cube -->
+  <rect x="26" y="26" width="34" height="34" rx="7" fill="url(#vmware-cube2)"/>
+  <!-- Top Right Cube -->
+  <rect x="68" y="26" width="34" height="34" rx="7" fill="url(#vmware-cube1)"/>
+  <!-- Bottom Left Cube -->
+  <rect x="26" y="68" width="34" height="34" rx="7" fill="url(#vmware-cube1)"/>
+  <!-- Bottom Right Cube -->
+  <rect x="68" y="68" width="34" height="34" rx="7" fill="url(#vmware-cube2)"/>
+
+  <!-- Intersecting Modern Accent -->
+  <circle cx="64" cy="64" r="8" fill="#00d2ff" filter="drop-shadow(0 0 4px #00d2ff)"/>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1320"/>
+      <stop offset="100%" stop-color="#141a24"/>
+    </linearGradient>
+    <linearGradient id="gemGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+    <linearGradient id="gemGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#33dcff"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Modern Rounded Squircle Background -->
+  <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#222d3d" stroke-width="4"/>
+
+  <!-- Orbital Rings -->
+  <ellipse cx="250" cy="230" rx="180" ry="85" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.3" transform="rotate(-25 250 230)"/>
+  <ellipse cx="250" cy="230" rx="180" ry="85" fill="none" stroke="#4facfe" stroke-width="2" stroke-opacity="0.3" transform="rotate(25 250 230)"/>
+
+  <!-- Twin Diamond Core (Gemini / Geminux) -->
+  <polygon points="195,140 250,200 195,330 140,230" fill="url(#gemGrad1)" opacity="0.95" filter="url(#glow)"/>
+  <polygon points="305,140 360,230 305,330 250,200" fill="url(#gemGrad2)" opacity="0.95" filter="url(#glow)"/>
+  <polygon points="250,200 275,235 250,270 225,235" fill="#ffffff" filter="url(#glow)"/>
+
+  <!-- Welcome Sparkles / Stars -->
+  <path d="M 250,60 L 255,80 L 275,85 L 255,90 L 250,110 L 245,90 L 225,85 L 245,80 Z" fill="#00f2fe" filter="url(#glow)"/>
+  <path d="M 390,120 L 393,133 L 406,136 L 393,139 L 390,152 L 387,139 L 374,136 L 387,133 Z" fill="#ffffff" filter="url(#glow)"/>
+  <path d="M 110,130 L 113,143 L 126,146 L 113,149 L 110,162 L 107,149 L 94,146 L 107,143 Z" fill="#00c6ff" filter="url(#glow)"/>
+
+  <!-- Welcome Badge Banner Ribbon at Bottom -->
+  <rect x="90" y="380" width="320" height="54" rx="27" fill="#101826" stroke="#00d2ff" stroke-width="2"/>
+  <text x="250" y="415" font-family="Ubuntu, sans-serif" font-size="22" font-weight="bold" fill="#00d2ff" text-anchor="middle" letter-spacing="3">BEM-VINDO</text>
+</svg>

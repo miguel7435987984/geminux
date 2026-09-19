@@ -1,0 +1,16 @@
+# Geminux OS 0.9 LTS Release Info
+NAME="Geminux OS"
+VERSION="0.9 LTS (Kanguru 25.10)"
+ID=geminux
+ID_LIKE="ubuntu debian"
+PRETTY_NAME="Geminux OS 0.9 LTS (Ubuntu 25.10 Kanguru)"
+VERSION_ID="0.9"
+VERSION_CODENAME=questing
+UBUNTU_CODENAME=questing
+HOME_URL="https://github.com/miguel7435987984/geminux"
+SUPPORT_URL="https://github.com/miguel7435987984/geminux/issues"
+BUG_REPORT_URL="https://github.com/miguel7435987984/geminux/issues"
+PRIVACY_POLICY_URL="https://github.com/miguel7435987984/geminux"
+LOGO=geminux-logo
+VENDOR_NAME="Geminux OS Team"
+VENDOR_URL="https://github.com/miguel7435987984/geminux"
