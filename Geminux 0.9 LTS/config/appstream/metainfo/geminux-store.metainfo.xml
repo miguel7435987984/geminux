@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.geminux.store</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Geminux Store</name>
+  <name xml:lang="pt_BR">Geminux Store</name>
+  <summary>Official App Center and package manager for Geminux OS</summary>
+  <summary xml:lang="pt_BR">Centro Oficial de Aplicativos e gerenciador de pacotes do Geminux OS</summary>
+  <description>
+    <p>
+      Geminux Store is the official software center for Geminux OS. It provides one-click installation
+      of curated native applications (Geminux AI, Geminux VM, Prius Terminal, Sober Fix), popular developer tools,
+      games, multimedia applications, and system updates.
+    </p>
+    <p xml:lang="pt_BR">
+      A Geminux Store é o centro oficial de aplicativos do Geminux OS. Oferece instalação em um clique
+      de softwares nativos curados (Geminux AI, Geminux VM, Prius Terminal, Sober Fix), ferramentas essenciais
+      para desenvolvedores, jogos, criação multimídia e atualizações de sistema.
+    </p>
+  </description>
+  <launchable type="desktop-id">geminux-store.desktop</launchable>
+  <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+  <provides>
+    <binary>geminux-store</binary>
+  </provides>
+</component>

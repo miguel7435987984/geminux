@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# sober-fix - Geminux OS Official Sober / Roblox Cache Cleaner & Repair Tool
+# ==============================================================================
+
+set -e
+
+# Colors
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${CYAN}=====================================================${NC}"
+echo -e "${CYAN}   🛠️  Geminux OS - Reparador do Sober (Roblox)       ${NC}"
+echo -e "${CYAN}=====================================================${NC}"
+
+SOBER_CACHE_DIR="$HOME/.var/app/org.vinegarhq.Sober/cache"
+SOBER_DATA_DIR="$HOME/.var/app/org.vinegarhq.Sober/data"
+SOBER_CONFIG_DIR="$HOME/.var/app/org.vinegarhq.Sober/config"
+
+echo -e "\n${YELLOW}==> Verificando arquivos de cache e temporários do Sober...${NC}"
+
+CLEANED=0
+
+if [ -d "$SOBER_CACHE_DIR" ]; then
+    echo -e "  🧹 Limpando cache: $SOBER_CACHE_DIR"
+    rm -rf "$SOBER_CACHE_DIR"/* "$SOBER_CACHE_DIR"/.* 2>/dev/null || true
+    CLEANED=1
+fi
+
+if [ -d "$HOME/.cache/org.vinegarhq.Sober" ]; then
+    echo -e "  🧹 Limpando cache do usuário: $HOME/.cache/org.vinegarhq.Sober"
+    rm -rf "$HOME/.cache/org.vinegarhq.Sober"/* 2>/dev/null || true
+    CLEANED=1
+fi
+
+# Kill any stuck background Roblox / Sober processes
+pkill -f "org.vinegarhq.Sober" 2>/dev/null || true
+pkill -f "sober" 2>/dev/null || true
+
+echo -e "\n${GREEN}=====================================================${NC}"
+echo -e "${GREEN}   ✨ Cache do Sober limpo com sucesso!             ${NC}"
+echo -e "${GREEN}   🚀 Você já pode abrir o Sober / Roblox agora.     ${NC}"
+echo -e "${GREEN}=====================================================${NC}\n"

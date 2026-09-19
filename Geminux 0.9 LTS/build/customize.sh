@@ -71,7 +71,216 @@ if [ -f /tmp/geminux-build/config/sources.list.d/ubuntu.sources ]; then
     cp /tmp/geminux-build/config/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources
 fi
 
-# 6. Plymouth Boot Splash Theme (Official Geminux BGRT + 60-frame Cyan Boot Spinner)
+# 6. Instalação e Montagem dos Aplicativos Nativos do Geminux 0.9 LTS
+echo "==> Instalando e configurando os aplicativos nativos do Geminux 0.9 LTS..."
+
+# 6.1 Prius Terminal (Terminal Padrão Oficial do Geminux)
+if [ -d /tmp/geminux-build/apps/prius-terminal ]; then
+    echo "    -> Instalando Prius Terminal..."
+    install -d /usr/local/bin /usr/bin /usr/share/applications /usr/share/icons/hicolor/scalable/apps /usr/share/pixmaps
+    install -m 755 /tmp/geminux-build/apps/prius-terminal/prius /usr/local/bin/prius
+    install -m 755 /tmp/geminux-build/apps/prius-terminal/prius /usr/bin/prius
+    install -m 644 /tmp/geminux-build/apps/prius-terminal/prius-terminal.desktop /usr/share/applications/prius-terminal.desktop
+    if [ -f /tmp/geminux-build/branding/icons/prius-terminal.svg ]; then
+        install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/icons/hicolor/scalable/apps/prius-terminal.svg
+        install -m 644 /tmp/geminux-build/branding/icons/prius-terminal.svg /usr/share/pixmaps/prius-terminal.svg
+    fi
+fi
+
+# 6.2 Repositório APT Local Oficial do Geminux & Catálogo AppStream
+echo "==> Configurando Repositório APT Local e Catálogo AppStream..."
+mkdir -p /var/lib/geminux/repo
+mkdir -p /usr/share/swcatalog/xml /var/lib/swcatalog/xml /usr/share/app-info/xmls /var/lib/app-info/xmls /usr/share/metainfo
+
+if [ -f /tmp/geminux-build/config/appstream/catalogs/geminux.xml ]; then
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /usr/share/swcatalog/xml/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /var/lib/swcatalog/xml/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /usr/share/app-info/xmls/geminux.xml
+    cp /tmp/geminux-build/config/appstream/catalogs/geminux.xml /var/lib/app-info/xmls/geminux.xml
+fi
+
+if [ -d /tmp/geminux-build/config/appstream/metainfo ]; then
+    cp /tmp/geminux-build/config/appstream/metainfo/*.metainfo.xml /usr/share/metainfo/ 2>/dev/null || true
+fi
+
+# Copiar todos os pacotes .deb para o repositório local
+find /tmp/geminux-build/apps -name "*.deb" -exec cp {} /var/lib/geminux/repo/ \; 2>/dev/null || true
+
+(
+    cd /var/lib/geminux/repo
+    if [ -x "$(command -v dpkg-scanpackages)" ]; then
+        dpkg-scanpackages . /dev/null > Packages 2>/dev/null || true
+    fi
+    if [ ! -s Packages ]; then
+        > Packages
+        for deb in *.deb; do
+            if [ -f "$deb" ]; then
+                dpkg-deb -I "$deb" control 2>/dev/null | sed '/^$/d' >> Packages
+                echo "Filename: ./$deb" >> Packages
+                echo "Size: $(stat -c%s "$deb")" >> Packages
+                echo "SHA256: $(sha256sum "$deb" | cut -d' ' -f1)" >> Packages
+                echo "" >> Packages
+            fi
+        done
+    fi
+    gzip -9c Packages > Packages.gz
+
+    cat <<'EOF_REL' > Release
+Archive: questing
+Origin: Geminux
+Label: Geminux OS 0.9 LTS
+Suite: questing
+Codename: questing
+Architectures: all amd64
+Components: main
+Description: Geminux OS 0.9 LTS Official Local Repository
+EOF_REL
+)
+
+cat <<'EOF_SRC' > /etc/apt/sources.list.d/geminux.list
+deb [trusted=yes] file:/var/lib/geminux/repo ./
+EOF_SRC
+
+# 6.3 Instalação dos Pacotes e Utilitários Nativos (.deb e lançadores)
+
+# Geminux Terminal
+if [ -f /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux Terminal (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-terminal/geminux-terminal_1.0.0_all.deb || apt-get install -f -y
+    if [ -x "$(command -v update-alternatives)" ]; then
+        update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/geminux-terminal 80 || true
+        update-alternatives --set x-terminal-emulator /usr/bin/geminux-terminal || true
+    fi
+fi
+
+# Sober Fix
+if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb ]; then
+    echo "    -> Instalando Sober Fix (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/sober-fix/sober-fix_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/sober-fix /usr/local/bin/sober-fix 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/sober-fix/sober-fix ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/sober-fix/sober-fix /usr/bin/sober-fix
+    ln -sf /usr/bin/sober-fix /usr/local/bin/sober-fix 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/sober-fix/sober-fix.desktop /usr/share/applications/sober-fix.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/sober-fix/sober-fix.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/sober-fix/sober-fix.metainfo.xml /usr/share/metainfo/sober-fix.metainfo.xml
+    fi
+fi
+
+# Geminux Virtual Machine
+if [ -f /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux Virtual Machine (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-vm /usr/local/bin/geminux-vm 2>/dev/null || true
+    ln -sf /usr/share/applications/geminux-virtual-machine.desktop /usr/share/applications/geminux-vm.desktop 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-vm/geminux-vm ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/geminux-vm/geminux-vm /usr/bin/geminux-vm
+    ln -sf /usr/bin/geminux-vm /usr/local/bin/geminux-vm 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.desktop /usr/share/applications/geminux-virtual-machine.desktop
+        ln -sf /usr/share/applications/geminux-virtual-machine.desktop /usr/share/applications/geminux-vm.desktop 2>/dev/null || true
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-vm/geminux-virtual-machine.metainfo.xml /usr/share/metainfo/geminux-virtual-machine.metainfo.xml
+    fi
+fi
+
+# Geminux AI
+if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux AI (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-ai/geminux-ai_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-ai /usr/local/bin/geminux-ai 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/geminux-ai/geminux-ai /usr/bin/geminux-ai
+    ln -sf /usr/bin/geminux-ai /usr/local/bin/geminux-ai 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-ai/geminux-ai.desktop /usr/share/applications/geminux-ai.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-ai/geminux-ai.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-ai/geminux-ai.metainfo.xml /usr/share/metainfo/geminux-ai.metainfo.xml
+    fi
+fi
+
+# Geminux Welcome
+if [ -f /tmp/geminux-build/apps/geminux-welcome/geminux-welcome_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux Welcome (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-welcome/geminux-welcome_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-welcome /usr/local/bin/geminux-welcome 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-welcome/geminux-welcome ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications /etc/xdg/autostart
+    install -m 755 /tmp/geminux-build/apps/geminux-welcome/geminux-welcome /usr/bin/geminux-welcome
+    ln -sf /usr/bin/geminux-welcome /usr/local/bin/geminux-welcome 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-welcome/geminux-welcome.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-welcome/geminux-welcome.desktop /usr/share/applications/geminux-welcome.desktop
+        install -m 644 /tmp/geminux-build/apps/geminux-welcome/geminux-welcome.desktop /etc/xdg/autostart/geminux-welcome.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-welcome/geminux-welcome.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-welcome/geminux-welcome.metainfo.xml /usr/share/metainfo/geminux-welcome.metainfo.xml
+    fi
+fi
+
+# Geminux Store
+if [ -f /tmp/geminux-build/apps/geminux-store/geminux-store_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux Store (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-store/geminux-store_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-store /usr/local/bin/geminux-store 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-store/geminux-store ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/geminux-store/geminux-store /usr/bin/geminux-store
+    ln -sf /usr/bin/geminux-store /usr/local/bin/geminux-store 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-store/geminux-store.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-store/geminux-store.desktop /usr/share/applications/geminux-store.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-store/geminux-store.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-store/geminux-store.metainfo.xml /usr/share/metainfo/geminux-store.metainfo.xml
+    fi
+fi
+
+# Geminux ROM Creator
+if [ -f /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator_1.0.0_all.deb ]; then
+    echo "    -> Instalando Geminux ROM Creator (.deb)..."
+    dpkg -i /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator_1.0.0_all.deb || apt-get install -f -y
+    ln -sf /usr/bin/geminux-rom-creator /usr/local/bin/geminux-rom-creator 2>/dev/null || true
+elif [ -f /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator ]; then
+    install -d /usr/bin /usr/local/bin /usr/share/metainfo /usr/share/applications
+    install -m 755 /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator /usr/bin/geminux-rom-creator
+    ln -sf /usr/bin/geminux-rom-creator /usr/local/bin/geminux-rom-creator 2>/dev/null || true
+    if [ -f /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator.desktop /usr/share/applications/geminux-rom-creator.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/geminux-rom-creator/geminux-rom-creator.metainfo.xml /usr/share/metainfo/geminux-rom-creator.metainfo.xml
+    fi
+fi
+
+# VMware Launcher
+if [ -d /tmp/geminux-build/apps/vmware-installer ]; then
+    install -d /usr/local/bin /usr/share/metainfo /usr/share/applications
+    if [ -f /tmp/geminux-build/apps/vmware-installer/vmware-launcher ]; then
+        install -m 755 /tmp/geminux-build/apps/vmware-installer/vmware-launcher /usr/local/bin/vmware-launcher
+    fi
+    if [ -f /tmp/geminux-build/apps/vmware-installer/vmware.desktop ]; then
+        install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.desktop /usr/share/applications/vmware.desktop
+    fi
+    if [ -f /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml ]; then
+        install -m 644 /tmp/geminux-build/apps/vmware-installer/vmware.metainfo.xml /usr/share/metainfo/vmware.metainfo.xml
+    fi
+fi
+
+# Atualizar caches do sistema
+if [ -x "$(command -v update-desktop-database)" ]; then
+    update-desktop-database /usr/share/applications || true
+fi
+if [ -x "$(command -v gtk-update-icon-cache)" ]; then
+    gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true
+fi
+
+# 7. Plymouth Boot Splash Theme (Official Geminux BGRT + 60-frame Cyan Boot Spinner)
 echo "==> Configurando Plymouth Boot Splash (Geminux BGRT + 60-frame Spinner)..."
 mkdir -p /etc/plymouth
 cat <<'EOF_PLY' > /etc/plymouth/plymouthd.conf

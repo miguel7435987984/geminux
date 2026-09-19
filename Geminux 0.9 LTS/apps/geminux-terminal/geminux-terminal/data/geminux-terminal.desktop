@@ -1,0 +1,21 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Geminux Terminal
+Comment=Terminal moderno, bonito e altamente customizável para Linux
+Exec=geminux-terminal
+Icon=geminux-terminal
+Terminal=false
+Categories=System;TerminalEmulator;Utility;
+Keywords=terminal;shell;prompt;command;commandline;vte;geminux;
+StartupNotify=true
+StartupWMClass=geminux-terminal
+Actions=NewTab;Preferences;
+
+[Desktop Action NewTab]
+Name=Nova Aba
+Exec=geminux-terminal
+
+[Desktop Action Preferences]
+Name=Preferências
+Exec=geminux-terminal --preferences

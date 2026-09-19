@@ -93,8 +93,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-log "==> [4/6] Copiando arquivos de branding e configuração para o chroot..."
+log "==> [4/6] Copiando arquivos de branding, aplicativos e configuração para o chroot..."
 mkdir -p "${ROOTFS_DIR}/tmp/geminux-build"
+cp -r "${SCRIPT_DIR}/apps" "${ROOTFS_DIR}/tmp/geminux-build/"
 cp -r "${SCRIPT_DIR}/branding" "${ROOTFS_DIR}/tmp/geminux-build/"
 cp -r "${SCRIPT_DIR}/config" "${ROOTFS_DIR}/tmp/geminux-build/"
 cp "${SCRIPT_DIR}/build/customize.sh" "${ROOTFS_DIR}/tmp/geminux-build/customize.sh"

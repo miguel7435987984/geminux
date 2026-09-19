@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.geminux.welcome</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Geminux Welcome</name>
+  <name xml:lang="pt_BR">Geminux Welcome</name>
+  <summary>Official welcome center and guided tour for Geminux OS</summary>
+  <summary xml:lang="pt_BR">Centro oficial de boas-vindas e tour guiado do Geminux OS</summary>
+  <description>
+    <p>
+      Geminux Welcome introduces new and experienced users to the core features of Geminux OS:
+      Geminux AI native assistant, Geminux Virtual Machine with embedded KVM display,
+      Prius Terminal, Geminux Store, and quick system customization options.
+    </p>
+    <p xml:lang="pt_BR">
+      O Geminux Welcome apresenta aos novos e experientes usuários os principais pilares do Geminux OS:
+      o assistente inteligente nativo Geminux AI, a central de virtualização Geminux Virtual Machine
+      com display embutido e aceleração KVM, o Prius Terminal, a Geminux Store e opções rápidas de personalização.
+    </p>
+  </description>
+  <launchable type="desktop-id">geminux-welcome.desktop</launchable>
+  <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+  <provides>
+    <binary>geminux-welcome</binary>
+  </provides>
+</component>
