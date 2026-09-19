@@ -351,6 +351,10 @@ mkdir -p /etc/sudoers.d
 echo "ALL ALL=(ALL) NOPASSWD: /usr/bin/calamares, /usr/local/bin/geminux-installer" > /etc/sudoers.d/99-geminux-installer
 chmod 440 /etc/sudoers.d/99-geminux-installer
 
+# Assegura que pkexec e sudo tenham permissões SUID corretas
+chmod 4755 /usr/bin/pkexec /usr/bin/sudo 2>/dev/null || true
+chown root:root /usr/bin/pkexec /usr/bin/sudo 2>/dev/null || true
+
 # Atalho do Calamares no menu e na área de trabalho
 mkdir -p /usr/share/applications /etc/skel/Desktop
 cat <<'EOF_DESK_CALA' > /usr/share/applications/calamares.desktop
