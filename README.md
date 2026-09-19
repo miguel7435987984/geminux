@@ -20,6 +20,28 @@ O **Geminux OS** é uma distribuição Linux moderna baseada no **Ubuntu 26.04 L
 
 ---
 
+## 📦 Edições Oficiais do Geminux OS
+
+| Versão | Base do Sistema | Status | Download da ISO | Release Oficial no GitHub |
+| :--- | :--- | :--- | :--- | :--- |
+| **Geminux OS 1.0 LTS** | Ubuntu 26.04 LTS (Resolute) | 🟢 **Principal / Mais Recente** | [Baixar ISO 1.0 (1.9 GB)](https://github.com/miguel7435987984/geminux/releases/download/v1.0/geminux-1.0-amd64.iso) | [Ver Release v1.0](https://github.com/miguel7435987984/geminux/releases/tag/v1.0) |
+| **Geminux OS 0.9 LTS** | Ubuntu 25.10 (Kanguru) | 🔵 **Edição Predecessora Estável** | [Baixar ISO 0.9 (1.6 GB)](https://github.com/miguel7435987984/geminux/releases/download/v0.9/geminux-0.9-amd64.iso) | [Ver Release v0.9](https://github.com/miguel7435987984/geminux/releases/tag/v0.9) |
+
+---
+
+### 💎 Geminux OS 0.9 LTS (Ubuntu 25.10 Kanguru)
+> **Edição Predecessora Isolada e Independente**  
+> Versão clássica baseada no **Ubuntu 25.10 (Kanguru / Questing)**, equipada com o tema Plymouth de boot nítido, logotipo oficial Geminux no Fastfetch, Prius Terminal na dock, repositório APT local e instalador gráfico Calamares.
+
+<div align="center">
+
+[![Download Geminux 0.9](https://img.shields.io/badge/Download_ISO-Geminux_0.9_LTS-00d2ff?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/miguel7435987984/geminux/releases/download/v0.9/geminux-0.9-amd64.iso)
+[![GitHub Release v0.9](https://img.shields.io/badge/GitHub-Release_v0.9-238636?style=for-the-badge&logo=github)](https://github.com/miguel7435987984/geminux/releases/tag/v0.9)
+
+</div>
+
+---
+
 ## 🛠️ Como Gerar a ISO no GitHub Actions (Nuvem)
 
 Este repositório já conta com **GitHub Actions** configurado para construir a ISO automaticamente nos servidores de alta performance do GitHub:
