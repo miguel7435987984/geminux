@@ -30,8 +30,10 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debootstrap ubuntu-keyring xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools dosfstools
-          sudo ln -sf gutsy /usr/share/debootstrap/scripts/questing
+          sudo apt-get install -y ubuntu-keyring xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools dosfstools wget distro-info
+          wget -q "http://archive.ubuntu.com/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.144ubuntu1_all.deb" -O /tmp/debootstrap.deb
+          sudo dpkg -i /tmp/debootstrap.deb
+          rm -f /tmp/debootstrap.deb
 
       - name: Prepare Scripts Permissions
         run: |
