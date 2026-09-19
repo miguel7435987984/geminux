@@ -174,6 +174,12 @@ set timeout=10
 
 insmod all_video
 
+if [ -z "$root" -o ! -f "($root)/casper/vmlinuz" ]; then
+    if ! search --no-floppy --set=root --label GEMINUX_0_9; then
+        search --no-floppy --set=root --file /.disk/info
+    fi
+fi
+
 menuentry "Experimentar ou Instalar o Geminux OS 0.9 LTS" {
     set gfxpayload=keep
     linux /casper/vmlinuz boot=casper quiet splash ---
@@ -187,11 +193,28 @@ menuentry "Geminux OS 0.9 LTS (Modo Seguro de Gráficos)" {
 }
 EOF
 
+cat << 'EOF' > "${IMAGE_DIR}/boot/grub/loopback.cfg"
+set default="0"
+set timeout=5
+
+menuentry "Experimentar ou Instalar o Geminux OS 0.9 LTS (Live)" {
+    set gfxpayload=keep
+    linux /casper/vmlinuz boot=casper iso-scan/filename=${iso_path} quiet splash ---
+    initrd /casper/initrd
+}
+
+menuentry "Geminux OS 0.9 LTS (Modo Seguro de Gráficos)" {
+    set gfxpayload=keep
+    linux /casper/vmlinuz boot=casper nomodeset iso-scan/filename=${iso_path} quiet splash ---
+    initrd /casper/initrd
+}
+EOF
+
 cat << 'EOF' > "${WORK_DIR}/early-grub.cfg"
-if [ -e /boot/grub/grub.cfg ]; then
-    set root=($root)
-    set prefix=($root)/boot/grub
-    configfile /boot/grub/grub.cfg
+if [ -z "$root" -o ! -f "($root)/casper/vmlinuz" ]; then
+    if ! search --no-floppy --set=root --label GEMINUX_0_9; then
+        search --no-floppy --set=root --file /.disk/info
+    fi
 fi
 set prefix=($root)/boot/grub
 configfile $prefix/grub.cfg
