@@ -166,6 +166,8 @@ log "==> [6/6] Criando squashfs e gerando imagem ISO híbrida ${OUT_ISO}..."
 mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -comp xz -noappend -b 1M
 
 # Configuração do GRUB de Inicialização da ISO
+mkdir -p "${IMAGE_DIR}/boot/grub" "${IMAGE_DIR}/EFI/BOOT"
+
 cat << 'EOF' > "${IMAGE_DIR}/boot/grub/grub.cfg"
 set default="0"
 set timeout=10
@@ -185,16 +187,58 @@ menuentry "Geminux OS 0.9 LTS (Modo Seguro de Gráficos)" {
 }
 EOF
 
+cat << 'EOF' > "${WORK_DIR}/early-grub.cfg"
+if [ -e /boot/grub/grub.cfg ]; then
+    set root=($root)
+    set prefix=($root)/boot/grub
+    configfile /boot/grub/grub.cfg
+fi
+set prefix=($root)/boot/grub
+configfile $prefix/grub.cfg
+EOF
+
+log "Configurando bootloader EFI (x86_64) e BIOS (i386-pc)..."
+mkdir -p "${IMAGE_DIR}/boot/grub/i386-pc" "${IMAGE_DIR}/boot/grub/x86_64-efi"
+cp -r /usr/lib/grub/i386-pc/* "${IMAGE_DIR}/boot/grub/i386-pc/" 2>/dev/null || true
+cp -r /usr/lib/grub/x86_64-efi/* "${IMAGE_DIR}/boot/grub/x86_64-efi/" 2>/dev/null || true
+
+grub-mkstandalone \
+    --format=x86_64-efi \
+    --output="${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" \
+    --locales="" \
+    --fonts="" \
+    --modules="all_video efi_gop iso9660 fat exfat ext2 part_gpt part_msdos normal linux search search_label search_fs_file search_fs_uuid configfile test echo reboot" \
+    "boot/grub/grub.cfg=${WORK_DIR}/early-grub.cfg"
+
+# Criar imagem de partição EFI FAT
+dd if=/dev/zero of="${IMAGE_DIR}/boot/grub/efi.img" bs=1M count=10
+mkfs.vfat "${IMAGE_DIR}/boot/grub/efi.img"
+mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI
+mmd -i "${IMAGE_DIR}/boot/grub/efi.img" ::EFI/BOOT
+mcopy -i "${IMAGE_DIR}/boot/grub/efi.img" "${IMAGE_DIR}/EFI/BOOT/BOOTX64.EFI" ::EFI/BOOT/
+
+# Gerar imagem core BIOS para El Torito
+grub-mkimage \
+    --format=i386-pc-eltorito \
+    --output="${IMAGE_DIR}/boot/grub/bios.img" \
+    --prefix=/boot/grub \
+    iso9660 biosdisk search search_label search_fs_file normal test linux
+
+log "Gerando imagem ISO híbrida oficial com xorriso..."
 xorriso -as mkisofs \
-    -r -V "GEMINUX_0_9" \
-    -J -l -b boot/grub/grub.cfg \
-    -c boot/grub/boot.cat \
+    -iso-level 3 \
+    -full-iso9660-filenames \
+    -r \
+    -J \
+    -volid "GEMINUX_0_9" \
+    -eltorito-boot boot/grub/bios.img \
+    -eltorito-catalog boot/grub/boot.cat \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
     -eltorito-alt-boot \
-    -e EFI/BOOT/BOOTX64.EFI \
+    -e boot/grub/efi.img \
     -no-emul-boot \
     -isohybrid-gpt-basdat \
-    -o "${OUT_ISO}" \
+    -output "${OUT_ISO}" \
     "${IMAGE_DIR}"
 
 log_ok "ISO do Geminux 0.9 LTS gerada com sucesso em: ${OUT_ISO}"

@@ -54,7 +54,7 @@ jobs:
 
       - name: Create Geminux 0.9 GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v0.9')
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v0.9')
         with:
           files: Geminux 0.9 LTS/geminux-0.9-amd64.iso
           tag_name: v0.9
