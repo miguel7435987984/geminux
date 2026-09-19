@@ -70,7 +70,6 @@ gir1.2-gtk-4.0
 gir1.2-vte-2.91
 
 # Navegação e Utilitários Padrão
-firefox
 software-properties-common
 apt-transport-https
 sudo

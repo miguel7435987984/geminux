@@ -1,4 +1,6 @@
 build-workspace/
+temp_iso/
+temp_rootfs/
 *.iso
 *.squashfs
 *.zip

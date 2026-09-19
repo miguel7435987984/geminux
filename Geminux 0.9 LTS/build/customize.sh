@@ -272,6 +272,24 @@ if [ -d /tmp/geminux-build/apps/vmware-installer ]; then
     fi
 fi
 
+# 6.4 Configuração do Fastfetch & Logotipo Oficial do Geminux
+echo "==> Configurando Fastfetch com logotipo oficial do Geminux OS..."
+mkdir -p /etc/fastfetch /etc/xdg/fastfetch /etc/skel/.config/fastfetch
+if [ -d /tmp/geminux-build/config/fastfetch ]; then
+    cp /tmp/geminux-build/config/fastfetch/* /etc/fastfetch/ || true
+    cp /tmp/geminux-build/config/fastfetch/* /etc/xdg/fastfetch/ || true
+    cp /tmp/geminux-build/config/fastfetch/* /etc/skel/.config/fastfetch/ || true
+fi
+
+# Assegura que os aliases do fastfetch carreguem o tema oficial do Geminux
+cat <<'EOF_BASHRC' >> /etc/bash.bashrc
+
+# Geminux OS Official Fastfetch Configuration
+alias fastfetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias geminux-info='fastfetch -c /etc/fastfetch/config.jsonc'
+EOF_BASHRC
+
 # Atualizar caches do sistema
 if [ -x "$(command -v update-desktop-database)" ]; then
     update-desktop-database /usr/share/applications || true
