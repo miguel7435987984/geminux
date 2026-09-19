@@ -127,17 +127,14 @@ EOF_CHROOT
 
 # Extrai kernel e initrd para o diretório de boot da ISO
 log "Extraindo Kernel e Initramfs para a ISO..."
+KERNEL_VER=$(ls -1 "${ROOTFS_DIR}/lib/modules" 2>/dev/null | tail -n 1)
+if [ -n "${KERNEL_VER}" ]; then
+    log "Atualizando initramfs com os temas e logotipo do Geminux 0.9 LTS..."
+    chroot "${ROOTFS_DIR}" update-initramfs -u -k "${KERNEL_VER}" || chroot "${ROOTFS_DIR}" update-initramfs -c -k "${KERNEL_VER}"
+fi
+
 VMLINUZ=$(ls -1t "${ROOTFS_DIR}/boot/vmlinuz-"* 2>/dev/null | head -n 1)
 INITRD=$(ls -1t "${ROOTFS_DIR}/boot/initrd.img-"* 2>/dev/null | head -n 1)
-
-if [ -z "${INITRD}" ] || [ ! -f "${INITRD}" ]; then
-    log "Gerando initramfs para o kernel..."
-    KERNEL_VER=$(ls -1 "${ROOTFS_DIR}/lib/modules" 2>/dev/null | tail -n 1)
-    if [ -n "${KERNEL_VER}" ]; then
-        chroot "${ROOTFS_DIR}" update-initramfs -c -k "${KERNEL_VER}"
-        INITRD=$(ls -1t "${ROOTFS_DIR}/boot/initrd.img-"* 2>/dev/null | head -n 1)
-    fi
-fi
 
 if [ -n "${VMLINUZ}" ] && [ -f "${VMLINUZ}" ]; then
     cp -L "${VMLINUZ}" "${IMAGE_DIR}/casper/vmlinuz"

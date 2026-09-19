@@ -71,8 +71,8 @@ if [ -f /tmp/geminux-build/config/sources.list.d/ubuntu.sources ]; then
     cp /tmp/geminux-build/config/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources
 fi
 
-# 6. Plymouth Boot Splash Theme (Official BGRT + 60-frame Boot Spinner)
-echo "==> Configurando Plymouth Boot Splash (BGRT + 60-frame Spinner)..."
+# 6. Plymouth Boot Splash Theme (Official Geminux BGRT + 60-frame Cyan Boot Spinner)
+echo "==> Configurando Plymouth Boot Splash (Geminux BGRT + 60-frame Spinner)..."
 mkdir -p /etc/plymouth
 cat <<'EOF_PLY' > /etc/plymouth/plymouthd.conf
 [Daemon]
@@ -90,8 +90,23 @@ fi
 if [ -d /tmp/geminux-build/branding/plymouth/spinner ]; then
     cp -r /tmp/geminux-build/branding/plymouth/spinner/* /usr/share/plymouth/themes/spinner/ || true
 fi
+
+# Assegura a presenca do logotipo oficial e do watermark Geminux OS
+if [ -f /tmp/geminux-build/branding/plymouth/spinner/bgrt-fallback.png ]; then
+    cp /tmp/geminux-build/branding/plymouth/spinner/bgrt-fallback.png /usr/share/plymouth/themes/spinner/bgrt-fallback.png
+    cp /tmp/geminux-build/branding/plymouth/spinner/bgrt-fallback.png /usr/share/plymouth/themes/bgrt/bgrt-fallback.png 2>/dev/null || true
+fi
+if [ -f /tmp/geminux-build/branding/plymouth/spinner/watermark.png ]; then
+    cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/plymouth/themes/spinner/watermark.png
+    cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/plymouth/themes/bgrt/watermark.png 2>/dev/null || true
+fi
 if [ -f /tmp/geminux-build/branding/icons/geminux-logo.png ]; then
-    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/plymouth/themes/spinner/bgrt-fallback.png || true
+    cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/plymouth/ubuntu-logo.png 2>/dev/null || true
+fi
+
+# Atualiza tema de texto do Plymouth (caso de fallback de terminal)
+if [ -d /usr/share/plymouth/themes/ubuntu-text ]; then
+    sed -i 's/title=Ubuntu.*/title=Geminux OS 0.9 LTS/g' /usr/share/plymouth/themes/ubuntu-text/ubuntu-text.plymouth 2>/dev/null || true
 fi
 
 if [ -f /usr/share/plymouth/themes/bgrt/bgrt.plymouth ]; then
@@ -102,6 +117,12 @@ if [ -f /usr/share/plymouth/themes/bgrt/bgrt.plymouth ]; then
     if [ -x "$(command -v plymouth-set-default-theme)" ]; then
         plymouth-set-default-theme bgrt || true
     fi
+fi
+
+# Atualiza obrigatoriamente o initramfs dentro do chroot para gravar o splash do Geminux no boot inicial
+echo "==> Atualizando initramfs com os temas oficiais do Geminux 0.9 LTS..."
+if [ -x "$(command -v update-initramfs)" ]; then
+    update-initramfs -u -k all || true
 fi
 
 echo "==> [Geminux 0.9 LTS Hook] Finalizado com sucesso!"
