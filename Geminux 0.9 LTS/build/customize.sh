@@ -26,6 +26,14 @@ fi
 ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
 echo "America/Sao_Paulo" > /etc/timezone
 
+# Silencia aviso legado do casper no boot (install-keymap)
+mkdir -p /usr/sbin
+cat << 'EOF' > /usr/sbin/install-keymap
+#!/bin/sh
+exit 0
+EOF
+chmod +x /usr/sbin/install-keymap
+
 # 2. Identidade do SO: Geminux 0.9 LTS
 if [ -f /tmp/geminux-build/branding/os-release ]; then
     mkdir -p /etc/geminux
