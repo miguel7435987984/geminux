@@ -415,6 +415,8 @@ fi
 if [ -f /tmp/geminux-build/branding/plymouth/spinner/watermark.png ]; then
     cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/plymouth/themes/spinner/watermark.png
     cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/plymouth/themes/bgrt/watermark.png 2>/dev/null || true
+    cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/pixmaps/ubuntu-logo-text-dark.png 2>/dev/null || true
+    cp /tmp/geminux-build/branding/plymouth/spinner/watermark.png /usr/share/pixmaps/ubuntu-logo-text.png 2>/dev/null || true
 fi
 if [ -f /tmp/geminux-build/branding/icons/geminux-logo.png ]; then
     cp /tmp/geminux-build/branding/icons/geminux-logo.png /usr/share/plymouth/ubuntu-logo.png 2>/dev/null || true
