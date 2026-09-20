@@ -34,6 +34,42 @@ exit 0
 EOF
 chmod +x /usr/sbin/install-keymap
 
+# Configuração Oficial do Casper para a Sessão Live do Geminux 0.8 LTS
+cat << 'EOF_CASPER' > /etc/casper.conf
+# Configuração do usuário Live do Geminux OS 0.8 LTS
+export USERNAME="geminux"
+export USERFULLNAME="Geminux OS"
+export HOST="geminux"
+export BUILD_SYSTEM="Ubuntu"
+export FLAVOUR="Geminux"
+EOF_CASPER
+
+# Configuração do GDM3 (Xorg forçado para compatibilidade total com VirtualBox e VMs)
+mkdir -p /etc/gdm3
+cat << 'EOF_GDM3' > /etc/gdm3/custom.conf
+# GDM3 configuration for Geminux OS 0.8 LTS
+[daemon]
+WaylandEnable=false
+AutomaticLoginEnable=true
+AutomaticLogin=geminux
+
+[security]
+
+[xdmcp]
+
+[chooser]
+
+[debug]
+EOF_GDM3
+
+# Assegura criação antecipada do usuário geminux e permissões de sudoers
+if ! id -u geminux >/dev/null 2>&1; then
+    useradd -m -s /bin/bash -c "Geminux OS" -G sudo,adm,cdrom,dip,plugdev,video,audio geminux 2>/dev/null || true
+    echo "geminux:geminux" | chpasswd 2>/dev/null || true
+    echo "geminux ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-geminux-user
+    chmod 440 /etc/sudoers.d/99-geminux-user
+fi
+
 # 2. Identidade do SO: Geminux 0.8 LTS
 if [ -f /tmp/geminux-build/branding/os-release ]; then
     mkdir -p /etc/geminux

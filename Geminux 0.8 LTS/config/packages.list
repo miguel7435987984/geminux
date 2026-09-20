@@ -4,6 +4,9 @@
 
 # Kernel & Inicialização
 linux-generic
+linux-firmware
+initramfs-tools
+systemd-sysv
 casper
 discover
 laptop-detect
@@ -12,11 +15,14 @@ os-prober
 # Ambiente Desktop GNOME & Shell
 ubuntu-desktop-minimal
 gnome-shell
+gdm3
 gnome-terminal
 gnome-control-center
 gnome-tweaks
 gnome-system-monitor
 gnome-software
+gnome-keyring
+libpam-gnome-keyring
 appstream
 appstream-util
 nautilus
@@ -41,7 +47,14 @@ pipewire-pulse
 pipewire-alsa
 wireplumber
 
-# Gráficos & Aceleração
+# Gráficos & Aceleração (Suporte Completo Xorg + Wayland + VirtualBox/VMware)
+xserver-xorg
+xserver-xorg-core
+xserver-xorg-video-all
+x11-xserver-utils
+virtualbox-guest-utils
+virtualbox-guest-x11
+open-vm-tools-desktop
 mesa-utils
 mesa-va-drivers
 mesa-vulkan-drivers

@@ -189,13 +189,13 @@ fi
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.8 LTS" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.8 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper nomodeset quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux nomodeset quiet splash ---
     initrd /casper/initrd
 }
 EOF
@@ -206,13 +206,13 @@ set timeout=5
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.8 LTS (Live)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.8 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper nomodeset iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux nomodeset iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 EOF
