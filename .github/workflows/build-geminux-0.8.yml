@@ -1,0 +1,75 @@
+name: Build Geminux OS 0.8 LTS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Geminux 0.8 LTS/**'
+      - '.github/workflows/build-geminux-0.8.yml'
+
+jobs:
+  build-iso-0-8:
+    name: Build Geminux 0.8 Live ISO (Ubuntu 24.04 LTS Noble)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space on Runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ubuntu-keyring xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools dosfstools wget distro-info
+          wget -q "http://archive.ubuntu.com/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.144ubuntu1_all.deb" -O /tmp/debootstrap.deb
+          sudo dpkg -i /tmp/debootstrap.deb
+          rm -f /tmp/debootstrap.deb
+
+      - name: Prepare Scripts Permissions
+        run: |
+          chmod +x "Geminux 0.8 LTS/build/build-iso.sh"
+          chmod +x "Geminux 0.8 LTS/build/customize.sh"
+
+      - name: Build Geminux 0.8 ISO
+        run: |
+          cd "Geminux 0.8 LTS"
+          sudo ./build/build-iso.sh
+
+      - name: Upload Geminux 0.8 ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geminux-0.8-amd64-iso
+          path: Geminux 0.8 LTS/geminux-0.8-amd64.iso
+          retention-days: 14
+
+      - name: Create Geminux 0.8 GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v0.8')
+        with:
+          files: Geminux 0.8 LTS/geminux-0.8-amd64.iso
+          tag_name: v0.8
+          name: Geminux OS 0.8 LTS (Ubuntu 24.04 LTS Noble)
+          make_latest: false
+          body: |
+            ## 🚀 Geminux OS 0.8 LTS (Ubuntu 24.04 LTS Noble Numbat)
+            Edição estável oficial do Geminux OS construída sobre a base sólida do **Ubuntu 24.04 LTS (Noble Numbat)**.
+
+            ### 💎 Recursos Desta Edição 0.8 LTS:
+            - **Base Estável de Longo Prazo:** Suporte de 5 anos com a base do Ubuntu 24.04 LTS (Noble Numbat).
+            - **Instalador Oficial Calamares:** Instalação intuitiva e ágil com particionamento automático e suporte UEFI/BIOS.
+            - **Prius Terminal:** Fixado por padrão nos favoritos da barra de tarefas (dock).
+            - **Áudio Nativo PipeWire & WirePlumber:** Desempenho de áudio profissional de baixa latência.
+            - **Boot Splash Plymouth Oficial:** Inicialização com identidade visual neon e spinner de alta precisão.
+            - **Isolamento Total:** Release independente que preserva 100% as edições Geminux 1.0 LTS e 0.9 LTS.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

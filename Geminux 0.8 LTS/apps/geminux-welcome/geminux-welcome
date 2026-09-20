@@ -1,0 +1,759 @@
+#!/usr/bin/env python3
+"""
+Geminux Welcome - Centro Oficial de Boas-Vindas & Tour do Geminux OS
+Apresenta os pilares do sistema: Geminux AI, Geminux VM, Prius Terminal e Personalização.
+"""
+
+import sys
+import os
+import json
+import subprocess
+import shutil
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+gi.require_version('GLib', '2.0')
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, GdkPixbuf, Gio
+
+APP_NAME = "Geminux Welcome"
+APP_VERSION = "1.0.0"
+ACCENT_CYAN = "#00d2ff"
+ACCENT_CYAN_HOVER = "#33dcff"
+BG_DARK = "#0b0f17"
+BG_CARD = "#141a24"
+BG_CARD_HOVER = "#1c2533"
+BG_INPUT = "#0e131d"
+BORDER_COLOR = "#222d3d"
+TEXT_PRIMARY = "#f0f6fc"
+TEXT_MUTED = "#8b949e"
+SUCCESS_GREEN = "#2ea043"
+
+CSS_STYLE = f"""
+* {{
+    font-family: 'Ubuntu', sans-serif;
+}}
+
+window.background {{
+    background-color: {BG_DARK};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar {{
+    background-color: {BG_CARD};
+    border-bottom: 1px solid {BORDER_COLOR};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .title {{
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .subtitle {{
+    color: {ACCENT_CYAN};
+    font-size: 11px;
+}}
+
+.hero-box {{
+    background-color: #0d1726;
+    border-bottom: 1px solid {BORDER_COLOR};
+    padding: 32px 24px;
+}}
+
+.hero-title {{
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 800;
+}}
+
+.hero-subtitle {{
+    color: {ACCENT_CYAN};
+    font-size: 14px;
+    font-weight: 600;
+}}
+
+.hero-desc {{
+    color: {TEXT_MUTED};
+    font-size: 13px;
+}}
+
+.card {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 12px;
+    padding: 16px;
+}}
+
+.card:hover {{
+    background-color: {BG_CARD_HOVER};
+    border-color: {ACCENT_CYAN};
+}}
+
+.card-title {{
+    color: {TEXT_PRIMARY};
+    font-size: 15px;
+    font-weight: 700;
+}}
+
+.card-desc {{
+    color: {TEXT_MUTED};
+    font-size: 12px;
+}}
+
+.badge {{
+    background-color: rgba(0, 210, 255, 0.12);
+    color: {ACCENT_CYAN};
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+.btn-primary {{
+    background-color: {ACCENT_CYAN};
+    color: #000000;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 8px 16px;
+    border: none;
+}}
+
+.btn-primary:hover {{
+    background-color: {ACCENT_CYAN_HOVER};
+}}
+
+.btn-secondary {{
+    background-color: #1a2230;
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+}}
+
+.btn-secondary:hover {{
+    background-color: #242f42;
+    border-color: {ACCENT_CYAN};
+    color: {ACCENT_CYAN};
+}}
+
+.btn-launch {{
+    background-color: #15263d;
+    color: {ACCENT_CYAN};
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 600;
+    font-size: 12px;
+}}
+
+.btn-launch:hover {{
+    background-color: #1d3554;
+    border-color: {ACCENT_CYAN};
+    color: #ffffff;
+}}
+
+.sidebar-row {{
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 2px 8px;
+}}
+
+.sidebar-row:selected {{
+    background-color: #1a2538;
+    color: {ACCENT_CYAN};
+    font-weight: bold;
+}}
+
+.footer-bar {{
+    background-color: {BG_CARD};
+    border-top: 1px solid {BORDER_COLOR};
+    padding: 12px 20px;
+}}
+"""
+
+AUTOSTART_DIR = os.path.expanduser("~/.config/autostart")
+AUTOSTART_FILE = os.path.join(AUTOSTART_DIR, "geminux-welcome.desktop")
+
+
+def launch_app(cmd):
+    """Executa um comando ou aplicativo de forma assíncrona e segura"""
+    try:
+        subprocess.Popen(cmd, shell=True)
+    except Exception as e:
+        print(f"[GeminuxWelcome] Erro ao abrir {cmd}: {e}", file=sys.stderr)
+
+
+class GeminuxWelcomeApp(Gtk.Window):
+    def __init__(self):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.set_title(f"{APP_NAME} - Geminux OS")
+        self.set_default_size(960, 640)
+        self.set_position(Gtk.WindowPosition.CENTER)
+
+        # Configura ícone da janela
+        icon_paths = [
+            "/usr/share/icons/hicolor/scalable/apps/geminux-welcome.svg",
+            "/usr/share/pixmaps/geminux-welcome.svg",
+            os.path.join(os.path.dirname(__file__), "../../branding/icons/geminux-welcome.svg"),
+            "/usr/share/icons/hicolor/scalable/apps/geminux-logo.svg"
+        ]
+        for p in icon_paths:
+            if os.path.exists(p):
+                self.set_icon_from_file(p)
+                break
+
+        # HeaderBar Oficial
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.set_title(APP_NAME)
+        header.set_subtitle("Geminux OS 1.0 LTS • Inovação, IA & Virtualização")
+        self.set_titlebar(header)
+
+        # Botão instalar sistema (se em modo Live)
+        is_live = os.path.exists("/usr/bin/calamares") or os.path.exists("/usr/local/bin/geminux-installer")
+        if is_live:
+            btn_install = Gtk.Button(label="💿 Instalar Geminux OS")
+            btn_install.get_style_context().add_class("btn-primary")
+            btn_install.connect("clicked", lambda b: launch_app("geminux-installer || calamares"))
+            header.pack_end(btn_install)
+
+        # Layout Principal Horizontal (Sidebar de Navegação + Stack de Conteúdo)
+        main_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.add(main_hbox)
+
+        # Sidebar Lateral Esquerda
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        sidebar.set_size_request(240, -1)
+        sidebar.get_style_context().add_class("card")
+        sidebar.set_margin_start(0)
+        sidebar.set_margin_end(0)
+        sidebar.set_margin_top(0)
+        sidebar.set_margin_bottom(0)
+
+        # Logo e Branding no topo da sidebar
+        logo_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        logo_box.set_margin_start(16)
+        logo_box.set_margin_end(16)
+        logo_box.set_margin_top(20)
+        logo_box.set_margin_bottom(16)
+
+        logo_img = Gtk.Image()
+        logo_icon_p = None
+        for p in icon_paths:
+            if os.path.exists(p):
+                logo_icon_p = p
+                break
+        if logo_icon_p:
+            try:
+                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo_icon_p, 42, 42, True)
+                logo_img.set_from_pixbuf(pb)
+            except Exception:
+                pass
+        logo_box.pack_start(logo_img, False, False, 0)
+
+        brand_lbls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        b_title = Gtk.Label()
+        b_title.set_markup("<span weight='bold' size='large' color='#00d2ff'>Geminux OS</span>")
+        b_title.set_halign(Gtk.Align.START)
+        b_sub = Gtk.Label(label="Versão 1.0 LTS")
+        b_sub.get_style_context().add_class("badge")
+        b_sub.set_halign(Gtk.Align.START)
+        brand_lbls.pack_start(b_title, False, False, 0)
+        brand_lbls.pack_start(b_sub, False, False, 0)
+        logo_box.pack_start(brand_lbls, True, True, 0)
+        sidebar.pack_start(logo_box, False, False, 0)
+
+        # Separador sutil
+        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sidebar.pack_start(sep, False, False, 6)
+
+        # Lista de Páginas do Tour
+        self.nav_list = Gtk.ListBox()
+        self.nav_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.nav_list.connect("row-selected", self.on_nav_selected)
+
+        self.pages_info = [
+            ("welcome", "✨ Boas-Vindas", "Visão geral do sistema operacional"),
+            ("apps", "🚀 Aplicativos &amp; IA", "Geminux AI, VM e Prius Terminal"),
+            ("custom", "🎨 Personalização", "Temas, tela, conexões e wallpapers"),
+            ("community", "🌐 Suporte &amp; Comunidade", "Documentação, GitHub e ajuda")
+        ]
+
+        for p_id, p_title, p_desc in self.pages_info:
+            row = Gtk.ListBoxRow()
+            row.page_id = p_id
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            row_box.get_style_context().add_class("sidebar-row")
+            lbl = Gtk.Label()
+            lbl.set_markup(f"<span size='medium'>{p_title}</span>")
+            lbl.set_halign(Gtk.Align.START)
+            row_box.pack_start(lbl, True, True, 0)
+            row.add(row_box)
+            self.nav_list.add(row)
+
+        sidebar.pack_start(self.nav_list, True, True, 0)
+
+        # Checkbox na base da sidebar: Iniciar com o sistema
+        autostart_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        autostart_box.set_margin_start(16)
+        autostart_box.set_margin_end(16)
+        autostart_box.set_margin_bottom(16)
+
+        self.chk_autostart = Gtk.CheckButton(label="Exibir ao iniciar o Geminux")
+        self.chk_autostart.set_active(self.is_autostart_enabled())
+        self.chk_autostart.connect("toggled", self.on_autostart_toggled)
+        autostart_box.pack_start(self.chk_autostart, False, False, 0)
+        sidebar.pack_end(autostart_box, False, False, 0)
+
+        main_hbox.pack_start(sidebar, False, False, 0)
+
+        # Divisor vertical
+        v_sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        main_hbox.pack_start(v_sep, False, False, 0)
+
+        # Stack Central de Conteúdo
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(250)
+
+        self.stack.add_named(self.create_welcome_page(), "welcome")
+        self.stack.add_named(self.create_apps_page(), "apps")
+        self.stack.add_named(self.create_custom_page(), "custom")
+        self.stack.add_named(self.create_community_page(), "community")
+
+        main_hbox.pack_start(self.stack, True, True, 0)
+
+        # Seleciona a primeira linha
+        first_row = self.nav_list.get_row_at_index(0)
+        if first_row:
+            self.nav_list.select_row(first_row)
+
+    def on_nav_selected(self, listbox, row):
+        if row and hasattr(row, "page_id"):
+            self.stack.set_visible_child_name(row.page_id)
+
+    def is_autostart_enabled(self):
+        """Verifica se o início automático do Geminux Welcome está ativo"""
+        if os.path.exists(AUTOSTART_FILE):
+            try:
+                with open(AUTOSTART_FILE, "r") as f:
+                    content = f.read()
+                    if "X-GNOME-Autostart-enabled=false" in content or "Hidden=true" in content:
+                        return False
+            except Exception:
+                pass
+        return True
+
+    def on_autostart_toggled(self, button):
+        """Ativa ou desativa a inicialização do Geminux Welcome"""
+        enabled = button.get_active()
+        os.makedirs(AUTOSTART_DIR, exist_ok=True)
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Name=Geminux Welcome
+Comment=Centro Oficial de Boas-Vindas & Tour do Geminux OS
+Exec=geminux-welcome
+Icon=geminux-welcome
+Terminal=false
+Categories=Utility;Settings;
+X-GNOME-Autostart-enabled={'true' if enabled else 'false'}
+Hidden={'false' if enabled else 'true'}
+"""
+        try:
+            with open(AUTOSTART_FILE, "w") as f:
+                f.write(desktop_content)
+        except Exception as e:
+            print(f"[GeminuxWelcome] Erro ao gravar autostart: {e}", file=sys.stderr)
+
+    # -------------------------------------------------------------------------
+    # Aba 1: Boas-Vindas
+    # -------------------------------------------------------------------------
+    def create_welcome_page(self):
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+
+        # Hero Banner
+        hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        hero.get_style_context().add_class("hero-box")
+
+        h_title = Gtk.Label()
+        h_title.set_markup("<span weight='heavy' size='20000' color='#ffffff'>Bem-vindo ao Geminux OS</span>")
+        h_title.set_halign(Gtk.Align.START)
+        hero.pack_start(h_title, False, False, 0)
+
+        h_sub = Gtk.Label()
+        h_sub.set_markup(f"<span weight='bold' size='12000' color='{ACCENT_CYAN}'>O Sistema Operacional com Inteligência Artificial Nativa e Máxima Performance</span>")
+        h_sub.set_halign(Gtk.Align.START)
+        hero.pack_start(h_sub, False, False, 0)
+
+        h_desc = Gtk.Label()
+        h_desc.set_text(
+            "O Geminux OS foi desenvolvido para unir a estabilidade robusta do Linux com as ferramentas mais "
+            "modernas de inteligência artificial, virtualização avançada de sistemas (Windows, Linux e macOS) "
+            "e uma experiência gráfica de alta fidelidade visual."
+        )
+        h_desc.get_style_context().add_class("hero-desc")
+        h_desc.set_line_wrap(True)
+        h_desc.set_halign(Gtk.Align.START)
+        hero.pack_start(h_desc, False, False, 0)
+
+        vbox.pack_start(hero, False, False, 0)
+
+        # Conteúdo em cartões com scroll suave
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        content_box.set_margin_start(24)
+        content_box.set_margin_end(24)
+        content_box.set_margin_top(20)
+        content_box.set_margin_bottom(24)
+
+        # Grid de Pilares do Geminux
+        grid = Gtk.Grid()
+        grid.set_column_spacing(16)
+        grid.set_row_spacing(16)
+        grid.set_column_homogeneous(True)
+
+        features = [
+            ("🤖", "Geminux AI Integrado", "Modelos modernos de IA com suporte a múltiplos provedores (Gemini 3.8, DeepSeek e Qwen) para automação de tarefas e código."),
+            ("🖥️", "Geminux Virtual Machine", "Virtualização acelerada KVM para rodar Windows, Linux e macOS dentro do próprio sistema com máxima velocidade."),
+            ("⚡", "Prius Terminal", "Terminal ultrarrápido com atalhos exclusivos, diagnóstico de hardware e visual cyberpunk oficial."),
+            ("🛡️", "Estabilidade & Proteção", "Kernel Linux otimizado, suporte a drivers Wi-Fi modernos para notebooks e proteção de integridade do sistema.")
+        ]
+
+        for i, (icon, title, desc) in enumerate(features):
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            card.get_style_context().add_class("card")
+
+            ic_lbl = Gtk.Label()
+            ic_lbl.set_markup(f"<span size='28000'>{icon}</span>")
+            card.pack_start(ic_lbl, False, False, 0)
+
+            c_text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            c_title = Gtk.Label()
+            c_title.set_markup(f"<span weight='bold' size='12000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(title)}</span>")
+            c_title.set_halign(Gtk.Align.START)
+            c_desc = Gtk.Label(label=desc)
+            c_desc.get_style_context().add_class("card-desc")
+            c_desc.set_line_wrap(True)
+            c_desc.set_halign(Gtk.Align.START)
+            c_text.pack_start(c_title, False, False, 0)
+            c_text.pack_start(c_desc, True, True, 0)
+            card.pack_start(c_text, True, True, 0)
+
+            col = i % 2
+            row = i // 2
+            grid.attach(card, col, row, 1, 1)
+
+        content_box.pack_start(grid, False, False, 0)
+
+        # Botão de Ação para Iniciar Tour
+        tour_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        tour_btn_box.set_halign(Gtk.Align.END)
+        tour_btn_box.set_margin_top(12)
+
+        btn_next = Gtk.Button(label="Conhecer Aplicativos ➔")
+        btn_next.get_style_context().add_class("btn-primary")
+        btn_next.connect("clicked", lambda b: self.nav_list.select_row(self.nav_list.get_row_at_index(1)))
+        tour_btn_box.pack_start(btn_next, False, False, 0)
+
+        content_box.pack_start(tour_btn_box, False, False, 0)
+        scrolled.add(content_box)
+        vbox.pack_start(scrolled, True, True, 0)
+
+        return vbox
+
+    # -------------------------------------------------------------------------
+    # Aba 2: Aplicativos & Pilares
+    # -------------------------------------------------------------------------
+    def create_apps_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        vbox.set_margin_start(24)
+        vbox.set_margin_end(24)
+        vbox.set_margin_top(24)
+        vbox.set_margin_bottom(24)
+
+        sec_title = Gtk.Label()
+        sec_title.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Aplicativos Exclusivos do Geminux</span>")
+        sec_title.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_title, False, False, 0)
+
+        sec_sub = Gtk.Label(label="Softwares desenvolvidos especialmente para potencializar sua produtividade:")
+        sec_sub.get_style_context().add_class("hero-desc")
+        sec_sub.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_sub, False, False, 0)
+
+        apps = [
+            (
+                "geminux-ai",
+                "🤖 Geminux AI",
+                "Assistente Inteligente Nativo",
+                "Gera comandos, explica erros de compilação, escreve scripts e responde dúvidas do sistema operacional em tempo real.",
+                "Abrir Geminux AI",
+                "geminux-ai"
+            ),
+            (
+                "geminux-vm",
+                "🖥️ Geminux Virtual Machine",
+                "Central Oficial de Virtualização",
+                "Crie e execute máquinas virtuais de Windows, Linux e macOS com aceleração KVM, suporte a discos .qcow2, .vdi e .vmdk e console embutido.",
+                "Abrir Geminux VM",
+                "geminux-vm"
+            ),
+            (
+                "prius-terminal",
+                "⚡ Prius Terminal",
+                "Terminal Padrão do Geminux",
+                "Terminal ultrarrápido com atalhos intuitivos e identidade visual ciano fixada na barra de tarefas.",
+                "Abrir Prius Terminal",
+                "prius"
+            ),
+            (
+                "geminux-store",
+                "🛍️ Geminux Store",
+                "Centro Oficial de Aplicativos",
+                "Explore, instale e atualize softwares nativos do Geminux, ferramentas de IA, pacotes DEB e Flatpak com 1 clique.",
+                "Abrir Geminux Store",
+                "geminux-store"
+            ),
+            (
+                "sober-fix",
+                "🎮 Sober Fix",
+                "Otimizador de Jogos & Roblox",
+                "Ferramenta de diagnóstico e resolução de compatibilidade para execução fluida do Roblox e títulos nativos.",
+                "Abrir Sober Fix",
+                "sober-fix"
+            )
+        ]
+
+        for icon_name, title, category, desc, btn_label, cmd in apps:
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+            card.get_style_context().add_class("card")
+
+            info_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            t_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            t_lbl = Gtk.Label()
+            t_lbl.set_markup(f"<span weight='bold' size='13000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(title)}</span>")
+            badge = Gtk.Label(label=category)
+            badge.get_style_context().add_class("badge")
+            t_box.pack_start(t_lbl, False, False, 0)
+            t_box.pack_start(badge, False, False, 0)
+            info_v.pack_start(t_box, False, False, 0)
+
+            d_lbl = Gtk.Label(label=desc)
+            d_lbl.get_style_context().add_class("card-desc")
+            d_lbl.set_line_wrap(True)
+            d_lbl.set_halign(Gtk.Align.START)
+            info_v.pack_start(d_lbl, True, True, 0)
+
+            card.pack_start(info_v, True, True, 0)
+
+            btn = Gtk.Button(label=btn_label)
+            btn.get_style_context().add_class("btn-launch")
+            btn.set_valign(Gtk.Align.CENTER)
+            btn.connect("clicked", lambda b, c=cmd: launch_app(c))
+            card.pack_end(btn, False, False, 0)
+
+            vbox.pack_start(card, False, False, 0)
+
+        scrolled.add(vbox)
+        return scrolled
+
+    # -------------------------------------------------------------------------
+    # Aba 3: Personalização & Sistema
+    # -------------------------------------------------------------------------
+    def create_custom_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        vbox.set_margin_start(24)
+        vbox.set_margin_end(24)
+        vbox.set_margin_top(24)
+        vbox.set_margin_bottom(24)
+
+        sec_title = Gtk.Label()
+        sec_title.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Personalização do Sistema</span>")
+        sec_title.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_title, False, False, 0)
+
+        sec_sub = Gtk.Label(label="Ajuste a aparência, tela, conexões e configurações ao seu estilo:")
+        sec_sub.get_style_context().add_class("hero-desc")
+        sec_sub.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_sub, False, False, 0)
+
+        # Card de Tema Visual (Dark / Light)
+        theme_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        theme_card.get_style_context().add_class("card")
+
+        t_info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        t_title = Gtk.Label()
+        t_title.set_markup(f"<span weight='bold' size='13000' color='{TEXT_PRIMARY}'>🎨 Esquema de Cores</span>")
+        t_title.set_halign(Gtk.Align.START)
+        t_desc = Gtk.Label(label="Alterne entre o visual Dark Oficial do Geminux e o modo claro.")
+        t_desc.get_style_context().add_class("card-desc")
+        t_desc.set_halign(Gtk.Align.START)
+        t_info.pack_start(t_title, False, False, 0)
+        t_info.pack_start(t_desc, False, False, 0)
+        theme_card.pack_start(t_info, True, True, 0)
+
+        theme_btns = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_dark = Gtk.Button(label="🌙 Modo Escuro")
+        btn_dark.get_style_context().add_class("btn-secondary")
+        btn_dark.connect("clicked", lambda b: launch_app("gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'"))
+        btn_light = Gtk.Button(label="☀️ Modo Claro")
+        btn_light.get_style_context().add_class("btn-secondary")
+        btn_light.connect("clicked", lambda b: launch_app("gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'"))
+        theme_btns.pack_start(btn_dark, False, False, 0)
+        theme_btns.pack_start(btn_light, False, False, 0)
+        theme_card.pack_end(theme_btns, False, False, 0)
+        vbox.pack_start(theme_card, False, False, 0)
+
+        # Atalhos rápidos para o painel de configurações
+        settings_shortcuts = [
+            ("🖼️", "Plano de Fundo & Papel de Parede", "Escolha entre os papéis de parede em alta definição do Geminux.", "gnome-control-center background"),
+            ("🖥️", "Resolução e Monitores", "Configure taxa de atualização, múltiplos monitores e escala HiDPI.", "gnome-control-center display"),
+            ("📶", "Rede e Conexões Wi-Fi", "Conecte-se à internet, configure VPNs e dispositivos sem fio.", "gnome-control-center wifi"),
+            ("🔊", "Áudio e Microfone", "Selecione a saída de som e ajuste os níveis dos dispositivos.", "gnome-control-center sound"),
+            ("⚙️", "Todas as Configurações", "Abra a central de controle completa do sistema.", "gnome-control-center")
+        ]
+
+        for icon, title, desc, cmd in settings_shortcuts:
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            card.get_style_context().add_class("card")
+
+            ic_lbl = Gtk.Label()
+            ic_lbl.set_markup(f"<span size='22000'>{icon}</span>")
+            card.pack_start(ic_lbl, False, False, 0)
+
+            c_text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            c_title = Gtk.Label()
+            c_title.set_markup(f"<span weight='bold' size='12000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(title)}</span>")
+            c_title.set_halign(Gtk.Align.START)
+            c_desc = Gtk.Label(label=desc)
+            c_desc.get_style_context().add_class("card-desc")
+            c_desc.set_halign(Gtk.Align.START)
+            c_text.pack_start(c_title, False, False, 0)
+            c_text.pack_start(c_desc, True, True, 0)
+            card.pack_start(c_text, True, True, 0)
+
+            btn = Gtk.Button(label="Configurar ➔")
+            btn.get_style_context().add_class("btn-secondary")
+            btn.set_valign(Gtk.Align.CENTER)
+            btn.connect("clicked", lambda b, c=cmd: launch_app(c))
+            card.pack_end(btn, False, False, 0)
+
+            vbox.pack_start(card, False, False, 0)
+
+        scrolled.add(vbox)
+        return scrolled
+
+    # -------------------------------------------------------------------------
+    # Aba 4: Suporte & Comunidade
+    # -------------------------------------------------------------------------
+    def create_community_page(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        vbox.set_margin_start(24)
+        vbox.set_margin_end(24)
+        vbox.set_margin_top(24)
+        vbox.set_margin_bottom(24)
+
+        sec_title = Gtk.Label()
+        sec_title.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Comunidade &amp; Desenvolvimento</span>")
+        sec_title.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_title, False, False, 0)
+
+        sec_sub = Gtk.Label(label="O Geminux é um projeto de código aberto em constante evolução:")
+        sec_sub.get_style_context().add_class("hero-desc")
+        sec_sub.set_halign(Gtk.Align.START)
+        vbox.pack_start(sec_sub, False, False, 0)
+
+        links = [
+            ("🐙", "Repositório Oficial no GitHub", "Acompanhe commits, releases, reporte problemas e contribua com novas ideias.", "https://github.com/miguel7435987984/geminux"),
+            ("📖", "Documentação do Geminux OS", "Guias de instalação, manuais do assistente Geminux AI e tutoriais de VMs.", "https://github.com/miguel7435987984/geminux#readme"),
+            ("🚀", "Roadmap & Geminux 2.0 LTS", "Confira o planejamento das próximas versões e novidades futuras.", "https://github.com/miguel7435987984/geminux/releases")
+        ]
+
+        for icon, title, desc, url in links:
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            card.get_style_context().add_class("card")
+
+            ic_lbl = Gtk.Label()
+            ic_lbl.set_markup(f"<span size='24000'>{icon}</span>")
+            card.pack_start(ic_lbl, False, False, 0)
+
+            c_text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            c_title = Gtk.Label()
+            c_title.set_markup(f"<span weight='bold' size='12000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(title)}</span>")
+            c_title.set_halign(Gtk.Align.START)
+            c_desc = Gtk.Label(label=desc)
+            c_desc.get_style_context().add_class("card-desc")
+            c_desc.set_halign(Gtk.Align.START)
+            c_desc.set_line_wrap(True)
+            c_text.pack_start(c_title, False, False, 0)
+            c_text.pack_start(c_desc, True, True, 0)
+            card.pack_start(c_text, True, True, 0)
+
+            btn = Gtk.Button(label="Acessar ↗")
+            btn.get_style_context().add_class("btn-secondary")
+            btn.set_valign(Gtk.Align.CENTER)
+            btn.connect("clicked", lambda b, u=url: launch_app(f"xdg-open '{u}'"))
+            card.pack_end(btn, False, False, 0)
+
+            vbox.pack_start(card, False, False, 0)
+
+        # Informações de Hardware & Sistema
+        sys_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sys_card.get_style_context().add_class("card")
+        sys_card.set_margin_top(12)
+
+        sys_title = Gtk.Label()
+        sys_title.set_markup(f"<span weight='bold' size='13000' color='{TEXT_PRIMARY}'>ℹ️ Informações da Sessão</span>")
+        sys_title.set_halign(Gtk.Align.START)
+        sys_card.pack_start(sys_title, False, False, 0)
+
+        # Coleta infos do sistema
+        uname_s = os.uname()
+        kernel_info = f"Kernel: Linux {uname_s.release} ({uname_s.machine})"
+        user_info = f"Usuário: {os.environ.get('USER', 'geminux')} | Sessão: {os.environ.get('XDG_CURRENT_DESKTOP', 'GNOME')}"
+
+        sys_k = Gtk.Label(label=kernel_info)
+        sys_k.get_style_context().add_class("card-desc")
+        sys_k.set_halign(Gtk.Align.START)
+        sys_u = Gtk.Label(label=user_info)
+        sys_u.get_style_context().add_class("card-desc")
+        sys_u.set_halign(Gtk.Align.START)
+
+        sys_card.pack_start(sys_k, False, False, 0)
+        sys_card.pack_start(sys_u, False, False, 0)
+        vbox.pack_start(sys_card, False, False, 0)
+
+        scrolled.add(vbox)
+        return scrolled
+
+
+def main():
+    # Aplica CSS
+    screen = Gdk.Screen.get_default()
+    if screen:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS_STYLE.encode())
+        Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    app = GeminuxWelcomeApp()
+    app.connect("destroy", Gtk.main_quit)
+    app.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

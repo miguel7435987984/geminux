@@ -1,0 +1,16 @@
+# Geminux OS 0.8 LTS Release Info
+NAME="Geminux OS"
+VERSION="0.8 LTS (Noble 24.04)"
+ID=geminux
+ID_LIKE="ubuntu debian"
+PRETTY_NAME="Geminux OS 0.8 LTS (Ubuntu 24.04 LTS Noble)"
+VERSION_ID="0.8"
+VERSION_CODENAME=noble
+UBUNTU_CODENAME=noble
+HOME_URL="https://github.com/miguel7435987984/geminux"
+SUPPORT_URL="https://github.com/miguel7435987984/geminux/issues"
+BUG_REPORT_URL="https://github.com/miguel7435987984/geminux/issues"
+PRIVACY_POLICY_URL="https://github.com/miguel7435987984/geminux"
+LOGO=geminux-logo
+VENDOR_NAME="Geminux OS Team"
+VENDOR_URL="https://github.com/miguel7435987984/geminux"

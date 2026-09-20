@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="sf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="sf-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded Base Background -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#sf-bg)"/>
+
+  <!-- Roblox/Sober Tilt Tilt Cube Base -->
+  <rect x="36" y="36" width="56" height="56" rx="14" fill="#0f172a" opacity="0.6"/>
+
+  <!-- Broom & Wrench Repair Symbol -->
+  <!-- Wrench Handle -->
+  <path d="M42 86 L74 54 M74 54 L84 44 C88 40 88 34 84 30 C80 26 74 26 70 30 L60 40 M60 40 L50 34" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Sparkles / Cleaning Magic Star -->
+  <path d="M84 76 L87 84 L95 87 L87 90 L84 98 L81 90 L73 87 L81 84 Z" fill="#38bdf8"/>
+  <circle cx="44" cy="44" r="4" fill="#38bdf8"/>
+</svg>

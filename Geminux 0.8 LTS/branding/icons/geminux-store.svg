@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1320"/>
+      <stop offset="100%" stop-color="#141a24"/>
+    </linearGradient>
+    <linearGradient id="bagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#152438"/>
+      <stop offset="100%" stop-color="#0f1926"/>
+    </linearGradient>
+    <linearGradient id="gemGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+    <linearGradient id="gemGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#33dcff"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Modern Rounded Squircle Background -->
+  <rect x="25" y="25" width="450" height="450" rx="90" fill="url(#bgGrad)" stroke="#222d3d" stroke-width="4"/>
+
+  <!-- Orbital Glow Ring -->
+  <ellipse cx="250" cy="275" rx="160" ry="70" fill="none" stroke="#00d2ff" stroke-width="2" stroke-opacity="0.25" transform="rotate(-15 250 275)"/>
+
+  <!-- Shopping Bag Handle -->
+  <path d="M 185,185 C 185,105 315,105 315,185" fill="none" stroke="url(#cyanGlow)" stroke-width="12" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M 185,185 C 185,105 315,105 315,185" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Shopping Bag Body -->
+  <path d="M 130,175 L 370,175 L 390,395 C 392,410 380,420 365,420 L 135,420 C 120,420 108,410 110,395 Z" fill="url(#bagGrad)" stroke="#00d2ff" stroke-width="5"/>
+
+  <!-- Fold / Shadow Accent on Bag -->
+  <path d="M 130,175 L 180,210 L 320,210 L 370,175" fill="none" stroke="#223650" stroke-width="3"/>
+
+  <!-- Twin Diamond Core on Bag Front -->
+  <g transform="translate(0, 30)">
+    <polygon points="210,185 250,225 210,315 170,245" fill="url(#gemGrad1)" opacity="0.95" filter="url(#glow)"/>
+    <polygon points="290,185 330,245 290,315 250,225" fill="url(#gemGrad2)" opacity="0.95" filter="url(#glow)"/>
+    <polygon points="250,225 268,250 250,275 232,250" fill="#ffffff" filter="url(#glow)"/>
+  </g>
+
+  <!-- Sparkles & Apps Energy -->
+  <path d="M 375,120 L 378,132 L 390,135 L 378,138 L 375,150 L 372,138 L 360,135 L 372,132 Z" fill="#00f2fe" filter="url(#glow)"/>
+  <path d="M 125,135 L 128,147 L 140,150 L 128,153 L 125,165 L 122,153 L 110,150 L 122,147 Z" fill="#ffffff" filter="url(#glow)"/>
+  <circle cx="395" cy="270" r="4" fill="#00d2ff" filter="url(#glow)"/>
+  <circle cx="105" cy="290" r="3" fill="#33dcff" filter="url(#glow)"/>
+
+  <!-- Store Tag Badge -->
+  <rect x="180" y="385" width="140" height="24" rx="12" fill="#0b1320" stroke="#00d2ff" stroke-width="2"/>
+  <text x="250" y="401" font-family="Ubuntu, sans-serif" font-size="12" font-weight="bold" fill="#00d2ff" text-anchor="middle" letter-spacing="2">STORE</text>
+</svg>

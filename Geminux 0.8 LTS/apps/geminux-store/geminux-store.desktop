@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Geminux Store
+GenericName=App Center & Package Manager
+GenericName[pt_BR]=Centro de Aplicativos & Gerenciador de Pacotes
+Comment=Official app store, software catalog, and updates for Geminux OS
+Comment[pt_BR]=Loja oficial de aplicativos, catálogo de programas e atualizações do Geminux OS
+Exec=geminux-store
+Icon=geminux-store
+Terminal=false
+Categories=System;PackageManager;Settings;Utility;
+Keywords=app;store;software;install;uninstall;update;packages;geminux;catalog;
+StartupNotify=true
+StartupWMClass=geminux-store
+X-GNOME-Gettext-Domain=geminux-store

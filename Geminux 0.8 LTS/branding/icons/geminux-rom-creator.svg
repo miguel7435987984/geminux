@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1726"/>
+      <stop offset="100%" stop-color="#06090e"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#0072ff"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect x="30" y="30" width="440" height="440" rx="90" fill="url(#bgGrad)" stroke="#1f293d" stroke-width="6"/>
+  <rect x="36" y="36" width="428" height="428" rx="84" fill="none" stroke="#00d2ff" stroke-width="2" stroke-opacity="0.4"/>
+
+  <!-- Circuit traces -->
+  <path d="M70 140 L130 140 L160 170" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.5"/>
+  <circle cx="70" cy="140" r="6" fill="#00d2ff"/>
+  <circle cx="160" cy="170" r="4" fill="#00d2ff"/>
+
+  <path d="M430 140 L370 140 L340 170" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.5"/>
+  <circle cx="430" cy="140" r="6" fill="#00d2ff"/>
+  <circle cx="340" cy="170" r="4" fill="#00d2ff"/>
+
+  <path d="M70 360 L130 360 L160 330" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.5"/>
+  <circle cx="70" cy="360" r="6" fill="#00d2ff"/>
+  <circle cx="160" cy="330" r="4" fill="#00d2ff"/>
+
+  <path d="M430 360 L370 360 L340 330" fill="none" stroke="#00d2ff" stroke-width="3" stroke-opacity="0.5"/>
+  <circle cx="430" cy="360" r="6" fill="#00d2ff"/>
+  <circle cx="340" cy="330" r="4" fill="#00d2ff"/>
+
+  <!-- Outer ROM Disk Ring -->
+  <circle cx="250" cy="250" r="145" fill="none" stroke="#00d2ff" stroke-width="4" stroke-opacity="0.7" stroke-dasharray="14 10"/>
+  <circle cx="250" cy="250" r="125" fill="#111c2e" stroke="#1f2d45" stroke-width="4"/>
+
+  <!-- Glowing ROM Sector Tracks -->
+  <circle cx="250" cy="250" r="95" fill="none" stroke="#00f2fe" stroke-width="2" stroke-opacity="0.4"/>
+  <circle cx="250" cy="250" r="65" fill="#0b121e" stroke="#00d2ff" stroke-width="3" filter="url(#neonGlow)"/>
+
+  <!-- Twin Diamond Core (Geminux Logo inside ROM) -->
+  <polygon points="210,180 250,225 210,320 170,250" fill="url(#cyanGrad)" opacity="0.95" filter="url(#neonGlow)"/>
+  <polygon points="290,180 330,250 290,320 250,225" fill="url(#cyanGrad)" opacity="0.8" filter="url(#neonGlow)"/>
+  <polygon points="250,225 270,250 250,275 230,250" fill="#ffffff" filter="url(#neonGlow)"/>
+
+  <!-- Hammer / Tool / Wrench Accent (Creator Badge) -->
+  <g transform="translate(320, 310)">
+    <circle cx="45" cy="45" r="50" fill="#0a1322" stroke="#00d2ff" stroke-width="3"/>
+    <path d="M25 65 L60 30 M50 20 L70 40 M55 15 C60 10 75 15 80 25 C82 30 75 40 70 40 L50 20" fill="url(#cyanGrad)" stroke="#ffffff" stroke-width="2"/>
+    <circle cx="25" cy="65" r="5" fill="#00d2ff"/>
+  </g>
+</svg>
