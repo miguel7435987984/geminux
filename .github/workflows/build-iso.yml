@@ -1,17 +1,6 @@
 name: Build Geminux OS ISO
 
 on:
-  push:
-    branches: [ "main", "master" ]
-    paths-ignore:
-      - 'Geminux 0.8 LTS/**'
-      - '.github/workflows/build-geminux-0.8.yml'
-      - 'Geminux 0.9 LTS/**'
-      - '.github/workflows/build-geminux-0.9.yml'
-      - 'BriDroid OS/**'
-      - 'website/**'
-      - 'README.md'
-      - 'docs/**'
   workflow_dispatch:
 
 jobs:
