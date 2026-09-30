@@ -12,7 +12,7 @@ CODENAME="${CODENAME:-lunar}"
 MIRROR="${MIRROR:-http://old-releases.ubuntu.com/ubuntu/}"
 KEYRING="${KEYRING:-/usr/share/keyrings/ubuntu-archive-keyring.gpg}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK_DIR="${SCRIPT_DIR}/build-workspace"
+WORK_DIR="${WORK_DIR:-/var/tmp/geminux-0.7-workspace}"
 ROOTFS_DIR="${WORK_DIR}/rootfs"
 IMAGE_DIR="${WORK_DIR}/image"
 OUT_ISO="${SCRIPT_DIR}/geminux-0.7-amd64.iso"
@@ -272,3 +272,4 @@ xorriso -as mkisofs \
     "${IMAGE_DIR}"
 
 log_ok "ISO do Geminux 0.7 LTS gerada com sucesso em: ${OUT_ISO}"
+rm -rf "${WORK_DIR}"
