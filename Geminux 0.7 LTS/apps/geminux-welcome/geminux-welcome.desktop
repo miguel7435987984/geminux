@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Geminux Welcome
+GenericName=Welcome Center & System Tour
+GenericName[pt_BR]=Centro de Boas-Vindas & Tour do Sistema
+Comment=Official welcome tour, system highlights, and quick customization for Geminux OS
+Comment[pt_BR]=Tour oficial de boas-vindas, apresentação dos recursos e personalização do Geminux OS
+Exec=geminux-welcome
+Icon=geminux-welcome
+Terminal=false
+Categories=Utility;Settings;System;
+Keywords=welcome;tour;start;guide;ai;virtualization;prius;settings;geminux;
+StartupNotify=true
+StartupWMClass=geminux-welcome
+X-GNOME-Autostart-enabled=true

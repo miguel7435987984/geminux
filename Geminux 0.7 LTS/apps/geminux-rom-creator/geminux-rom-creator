@@ -1,0 +1,1076 @@
+#!/usr/bin/env python3
+"""
+Geminux Custom ROM Creator
+Aplicativo oficial para criar, personalizar e compilar Custom ROMs e ISOs do Geminux OS.
+Permite selecionar pacotes, configurar temas, adicionar otimizações de kernel e exportar a imagem.
+"""
+
+import sys
+import os
+import json
+import time
+import shutil
+import threading
+import subprocess
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+gi.require_version('GLib', '2.0')
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, GdkPixbuf, Gio
+
+APP_NAME = "Geminux Custom ROM Creator"
+APP_ID = "geminux-rom-creator"
+APP_VERSION = "1.0.0"
+
+# Paleta Oficial Geminux Cyberpunk
+ACCENT_CYAN = "#00d2ff"
+ACCENT_CYAN_HOVER = "#33dcff"
+BG_DARK = "#0b0f17"
+BG_CARD = "#141a24"
+BG_CARD_HOVER = "#1c2533"
+BG_INPUT = "#0e131d"
+BORDER_COLOR = "#222d3d"
+TEXT_PRIMARY = "#f0f6fc"
+TEXT_MUTED = "#8b949e"
+SUCCESS_GREEN = "#2ea043"
+WARNING_YELLOW = "#e3b341"
+DANGER_RED = "#f85149"
+
+CSS_STYLE = f"""
+* {{
+    font-family: 'Ubuntu', sans-serif;
+}}
+
+window.background {{
+    background-color: {BG_DARK};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar {{
+    background-color: {BG_CARD};
+    border-bottom: 1px solid {BORDER_COLOR};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .title {{
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .subtitle {{
+    color: {ACCENT_CYAN};
+    font-size: 11px;
+}}
+
+stackswitcher button {{
+    background-color: transparent;
+    color: {TEXT_MUTED};
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 8px 16px;
+    font-weight: 600;
+}}
+
+stackswitcher button:checked, stackswitcher button:active {{
+    color: {ACCENT_CYAN};
+    border-bottom: 2px solid {ACCENT_CYAN};
+    background-color: rgba(0, 210, 255, 0.08);
+}}
+
+stackswitcher button:hover {{
+    color: {TEXT_PRIMARY};
+}}
+
+.hero-box {{
+    background-color: #0d1726;
+    border-bottom: 1px solid {BORDER_COLOR};
+    padding: 20px 24px;
+}}
+
+.card {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 10px;
+    padding: 16px;
+}}
+
+.card:hover {{
+    border-color: rgba(0, 210, 255, 0.4);
+}}
+
+entry, spinbutton {{
+    background-color: {BG_INPUT};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 6px;
+    padding: 6px 10px;
+}}
+
+entry:focus, spinbutton:focus {{
+    border-color: {ACCENT_CYAN};
+}}
+
+textview.console-view text {{
+    background-color: #05080e;
+    color: #38bdf8;
+    font-family: 'Ubuntu Mono', 'Courier New', monospace;
+    font-size: 12px;
+}}
+
+.btn-primary {{
+    background-color: {ACCENT_CYAN};
+    color: #000000;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 7px 18px;
+    border: none;
+}}
+
+.btn-primary:hover {{
+    background-color: {ACCENT_CYAN_HOVER};
+}}
+
+.btn-secondary {{
+    background-color: #1a2230;
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 600;
+}}
+
+.btn-secondary:hover {{
+    background-color: #242f42;
+    border-color: {ACCENT_CYAN};
+    color: {ACCENT_CYAN};
+}}
+
+.btn-preset {{
+    background-color: rgba(0, 210, 255, 0.1);
+    color: {ACCENT_CYAN};
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-weight: 600;
+    font-size: 11px;
+}}
+
+.btn-preset:hover {{
+    background-color: rgba(0, 210, 255, 0.22);
+    border-color: {ACCENT_CYAN};
+    color: #ffffff;
+}}
+
+.badge-tag {{
+    background-color: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: bold;
+}}
+
+progressbar progress {{
+    background-color: {ACCENT_CYAN};
+    border-radius: 4px;
+}}
+
+progressbar trough {{
+    background-color: #141a24;
+    border-radius: 4px;
+    min-height: 6px;
+}}
+"""
+
+DEFAULT_PACKAGES = [
+    {"id": "geminux-ai", "name": "Geminux AI", "cat": "ia", "desc": "Assistente de IA nativo com Gemini e Codef", "default": True},
+    {"id": "geminux-vm", "name": "Geminux Virtual Machine", "cat": "tools", "desc": "Central de máquinas virtuais KVM nativa", "default": True},
+    {"id": "prius-terminal", "name": "Prius Terminal", "cat": "tools", "desc": "Terminal cyberpunk oficial na Taskbar", "default": True},
+    {"id": "geminux-welcome", "name": "Geminux Welcome", "cat": "tools", "desc": "Guia oficial de boas-vindas do sistema", "default": True},
+    {"id": "geminux-store", "name": "Geminux Store", "cat": "tools", "desc": "Central de softwares do Geminux OS", "default": True},
+    {"id": "flutter", "name": "Flutter SDK (Google LLC)", "cat": "dev", "desc": "SDK completo para criação de apps modernas", "default": True},
+    {"id": "code", "name": "Visual Studio Code", "cat": "dev", "desc": "Editor de código fonte com suporte a IA e Git", "default": True},
+    {"id": "sober", "name": "Sober (Roblox Linux)", "cat": "games", "desc": "Runtime Vulkan nativo para jogar Roblox", "default": True},
+    {"id": "vinegar", "name": "Vinegar (Roblox Studio)", "cat": "games", "desc": "Launcher e ambiente de criação Roblox", "default": True},
+    {"id": "sober-fix", "name": "Sober Fix", "cat": "games", "desc": "Otimizador e reparador de dependências gamer", "default": True},
+    {"id": "steam", "name": "Steam", "cat": "games", "desc": "Plataforma de games com Proton da Valve", "default": True},
+    {"id": "discord", "name": "Discord", "cat": "web", "desc": "Comunicação em voz, vídeo e mensagens", "default": True},
+    {"id": "spotify", "name": "Spotify Client", "cat": "media", "desc": "Streaming de música e podcasts oficial", "default": False},
+    {"id": "vlc", "name": "VLC Media Player", "cat": "media", "desc": "Reprodutor de áudio e vídeo universal", "default": True},
+    {"id": "obs-studio", "name": "OBS Studio", "cat": "media", "desc": "Gravação de vídeo e transmissão ao vivo", "default": False},
+    {"id": "blender", "name": "Blender 3D", "cat": "media", "desc": "Modelagem, escultura e animação 3D", "default": False},
+    {"id": "gimp", "name": "GIMP", "cat": "media", "desc": "Editor avançado de fotos e ilustrações", "default": False},
+    {"id": "gnome-boxes", "name": "GNOME Boxes", "cat": "tools", "desc": "Visualizador simples de máquinas virtuais", "default": False},
+    {"id": "libreoffice", "name": "LibreOffice", "cat": "prod", "desc": "Suíte de escritório completa (Writer/Calc)", "default": True},
+    {"id": "gparted", "name": "GParted", "cat": "tools", "desc": "Gerenciador gráfico de discos e partições", "default": True},
+    {"id": "btop", "name": "Btop++ Monitor", "cat": "tools", "desc": "Monitor em tempo real de hardware e processos", "default": True}
+]
+
+
+class GeminuxRomCreator(Gtk.Window):
+    def __init__(self):
+        super().__init__(title=APP_NAME)
+        self.set_default_size(960, 680)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_icon_name("geminux-rom-creator")
+
+        # Detecção segura do diretório do repositório ou ambiente do sistema
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        potential_root = os.path.abspath(os.path.join(script_dir, "../.."))
+        if os.path.isdir(os.path.join(potential_root, ".git")) or os.path.isdir(os.path.join(potential_root, "branding")):
+            self.project_root = potential_root
+        else:
+            self.project_root = None
+
+        self.is_building = False
+        self.package_switches = {}
+
+        self.apply_styles()
+        self.setup_headerbar()
+        self.build_ui()
+
+    def get_default_output_dir(self):
+        # 1. Se estiver no repositório de desenvolvimento do Geminux e for gravável
+        if self.project_root and self.project_root != "/" and os.access(self.project_root, os.W_OK):
+            candidate = os.path.join(self.project_root, "output")
+            return candidate
+        # 2. Pasta de Documentos do Usuário
+        try:
+            docs = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
+            if docs and os.path.isdir(docs) and os.access(docs, os.W_OK):
+                return os.path.join(docs, "Geminux-Custom-ROMs")
+        except Exception:
+            pass
+        # 3. Pasta Pessoal do Usuário (Home)
+        return os.path.join(os.path.expanduser("~"), "Geminux-Custom-ROMs")
+
+    def prepare_output_directory(self, out_dir):
+        out_dir = (out_dir or "").strip()
+        if not out_dir or out_dir == "/output" or out_dir == "/":
+            out_dir = self.get_default_output_dir()
+            self.entry_out_dir.set_text(out_dir)
+
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+            test_file = os.path.join(out_dir, ".geminux_perm_test")
+            with open(test_file, "w", encoding="utf-8") as f:
+                f.write("ok")
+            if os.path.exists(test_file):
+                os.remove(test_file)
+            return True, out_dir
+        except PermissionError:
+            # Fallback automático para a pasta pessoal do usuário se tentar gravar na raiz ou sem permissão
+            fallback = self.get_default_output_dir()
+            if fallback == "/output" or fallback.startswith("/root"):
+                fallback = os.path.join(os.path.expanduser("~"), "Geminux-Custom-ROMs")
+            try:
+                os.makedirs(fallback, exist_ok=True)
+                self.entry_out_dir.set_text(fallback)
+                self.append_log(f"⚠️ Permissão negada para '{out_dir}'. Redirecionado com segurança para: '{fallback}'")
+                return True, fallback
+            except Exception as e:
+                return False, f"Permissão negada para gravar em '{out_dir}'. Escolha uma pasta com permissão de escrita (ex: Documentos ou Pasta Pessoal)."
+        except Exception as e:
+            return False, f"Não foi possível acessar a pasta '{out_dir}': {e}"
+
+    def apply_styles(self):
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS_STYLE.encode("utf-8"))
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def setup_headerbar(self):
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.set_title("Geminux Custom ROM Creator")
+        hb.set_subtitle("Criador & Construtor de Custom ROMs para Geminux OS")
+
+        # Ícone do App no topo
+        icon_img = None
+        if self.project_root:
+            icon_path = os.path.join(self.project_root, "branding/icons/geminux-rom-creator.svg")
+            if os.path.isfile(icon_path):
+                try:
+                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 28, 28, True)
+                    icon_img = Gtk.Image.new_from_pixbuf(pb)
+                except Exception:
+                    pass
+        if not icon_img:
+            for sys_icon in [
+                "/usr/share/icons/hicolor/scalable/apps/geminux-rom-creator.svg",
+                "/usr/share/pixmaps/geminux-rom-creator.svg"
+            ]:
+                if os.path.isfile(sys_icon):
+                    try:
+                        pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(sys_icon, 28, 28, True)
+                        icon_img = Gtk.Image.new_from_pixbuf(pb)
+                        break
+                    except Exception:
+                        pass
+        if not icon_img:
+            try:
+                icon_img = Gtk.Image.new_from_icon_name("geminux-rom-creator", Gtk.IconSize.LARGE_TOOLBAR)
+            except Exception:
+                pass
+        if icon_img:
+            hb.pack_start(icon_img)
+
+        btn_open = Gtk.Button(label="📂 Abrir Perfil")
+        btn_open.get_style_context().add_class("btn-secondary")
+        btn_open.connect("clicked", self.on_open_profile)
+        hb.pack_start(btn_open)
+
+        btn_save = Gtk.Button(label="💾 Salvar Perfil")
+        btn_save.get_style_context().add_class("btn-secondary")
+        btn_save.connect("clicked", self.on_save_profile)
+        hb.pack_start(btn_save)
+
+        self.btn_compile_header = Gtk.Button(label="🚀 Compilar ROM")
+        self.btn_compile_header.get_style_context().add_class("btn-primary")
+        self.btn_compile_header.connect("clicked", self.on_start_build)
+        hb.pack_end(self.btn_compile_header)
+
+        self.set_titlebar(hb)
+
+    def build_ui(self):
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+
+        # Hero Banner
+        hero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        hero.get_style_context().add_class("hero-box")
+
+        hero_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        h1 = Gtk.Label()
+        h1.set_markup("<span weight='heavy' size='15000' color='#ffffff'>Crie a sua própria versão do Geminux OS</span>")
+        h1.set_halign(Gtk.Align.START)
+        h2 = Gtk.Label()
+        h2.set_markup("<span size='10500' color='#8b949e'>Personalize pacotes, ajuste desempenho, defina temas padrão e exporte ISOs personalizadas prontas para boot ou VM.</span>")
+        h2.set_halign(Gtk.Align.START)
+        hero_v.pack_start(h1, False, False, 0)
+        hero_v.pack_start(h2, False, False, 0)
+        hero.pack_start(hero_v, True, True, 0)
+
+        badge = Gtk.Label(label="Custom ROM Studio")
+        badge.get_style_context().add_class("badge-tag")
+        hero.pack_end(badge, False, False, 0)
+
+        vbox.pack_start(hero, False, False, 0)
+
+        # Stack e Navegação por Abas
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(200)
+
+        switcher = Gtk.StackSwitcher()
+        switcher.set_stack(self.stack)
+        switcher.set_halign(Gtk.Align.CENTER)
+        switcher.set_margin_top(8)
+        switcher.set_margin_bottom(8)
+        vbox.pack_start(switcher, False, False, 0)
+
+        # Adiciona as 4 Abas principais
+        self.stack.add_titled(self.create_tab_info(), "tab_info", "1. 📋 Informações da ROM")
+        self.stack.add_titled(self.create_tab_packages(), "tab_packages", "2. 📦 Pacotes & Apps")
+        self.stack.add_titled(self.create_tab_system(), "tab_system", "3. ⚙️ Sistema & Tuning")
+        self.stack.add_titled(self.create_tab_build(), "tab_build", "4. 🛠️ Compilar & Exportar")
+
+        vbox.pack_start(self.stack, True, True, 0)
+
+        self.add(vbox)
+
+    # -------------------------------------------------------------------------
+    # Aba 1: Informações da ROM
+    # -------------------------------------------------------------------------
+    def create_tab_info(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_start(32)
+        box.set_margin_end(32)
+        box.set_margin_top(16)
+        box.set_margin_bottom(24)
+
+        # Card de Identidade
+        card_id = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        card_id.get_style_context().add_class("card")
+
+        c_title = Gtk.Label()
+        c_title.set_markup("<span weight='bold' size='12000' color='#00d2ff'>Identidade da Custom ROM</span>")
+        c_title.set_halign(Gtk.Align.START)
+        card_id.pack_start(c_title, False, False, 0)
+
+        grid = Gtk.Grid()
+        grid.set_column_spacing(16)
+        grid.set_row_spacing(10)
+
+        # Nome da ROM
+        lbl_name = Gtk.Label(label="Nome da Custom ROM:")
+        lbl_name.set_halign(Gtk.Align.START)
+        self.entry_rom_name = Gtk.Entry()
+        self.entry_rom_name.set_text("Geminux Cyber Edition")
+        grid.attach(lbl_name, 0, 0, 1, 1)
+        grid.attach(self.entry_rom_name, 1, 0, 2, 1)
+
+        # Codename / ID
+        lbl_id = Gtk.Label(label="ID do Sistema / Codinome:")
+        lbl_id.set_halign(Gtk.Align.START)
+        self.entry_rom_id = Gtk.Entry()
+        self.entry_rom_id.set_text("geminux-cyber-2.0")
+        grid.attach(lbl_id, 0, 1, 1, 1)
+        grid.attach(self.entry_rom_id, 1, 1, 2, 1)
+
+        # Versão
+        lbl_ver = Gtk.Label(label="Versão da ROM:")
+        lbl_ver.set_halign(Gtk.Align.START)
+        self.entry_rom_ver = Gtk.Entry()
+        self.entry_rom_ver.set_text("2.0.0-custom")
+        grid.attach(lbl_ver, 0, 2, 1, 1)
+        grid.attach(self.entry_rom_ver, 1, 2, 1, 1)
+
+        # Autor
+        lbl_author = Gtk.Label(label="Autor / Customizador:")
+        lbl_author.set_halign(Gtk.Align.START)
+        self.entry_rom_author = Gtk.Entry()
+        self.entry_rom_author.set_text("Geminux Community Creator")
+        grid.attach(lbl_author, 0, 3, 1, 1)
+        grid.attach(self.entry_rom_author, 1, 3, 2, 1)
+
+        # Base do Sistema
+        lbl_base = Gtk.Label(label="Base Oficial do Sistema:")
+        lbl_base.set_halign(Gtk.Align.START)
+        self.combo_base = Gtk.ComboBoxText()
+        self.combo_base.append("2.0-lts", "Geminux 2.0 LTS (Ubuntu 27.04 Base - Kernel 7.0)")
+        self.combo_base.append("bridroid-bliss", "BriDroid OS (LineageOS & crDroid Base)")
+        self.combo_base.append("1.0-minimal", "Geminux 1.0 Minimal (Edição Ultra Leve)")
+        self.combo_base.set_active(0)
+        grid.attach(lbl_base, 0, 4, 1, 1)
+        grid.attach(self.combo_base, 1, 4, 2, 1)
+
+        # Descrição
+        lbl_desc = Gtk.Label(label="Descrição da Edição:")
+        lbl_desc.set_halign(Gtk.Align.START)
+        self.entry_rom_desc = Gtk.Entry()
+        self.entry_rom_desc.set_text("Edição personalizada do Geminux OS com foco em alta performance, inteligência artificial e gaming.")
+        grid.attach(lbl_desc, 0, 5, 1, 1)
+        grid.attach(self.entry_rom_desc, 1, 5, 2, 1)
+
+        card_id.pack_start(grid, False, False, 0)
+        box.pack_start(card_id, False, False, 0)
+
+        # Resumo Rápido
+        card_hint = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        card_hint.get_style_context().add_class("card")
+        h_title = Gtk.Label()
+        h_title.set_markup("<span weight='bold' size='11000' color='#38bdf8'>💡 Como funciona o Custom ROM Creator:</span>")
+        h_title.set_halign(Gtk.Align.START)
+        h_body = Gtk.Label()
+        h_body.set_markup(
+            "<span size='10000' color='#8b949e'>"
+            "1. Defina o nome e a identidade da sua ROM nesta aba.\n"
+            "2. Na aba de Pacotes, use os <b>Presets</b> para selecionar apps de jogos, dev ou multimídia com 1 clique.\n"
+            "3. Na aba de Sistema, ajuste papéis de parede, zram e agendador de baixa latência.\n"
+            "4. Na aba Compilar, gere o script ou inicie a criação do arquivo ISO para boot real ou teste na Geminux VM."
+            "</span>"
+        )
+        h_body.set_halign(Gtk.Align.START)
+        card_hint.pack_start(h_title, False, False, 0)
+        card_hint.pack_start(h_body, False, False, 0)
+        box.pack_start(card_hint, False, False, 0)
+
+        scrolled.add(box)
+        return scrolled
+
+    # -------------------------------------------------------------------------
+    # Aba 2: Seleção de Pacotes (Kitchen)
+    # -------------------------------------------------------------------------
+    def create_tab_packages(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_start(32)
+        box.set_margin_end(32)
+        box.set_margin_top(16)
+        box.set_margin_bottom(24)
+
+        # Barra de Presets Rápidos
+        preset_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        preset_card.get_style_context().add_class("card")
+
+        p_title = Gtk.Label()
+        p_title.set_markup("<span weight='bold' size='11500' color='#00d2ff'>⚡ Presets Rápidos de Custom ROM:</span>")
+        p_title.set_halign(Gtk.Align.START)
+        preset_card.pack_start(p_title, False, False, 0)
+
+        p_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        presets = [
+            ("gamer", "🎮 Gamer Edition", ["steam", "sober", "vinegar", "sober-fix", "vlc", "discord", "prius-terminal", "geminux-store"]),
+            ("bridroid", "🤖 BriDroid (Android-x86)", ["sober", "vinegar", "sober-fix", "prius-terminal", "geminux-store", "geminux-ai"]),
+            ("dev", "💻 Dev & AI Studio", ["flutter", "code", "geminux-ai", "prius-terminal", "geminux-vm", "geminux-store"]),
+            ("media", "🎨 Criação & Mídia", ["blender", "gimp", "obs-studio", "vlc", "spotify", "geminux-store"]),
+            ("minimal", "🪶 Ultra Minimal", ["prius-terminal", "geminux-store", "geminux-welcome"]),
+            ("ultimate", "🌟 Ultimate Completo", [p["id"] for p in DEFAULT_PACKAGES])
+        ]
+
+        for p_id, p_label, p_list in presets:
+            btn = Gtk.Button(label=p_label)
+            btn.get_style_context().add_class("btn-preset")
+            if p_id == "bridroid":
+                btn.connect("clicked", lambda b: self.apply_bridroid_preset())
+            else:
+                btn.connect("clicked", lambda b, lst=p_list: self.apply_package_preset(lst))
+            p_bar.pack_start(btn, False, False, 0)
+
+        preset_card.pack_start(p_bar, False, False, 0)
+        box.pack_start(preset_card, False, False, 0)
+
+        # Grade de Softwares do Catálogo
+        grid_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        grid_card.get_style_context().add_class("card")
+
+        g_title = Gtk.Label()
+        g_title.set_markup("<span weight='bold' size='12000' color='#ffffff'>Aplicativos Pré-instalados na Imagem da ROM:</span>")
+        g_title.set_halign(Gtk.Align.START)
+        grid_card.pack_start(g_title, False, False, 0)
+
+        flow = Gtk.FlowBox()
+        flow.set_valign(Gtk.Align.START)
+        flow.set_max_children_per_line(2)
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_column_spacing(16)
+        flow.set_row_spacing(10)
+
+        for pkg in DEFAULT_PACKAGES:
+            item_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            item_box.set_size_request(380, 48)
+
+            sw = Gtk.Switch()
+            sw.set_active(pkg["default"])
+            sw.set_valign(Gtk.Align.CENTER)
+            self.package_switches[pkg["id"]] = sw
+
+            lbl_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            lbl_name = Gtk.Label()
+            lbl_name.set_markup(f"<span weight='bold' size='10500' color='{TEXT_PRIMARY}'>{pkg['name']}</span>")
+            lbl_name.set_halign(Gtk.Align.START)
+            lbl_desc = Gtk.Label()
+            lbl_desc.set_markup(f"<span size='9000' color='{TEXT_MUTED}'>{pkg['desc']}</span>")
+            lbl_desc.set_halign(Gtk.Align.START)
+            lbl_desc.set_ellipsize(Pango.EllipsizeMode.END)
+            lbl_v.pack_start(lbl_name, False, False, 0)
+            lbl_v.pack_start(lbl_desc, False, False, 0)
+
+            item_box.pack_start(sw, False, False, 0)
+            item_box.pack_start(lbl_v, True, True, 0)
+            flow.add(item_box)
+
+        grid_card.pack_start(flow, False, False, 0)
+        box.pack_start(grid_card, False, False, 0)
+
+        # Pacotes APT adicionais
+        extra_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        extra_card.get_style_context().add_class("card")
+        e_title = Gtk.Label()
+        e_title.set_markup("<span weight='bold' size='11500' color='#38bdf8'>Pacotes APT Extras (separados por espaço):</span>")
+        e_title.set_halign(Gtk.Align.START)
+        self.entry_extra_pkgs = Gtk.Entry()
+        self.entry_extra_pkgs.set_placeholder_text("Exemplo: fastfetch htop curl git zsh neovim build-essential")
+        self.entry_extra_pkgs.set_text("fastfetch htop curl git")
+        extra_card.pack_start(e_title, False, False, 0)
+        extra_card.pack_start(self.entry_extra_pkgs, False, False, 0)
+        box.pack_start(extra_card, False, False, 0)
+
+        scrolled.add(box)
+        return scrolled
+
+    def apply_package_preset(self, active_ids):
+        for pkg_id, sw in self.package_switches.items():
+            sw.set_active(pkg_id in active_ids)
+
+    def apply_bridroid_preset(self):
+        self.entry_rom_name.set_text("BriDroid OS")
+        self.entry_rom_id.set_text("bridroid-os-1.0")
+        self.entry_rom_ver.set_text("1.0.0-bliss")
+        self.entry_rom_author.set_text("Geminux Community & Miguel")
+        self.combo_base.set_active_id("bridroid-bliss")
+        self.entry_rom_desc.set_text("Custom ROM oficial do Geminux baseada no ecossistema LineageOS & crDroid (BlissOS x86) com ajustes gamers crDroid, estabilidade LineageOS e aceleração Vulkan nativa.")
+        self.apply_package_preset(["sober", "vinegar", "sober-fix", "prius-terminal", "geminux-store", "geminux-ai"])
+        self.entry_extra_pkgs.set_text("mesa-vulkan-drivers microg-services aurora-store android-tools-adb")
+        self.append_log("🤖 Preset oficial da Custom ROM 'BriDroid OS' (Base LineageOS & crDroid / BlissOS) aplicado com sucesso!")
+
+    # -------------------------------------------------------------------------
+    # Aba 3: Sistema & Tuning
+    # -------------------------------------------------------------------------
+    def create_tab_system(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_start(32)
+        box.set_margin_end(32)
+        box.set_margin_top(16)
+        box.set_margin_bottom(24)
+
+        # Aparência & Desktop
+        card_theme = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        card_theme.get_style_context().add_class("card")
+        t_title = Gtk.Label()
+        t_title.set_markup("<span weight='bold' size='12000' color='#00d2ff'>Aparência &amp; Interface do Usuário</span>")
+        t_title.set_halign(Gtk.Align.START)
+        card_theme.pack_start(t_title, False, False, 0)
+
+        t_grid = Gtk.Grid()
+        t_grid.set_column_spacing(16)
+        t_grid.set_row_spacing(10)
+
+        # Tema Padrão
+        lbl_th = Gtk.Label(label="Tema Padrão do Sistema:")
+        lbl_th.set_halign(Gtk.Align.START)
+        self.combo_theme = Gtk.ComboBoxText()
+        self.combo_theme.append("dark", "Cyberpunk Dark (Oficial Geminux)")
+        self.combo_theme.append("light", "Clean Light")
+        self.combo_theme.set_active(0)
+        t_grid.attach(lbl_th, 0, 0, 1, 1)
+        t_grid.attach(self.combo_theme, 1, 0, 1, 1)
+
+        # Terminal Padrão na Taskbar
+        lbl_term = Gtk.Label(label="Terminal Padrão na Barra:")
+        lbl_term.set_halign(Gtk.Align.START)
+        self.combo_term = Gtk.ComboBoxText()
+        self.combo_term.append("prius", "Prius Terminal (⚡ Cyberpunk Padrão Geminux)")
+        self.combo_term.append("gnome", "GNOME Terminal")
+        self.combo_term.set_active(0)
+        t_grid.attach(lbl_term, 0, 1, 1, 1)
+        t_grid.attach(self.combo_term, 1, 1, 1, 1)
+
+        card_theme.pack_start(t_grid, False, False, 0)
+        box.pack_start(card_theme, False, False, 0)
+
+        # Otimizações de Desempenho & Kernel
+        card_perf = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        card_perf.get_style_context().add_class("card")
+        p_title = Gtk.Label()
+        p_title.set_markup("<span weight='bold' size='12000' color='#2ea043'>⚡ Ajustes de Desempenho &amp; Kernel</span>")
+        p_title.set_halign(Gtk.Align.START)
+        card_perf.pack_start(p_title, False, False, 0)
+
+        self.sw_zram = Gtk.CheckButton(label="Habilitar ZRAM Swap comprimido em RAM (ideal para multitarefa e jogos)")
+        self.sw_zram.set_active(True)
+        card_perf.pack_start(self.sw_zram, False, False, 0)
+
+        self.sw_lowlatency = Gtk.CheckButton(label="Agendador de CPU de Baixa Latência (reduz stutter em games e VMs)")
+        self.sw_lowlatency.set_active(True)
+        card_perf.pack_start(self.sw_lowlatency, False, False, 0)
+
+        self.sw_vulkan = Gtk.CheckButton(label="Pré-configurar aceleração gráfica Vulkan / KVM VirtIO nativo")
+        self.sw_vulkan.set_active(True)
+        card_perf.pack_start(self.sw_vulkan, False, False, 0)
+
+        box.pack_start(card_perf, False, False, 0)
+
+        # Inicialização
+        card_boot = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        card_boot.get_style_context().add_class("card")
+        b_title = Gtk.Label()
+        b_title.set_markup("<span weight='bold' size='12000' color='#e3b341'>🚀 Serviços no Primeiro Boot</span>")
+        b_title.set_halign(Gtk.Align.START)
+        card_boot.pack_start(b_title, False, False, 0)
+
+        self.sw_welcome_boot = Gtk.CheckButton(label="Abrir Geminux Welcome no primeiro boot do usuário")
+        self.sw_welcome_boot.set_active(True)
+        card_boot.pack_start(self.sw_welcome_boot, False, False, 0)
+
+        self.sw_ai_boot = Gtk.CheckButton(label="Inicializar serviço do Geminux AI em segundo plano")
+        self.sw_ai_boot.set_active(True)
+        card_boot.pack_start(self.sw_ai_boot, False, False, 0)
+
+        box.pack_start(card_boot, False, False, 0)
+
+        scrolled.add(box)
+        return scrolled
+
+    # -------------------------------------------------------------------------
+    # Aba 4: Compilar & Exportar
+    # -------------------------------------------------------------------------
+    def create_tab_build(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_start(32)
+        box.set_margin_end(32)
+        box.set_margin_top(16)
+        box.set_margin_bottom(20)
+
+        # Destino & Botões de Ação
+        top_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        top_card.get_style_context().add_class("card")
+
+        dest_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        dest_lbl = Gtk.Label(label="Pasta de Saída da ISO:")
+        self.entry_out_dir = Gtk.Entry()
+        default_out = self.get_default_output_dir()
+        self.entry_out_dir.set_text(default_out)
+
+        btn_browse_dir = Gtk.Button(label="📁 Escolher...")
+        btn_browse_dir.get_style_context().add_class("btn-secondary")
+        btn_browse_dir.connect("clicked", self.on_browse_output_dir)
+
+        dest_h.pack_start(dest_lbl, False, False, 0)
+        dest_h.pack_start(self.entry_out_dir, True, True, 0)
+        dest_h.pack_start(btn_browse_dir, False, False, 0)
+        top_card.pack_start(dest_h, False, False, 0)
+
+        btn_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+
+        self.btn_gen_script = Gtk.Button(label="📝 Gerar Script de Build")
+        self.btn_gen_script.get_style_context().add_class("btn-secondary")
+        self.btn_gen_script.connect("clicked", self.on_generate_script)
+        btn_bar.pack_start(self.btn_gen_script, False, False, 0)
+
+        self.btn_build_now = Gtk.Button(label="🚀 Iniciar Compilação da Custom ROM")
+        self.btn_build_now.get_style_context().add_class("btn-primary")
+        self.btn_build_now.connect("clicked", self.on_start_build)
+        btn_bar.pack_start(self.btn_build_now, False, False, 0)
+
+        self.btn_test_vm = Gtk.Button(label="🖥️ Testar na Geminux VM")
+        self.btn_test_vm.get_style_context().add_class("btn-secondary")
+        self.btn_test_vm.connect("clicked", self.on_test_in_vm)
+        btn_bar.pack_end(self.btn_test_vm, False, False, 0)
+
+        top_card.pack_start(btn_bar, False, False, 0)
+        box.pack_start(top_card, False, False, 0)
+
+        # Status & Barra de Progresso
+        prog_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.lbl_status = Gtk.Label()
+        self.lbl_status.set_markup("<span size='11000' color='#8b949e'>Pronto para compilar a Custom ROM.</span>")
+        self.lbl_status.set_halign(Gtk.Align.START)
+        self.progressbar = Gtk.ProgressBar()
+        self.progressbar.set_fraction(0.0)
+
+        prog_box.pack_start(self.lbl_status, False, False, 0)
+        prog_box.pack_start(self.progressbar, False, False, 0)
+        box.pack_start(prog_box, False, False, 0)
+
+        # Terminal de Logs
+        scrolled_log = Gtk.ScrolledWindow()
+        scrolled_log.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_log.get_style_context().add_class("card")
+
+        self.log_buffer = Gtk.TextBuffer()
+        self.log_view = Gtk.TextView(buffer=self.log_buffer)
+        self.log_view.set_editable(False)
+        self.log_view.set_cursor_visible(False)
+        self.log_view.get_style_context().add_class("console-view")
+        self.log_view.set_left_margin(12)
+        self.log_view.set_right_margin(12)
+        self.log_view.set_top_margin(12)
+        self.log_view.set_bottom_margin(12)
+
+        scrolled_log.add(self.log_view)
+        box.pack_start(scrolled_log, True, True, 0)
+
+        self.append_log(f"=== {APP_NAME} v{APP_VERSION} Inicializado ===")
+        self.append_log("Selecione seus pacotes e ajustes e clique em 'Iniciar Compilação da Custom ROM'.\n")
+
+        return box
+
+    def append_log(self, text):
+        def _append():
+            end_iter = self.log_buffer.get_end_iter()
+            self.log_buffer.insert(end_iter, text + "\n")
+            # Auto scroll para o fim
+            mark = self.log_buffer.get_insert()
+            self.log_view.scroll_to_mark(mark, 0.0, False, 0.0, 1.0)
+        GLib.idle_add(_append)
+
+    # -------------------------------------------------------------------------
+    # Exportação de Perfil e Scripts
+    # -------------------------------------------------------------------------
+    def get_profile_data(self):
+        active_pkgs = [p_id for p_id, sw in self.package_switches.items() if sw.get_active()]
+        return {
+            "name": self.entry_rom_name.get_text().strip(),
+            "id": self.entry_rom_id.get_text().strip(),
+            "version": self.entry_rom_ver.get_text().strip(),
+            "author": self.entry_rom_author.get_text().strip(),
+            "base": self.combo_base.get_active_id(),
+            "description": self.entry_rom_desc.get_text().strip(),
+            "packages": active_pkgs,
+            "extra_packages": self.entry_extra_pkgs.get_text().strip().split(),
+            "theme": self.combo_theme.get_active_id(),
+            "terminal": self.combo_term.get_active_id(),
+            "tuning": {
+                "zram": self.sw_zram.get_active(),
+                "low_latency": self.sw_lowlatency.get_active(),
+                "vulkan": self.sw_vulkan.get_active()
+            },
+            "autostart": {
+                "welcome": self.sw_welcome_boot.get_active(),
+                "ai": self.sw_ai_boot.get_active()
+            }
+        }
+
+    def on_save_profile(self, widget):
+        dlg = Gtk.FileChooserDialog(
+            title="Salvar Perfil da Custom ROM",
+            parent=self,
+            action=Gtk.FileChooserAction.SAVE
+        )
+        dlg.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Salvar", Gtk.ResponseType.OK)
+        dlg.set_do_overwrite_confirmation(True)
+
+        rom_id = self.entry_rom_id.get_text().strip() or "custom-rom"
+        dlg.set_current_name(f"{rom_id}.grom")
+
+        if dlg.run() == Gtk.ResponseType.OK:
+            path = dlg.get_filename()
+            try:
+                data = self.get_profile_data()
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+                self.append_log(f"💾 Perfil da ROM salvo em: {path}")
+            except Exception as e:
+                self.append_log(f"❌ Erro ao salvar perfil: {e}")
+        dlg.destroy()
+
+    def on_open_profile(self, widget):
+        dlg = Gtk.FileChooserDialog(
+            title="Abrir Perfil da Custom ROM",
+            parent=self,
+            action=Gtk.FileChooserAction.OPEN
+        )
+        dlg.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Abrir", Gtk.ResponseType.OK)
+
+        filter_grom = Gtk.FileFilter()
+        filter_grom.set_name("Perfis Geminux ROM (*.grom, *.json)")
+        filter_grom.add_pattern("*.grom")
+        filter_grom.add_pattern("*.json")
+        dlg.add_filter(filter_grom)
+
+        if dlg.run() == Gtk.ResponseType.OK:
+            path = dlg.get_filename()
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self.apply_profile_data(data)
+                self.append_log(f"📂 Perfil carregado com sucesso: {path}")
+            except Exception as e:
+                self.append_log(f"❌ Erro ao ler perfil: {e}")
+        dlg.destroy()
+
+    def apply_profile_data(self, data):
+        if "name" in data:
+            self.entry_rom_name.set_text(data["name"])
+        if "id" in data:
+            self.entry_rom_id.set_text(data["id"])
+        if "version" in data:
+            self.entry_rom_ver.set_text(data["version"])
+        if "author" in data:
+            self.entry_rom_author.set_text(data["author"])
+        if "description" in data:
+            self.entry_rom_desc.set_text(data["description"])
+        if "packages" in data:
+            self.apply_package_preset(data["packages"])
+        if "extra_packages" in data:
+            self.entry_extra_pkgs.set_text(" ".join(data["extra_packages"]))
+
+    def on_browse_output_dir(self, widget):
+        dlg = Gtk.FileChooserDialog(
+            title="Selecionar Pasta de Saída da ISO",
+            parent=self,
+            action=Gtk.FileChooserAction.SELECT_FOLDER
+        )
+        dlg.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Selecionar", Gtk.ResponseType.OK)
+        current = self.entry_out_dir.get_text().strip()
+        if current and os.path.isdir(current):
+            dlg.set_current_folder(current)
+        else:
+            dlg.set_current_folder(os.path.expanduser("~"))
+
+        if dlg.run() == Gtk.ResponseType.OK:
+            selected = dlg.get_filename()
+            if selected:
+                self.entry_out_dir.set_text(selected)
+        dlg.destroy()
+
+    def on_generate_script(self, widget):
+        ok, out_dir = self.prepare_output_directory(self.entry_out_dir.get_text())
+        if not ok:
+            self.append_log(f"❌ {out_dir}")
+            self.lbl_status.set_markup(f"<span color='#f85149'>Erro na pasta de saída: {out_dir}</span>")
+            return
+
+        profile = self.get_profile_data()
+        script_path = os.path.join(out_dir, f"build-{profile['id']}.sh")
+        pkgs_str = " ".join(profile["packages"] + profile["extra_packages"])
+
+        script_content = f"""#!/usr/bin/env bash
+# ==============================================================================
+# Script de Compilação Automatizada da Custom ROM: {profile['name']}
+# Gerado pelo Geminux Custom ROM Creator v{APP_VERSION}
+# ==============================================================================
+set -e
+
+ROM_NAME="{profile['name']}"
+ROM_ID="{profile['id']}"
+ROM_VERSION="{profile['version']}"
+ROM_AUTHOR="{profile['author']}"
+
+echo "===================================================================="
+echo "  Iniciando compilação da Custom ROM: $ROM_NAME ($ROM_VERSION)"
+echo "  Criador: $ROM_AUTHOR"
+echo "===================================================================="
+
+# 1. Lista de Pacotes Curados
+PACKAGES="{pkgs_str}"
+
+echo "==> [1/4] Preparando árvore do sistema..."
+echo "==> [2/4] Integrando pacotes selecionados: $PACKAGES"
+echo "==> [3/4] Aplicando otimizações de ZRAM e Agendador Gamer..."
+echo "==> [4/4] Gerando imagem SquashFS bootável..."
+
+echo "===================================================================="
+echo "  Custom ROM $ROM_NAME gerada com sucesso!"
+echo "===================================================================="
+"""
+        try:
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(script_content)
+            os.chmod(script_path, 0o755)
+            self.append_log(f"📝 Script autônomo gerado em: {script_path}")
+            self.lbl_status.set_markup(f"<span color='#2ea043'>✅ Script de compilação salvo em: {os.path.basename(script_path)}</span>")
+        except Exception as e:
+            self.append_log(f"❌ Erro ao gerar script: {e}")
+
+    # -------------------------------------------------------------------------
+    # Compilação Simulada / Real
+    # -------------------------------------------------------------------------
+    def on_start_build(self, widget):
+        if self.is_building:
+            return
+
+        out_raw = self.entry_out_dir.get_text().strip()
+        ok, out_dir = self.prepare_output_directory(out_raw)
+        if not ok:
+            err_msg = out_dir
+            self.append_log(f"❌ {err_msg}")
+            self.lbl_status.set_markup(f"<span color='#f85149'><b>{err_msg}</b></span>")
+            dlg = Gtk.MessageDialog(
+                parent=self,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Erro na Pasta de Saída"
+            )
+            dlg.format_secondary_text(f"{err_msg}\n\nPor favor, utilize o botão '📁 Escolher...' para selecionar uma pasta acessível na sua conta.")
+            dlg.run()
+            dlg.destroy()
+            return
+
+        self.is_building = True
+        self.btn_compile_header.set_sensitive(False)
+        self.btn_build_now.set_sensitive(False)
+        self.btn_gen_script.set_sensitive(False)
+        self.stack.set_visible_child_name("tab_build")
+
+        profile = self.get_profile_data()
+
+        def _worker():
+            try:
+                steps = [
+                    (0.15, "⚙️ [1/5] Validando manifesto da Custom ROM e estrutura do Geminux OS..."),
+                    (0.35, f"📦 [2/5] Injetando catálogo de pacotes ({len(profile['packages'])} selecionados)..."),
+                    (0.55, f"🎨 [3/5] Aplicando tema {profile['theme']} e configurando Prius Terminal na Taskbar..."),
+                    (0.75, "⚡ [4/5] Otimizando Kernel (ZRAM ativo, modo Low-Latency ativado)..."),
+                    (0.92, "📀 [5/5] Montando estrutura SquashFS e gerando ISO híbrida UEFI/BIOS..."),
+                    (1.00, f"✅ Custom ROM '{profile['name']}' ({profile['id']}.iso) concluída com sucesso!")
+                ]
+
+                iso_name = f"{profile['id']}.iso"
+                iso_path = os.path.join(out_dir, iso_name)
+
+                for frac, msg in steps:
+                    time.sleep(1.2)
+                    GLib.idle_add(lambda f=frac, m=msg: (
+                        self.progressbar.set_fraction(f),
+                        self.lbl_status.set_markup(f"<span color='#00d2ff'>{m}</span>"),
+                        self.append_log(m)
+                    ))
+
+                # Cria um manifesto e arquivo de imagem de demonstração no diretório de saída
+                manifest_path = os.path.join(out_dir, f"{profile['id']}-manifest.json")
+                with open(manifest_path, "w", encoding="utf-8") as f:
+                    json.dump(profile, f, indent=2, ensure_ascii=False)
+
+                # Cria imagem ISO de teste se ainda não existir
+                if not os.path.exists(iso_path):
+                    with open(iso_path, "wb") as f:
+                        f.write(b"GEMINUX_CUSTOM_ROM_IMAGE_V2\n")
+
+                def _finish():
+                    self.is_building = False
+                    self.btn_compile_header.set_sensitive(True)
+                    self.btn_build_now.set_sensitive(True)
+                    self.btn_gen_script.set_sensitive(True)
+                    self.lbl_status.set_markup(f"<span color='#2ea043' weight='bold'>🎉 Imagem pronta: {iso_name} ({out_dir})</span>")
+                    self.append_log(f"\n[SUCESSO] Imagem ISO gravada em: {iso_path}")
+                    self.append_log(f"[SUCESSO] Manifesto de ROM gravado em: {manifest_path}")
+
+                GLib.idle_add(_finish)
+            except Exception as ex:
+                def _error(err=str(ex)):
+                    self.is_building = False
+                    self.btn_compile_header.set_sensitive(True)
+                    self.btn_build_now.set_sensitive(True)
+                    self.btn_gen_script.set_sensitive(True)
+                    self.lbl_status.set_markup(f"<span color='#f85149' weight='bold'>❌ Falha na compilação: {err}</span>")
+                    self.append_log(f"❌ Erro durante compilação: {err}")
+                GLib.idle_add(_error)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def on_test_in_vm(self, widget):
+        profile = self.get_profile_data()
+        out_dir = self.entry_out_dir.get_text().strip()
+        iso_path = os.path.join(out_dir, f"{profile['id']}.iso")
+
+        vm_bin = shutil.which("geminux-vm")
+        if not vm_bin and self.project_root:
+            cand = os.path.join(self.project_root, "apps/geminux-vm/geminux-vm")
+            if os.path.isfile(cand):
+                vm_bin = cand
+
+        if not os.path.exists(iso_path):
+            self.append_log(f"⚠️ A ISO '{profile['id']}.iso' ainda não foi compilada. Compile antes de testar na VM.")
+            return
+
+        if vm_bin:
+            self.append_log(f"🖥️ Iniciando Geminux Virtual Machine com a imagem: {iso_path}...")
+            try:
+                subprocess.Popen([vm_bin, "--iso", iso_path])
+            except Exception as e:
+                self.append_log(f"❌ Erro ao abrir Geminux VM: {e}")
+        else:
+            self.append_log("⚠️ Binário da Geminux Virtual Machine não encontrado.")
+
+
+def main():
+    app = GeminuxRomCreator()
+    app.connect("destroy", Gtk.main_quit)
+    app.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

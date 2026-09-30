@@ -1,0 +1,28 @@
+{
+  "name": "BriDroid OS",
+  "id": "bridroid-os-1.0",
+  "version": "1.0.0-bliss",
+  "author": "Geminux Community & Miguel",
+  "base": "bridroid-bliss",
+  "description": "Custom ROM oficial do Geminux baseada no ecossistema LineageOS & crDroid (BlissOS x86) com aceleração gráfica Vulkan nativa, ajustes gamers do crDroid, privacidade do LineageOS e visual Cyberpunk.",
+  "theme": "dark",
+  "terminal": "prius",
+  "tuning": {
+    "zram": true,
+    "lowlatency": true,
+    "vulkan": true
+  },
+  "packages": [
+    "prius-terminal",
+    "geminux-ai",
+    "sober",
+    "vinegar",
+    "geminux-store"
+  ],
+  "extra_packages": [
+    "mesa-vulkan-drivers",
+    "microg-services",
+    "aurora-store",
+    "android-tools-adb"
+  ]
+}

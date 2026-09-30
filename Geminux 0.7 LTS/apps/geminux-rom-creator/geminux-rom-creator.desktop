@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Geminux Custom ROM Creator
+GenericName=Custom ROM & ISO Creator
+GenericName[pt_BR]=Criador de Custom ROM & ISO
+Comment=Official Custom ROM and bootable ISO builder for Geminux OS
+Comment[pt_BR]=Criador e construtor oficial de Custom ROMs e imagens ISO para o Geminux OS
+Exec=geminux-rom-creator
+Icon=geminux-rom-creator
+Terminal=false
+Categories=Utility;Settings;System;Development;
+Keywords=rom;iso;creator;builder;kitchen;custom;geminux;distro;linux;
+StartupNotify=true
+StartupWMClass=geminux-rom-creator

@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<components version="0.14" origin="geminux">
+  <component type="desktop-application">
+    <id>sober-fix.desktop</id>
+    <pkgname>sober-fix</pkgname>
+    <source_pkgname>sober-fix</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Sober Fix (Roblox Cleaner)</name>
+    <summary>Limpeza de cache e reparo automático do Sober / Roblox no Geminux OS</summary>
+    <description>
+      <p>
+        O Sober Fix é um utilitário exclusivo desenvolvido para o Geminux OS que resolve travamentos,
+        erros de atualização e problemas de cache do cliente Sober / Roblox no Linux.
+      </p>
+      <p>
+        Recursos principais:
+      </p>
+      <ul>
+        <li>Limpeza profunda do cache de jogos e dados temporários do Sober</li>
+        <li>Finalização segura de instâncias travadas em segundo plano</li>
+        <li>Restauração rápida da estabilidade do Roblox sem necessidade de reinstalar</li>
+      </ul>
+    </description>
+    <screenshots>
+      <screenshot type="default">
+        <caption>Terminal do Geminux OS executando a limpeza e reparo de cache do Sober Fix</caption>
+        <image width="1280" height="720">https://raw.githubusercontent.com/miguel7435987984/geminux/main/branding/screenshots/sober-fix.png</image>
+      </screenshot>
+    </screenshots>
+    <launchable type="desktop-id">sober-fix.desktop</launchable>
+    <icon type="stock">sober-fix</icon>
+    <provides>
+      <binary>sober-fix</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>Game</category>
+      <category>Utility</category>
+      <category>System</category>
+    </categories>
+    <keywords>
+      <keyword>sober</keyword>
+      <keyword>roblox</keyword>
+      <keyword>fix</keyword>
+      <keyword>cache</keyword>
+      <keyword>clean</keyword>
+      <keyword>game</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-04">
+        <description>
+          <p>Lançamento inicial oficial do Sober Fix para o Geminux OS 1.0 LTS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.soberfix">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+  <component type="desktop-application">
+    <id>geminux-virtual-machine.desktop</id>
+    <pkgname>geminux-virtual-machine</pkgname>
+    <source_pkgname>geminux-virtual-machine</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Geminux Virtual Machine</name>
+    <summary>Gerenciador oficial de máquinas virtuais para Windows, Linux e macOS</summary>
+    <description>
+      <p>
+        O Geminux Virtual Machine é o aplicativo oficial de virtualização gráfica do Geminux OS.
+        Ele permite criar, gerenciar e executar máquinas virtuais de alta performance com facilidade,
+        oferecendo suporte e interoperabilidade com os motores KVM / Hyper-V, Oracle VM VirtualBox e VMware Workstation.
+      </p>
+      <p>
+        Destaques e Recursos:
+      </p>
+      <ul>
+        <li>Interface gráfica moderna e intuitiva integrada ao tema escuro e neon-cyan do Geminux OS</li>
+        <li>Suporte a múltiplos motores de virtualização: KVM / Hyper-V, VirtualBox e VMware</li>
+        <li>Compatibilidade nativa com formatos de disco virtual .qcow2, .vdi (VirtualBox) e .vmdk (VMware)</li>
+        <li>Perfis otimizados prontos para Windows (11, 10, 7) com Hyper-V enlightenments, distribuições Linux e macOS</li>
+        <li>Aceleração KVM nativa com drivers VirtIO para gráficos, rede e discos de alta velocidade</li>
+        <li>Assistente visual para criar discos rígidos virtuais e anexar imagens ISO facilmente</li>
+        <li>Controle completo de hardware: ajuste de núcleos de CPU (vCPUs), memória RAM e armazenamento</li>
+        <li>Segurança total: suas máquinas virtuais rodam em ambiente isolado sem afetar seu disco real</li>
+      </ul>
+    </description>
+    <screenshots>
+      <screenshot type="default">
+        <caption>Janela principal do Geminux Virtual Machine gerenciando sistemas virtuais</caption>
+        <image width="1280" height="720">https://raw.githubusercontent.com/miguel7435987984/geminux/main/branding/screenshots/geminux-vm.png</image>
+      </screenshot>
+    </screenshots>
+    <launchable type="desktop-id">geminux-virtual-machine.desktop</launchable>
+    <icon type="stock">geminux-vm</icon>
+    <provides>
+      <binary>geminux-vm</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>Emulator</category>
+      <category>Utility</category>
+    </categories>
+    <keywords>
+      <keyword>vm</keyword>
+      <keyword>virtual</keyword>
+      <keyword>machine</keyword>
+      <keyword>qemu</keyword>
+      <keyword>kvm</keyword>
+      <keyword>windows</keyword>
+      <keyword>linux</keyword>
+      <keyword>macos</keyword>
+      <keyword>virtualbox</keyword>
+      <keyword>vmware</keyword>
+      <keyword>hyperv</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-08">
+        <description>
+          <p>Lançamento oficial do Geminux Virtual Machine com suporte multi-motor a KVM / Hyper-V, VirtualBox e VMware para Windows, Linux e macOS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.vm">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+
+  <component type="desktop-application">
+    <id>org.geminux.ai</id>
+    <pkgname>geminux-ai</pkgname>
+    <source_pkgname>geminux-ai</source_pkgname>
+    <name>Geminux AI</name>
+    <summary>Assistente Inteligente Oficial do Geminux OS</summary>
+    <description>
+      <p>
+        O Geminux AI é o assistente inteligente oficial desenvolvido para o Geminux OS,
+        trazendo suporte nativo para comandos do Linux, scripts, diagnósticos e automação.
+      </p>
+      <p>
+        Principais Recursos:
+      </p>
+      <ul>
+        <li>Interface conversacional moderna integrada ao tema Geminux Dark Neon</li>
+        <li>Base de conhecimento offline para comandos, atalhos e configurações do sistema</li>
+        <li>Atalhos rápidos para verificar memória RAM, discos, rede e atualizações</li>
+        <li>Módulo <b>Codef</b> integrado para criar aplicativos Android, iOS, Web e Geminux OS</li>
+        <li>Suporte a múltiplos motores de IA: Google Gemini, DeepSeek, Qwen (Alibaba) e OpenAI</li>
+        <li>Segurança e privacidade garantidas pela Geminux OS Team.</li>
+      </ul>
+    </description>
+    <launchable type="desktop-id">geminux-ai.desktop</launchable>
+    <icon type="stock">geminux-ai</icon>
+    <provides>
+      <binary>geminux-ai</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>Utility</category>
+      <category>Development</category>
+      <category>System</category>
+    </categories>
+    <keywords>
+      <keyword>ai</keyword>
+      <keyword>codef</keyword>
+      <keyword>assistant</keyword>
+      <keyword>chat</keyword>
+      <keyword>gemini</keyword>
+      <keyword>deepseek</keyword>
+      <keyword>qwen</keyword>
+      <keyword>openai</keyword>
+      <keyword>android</keyword>
+      <keyword>ios</keyword>
+      <keyword>terminal</keyword>
+      <keyword>linux</keyword>
+      <keyword>geminux</keyword>
+      <keyword>help</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-08">
+        <description>
+          <p>Lançamento inicial do Geminux AI como assistente inteligente oficial do Geminux OS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.ai">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+
+  <component type="desktop-application">
+    <id>geminux-store.desktop</id>
+    <pkgname>geminux-store</pkgname>
+    <source_pkgname>geminux-store</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Geminux Store</name>
+    <summary>Centro Oficial de Aplicativos e gerenciador de pacotes do Geminux OS</summary>
+    <description>
+      <p>
+        A Geminux Store é a loja e centro oficial de aplicativos do Geminux OS.
+        Ela oferece navegação ágil em catálogo curado com aplicativos nativos do Geminux,
+        ferramentas de inteligência artificial, utilitários, emuladores e jogos com suporte a pacotes DEB e Flatpaks.
+      </p>
+      <p>Destaques:</p>
+      <ul>
+        <li>Instalação e remoção em 1 clique de aplicativos nativos e de terceiros</li>
+        <li>Categorias dedicadas: Destaques, IA, Jogos, Mídia e Ferramentas</li>
+        <li>Visual moderno neon-cyan perfeitamente integrado ao ecossistema do Geminux OS</li>
+      </ul>
+    </description>
+    <launchable type="desktop-id">geminux-store.desktop</launchable>
+    <icon type="stock">geminux-store</icon>
+    <provides>
+      <binary>geminux-store</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>PackageManager</category>
+      <category>Utility</category>
+    </categories>
+    <keywords>
+      <keyword>store</keyword>
+      <keyword>app</keyword>
+      <keyword>package</keyword>
+      <keyword>software</keyword>
+      <keyword>flatpak</keyword>
+      <keyword>deb</keyword>
+      <keyword>geminux</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-11">
+        <description>
+          <p>Lançamento oficial da Geminux Store com suporte integrado a pacotes nativos, APT e Flatpak.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.store">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+
+  <component type="desktop-application">
+    <id>geminux-welcome.desktop</id>
+    <pkgname>geminux-welcome</pkgname>
+    <source_pkgname>geminux-welcome</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Geminux Welcome</name>
+    <summary>Centro oficial de boas-vindas e tour guiado do Geminux OS</summary>
+    <description>
+      <p>
+        O Geminux Welcome apresenta aos novos e experientes usuários os principais pilares do Geminux OS:
+        o assistente inteligente nativo Geminux AI, a central de virtualização Geminux Virtual Machine
+        com display embutido e aceleração KVM, o Prius Terminal, a Geminux Store e opções rápidas de personalização.
+      </p>
+    </description>
+    <launchable type="desktop-id">geminux-welcome.desktop</launchable>
+    <icon type="stock">geminux-welcome</icon>
+    <provides>
+      <binary>geminux-welcome</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>Utility</category>
+      <category>Settings</category>
+    </categories>
+    <keywords>
+      <keyword>welcome</keyword>
+      <keyword>tour</keyword>
+      <keyword>intro</keyword>
+      <keyword>settings</keyword>
+      <keyword>geminux</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-11">
+        <description>
+          <p>Lançamento do centro de boas-vindas e personalização rápida do Geminux OS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.welcome">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+
+  <component type="desktop-application">
+    <id>prius-terminal.desktop</id>
+    <pkgname>prius-terminal</pkgname>
+    <source_pkgname>prius-terminal</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Prius Terminal</name>
+    <summary>Terminal ultrarrápido oficial do Geminux OS</summary>
+    <description>
+      <p>
+        O Prius Terminal é o emulador de terminal padrão e oficial do Geminux OS fixado na barra de tarefas.
+        Desenvolvido com foco em máxima velocidade de renderização, visual cyberpunk neon,
+        atalhos integrados de auditoria de hardware e histórico persistente inteligente.
+      </p>
+    </description>
+    <launchable type="desktop-id">prius-terminal.desktop</launchable>
+    <icon type="stock">prius-terminal</icon>
+    <provides>
+      <binary>prius</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>TerminalEmulator</category>
+      <category>Utility</category>
+    </categories>
+    <keywords>
+      <keyword>terminal</keyword>
+      <keyword>prius</keyword>
+      <keyword>shell</keyword>
+      <keyword>bash</keyword>
+      <keyword>cli</keyword>
+      <keyword>geminux</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-08">
+        <description>
+          <p>Lançamento oficial do Prius Terminal integrado como terminal padrão do Geminux OS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.prius">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+
+  <component type="desktop-application">
+    <id>geminux-rom-creator.desktop</id>
+    <pkgname>geminux-rom-creator</pkgname>
+    <source_pkgname>geminux-rom-creator</source_pkgname>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>Geminux Custom ROM Creator</name>
+    <summary>Criador oficial de Custom ROMs e construtor de ISOs do Geminux OS</summary>
+    <description>
+      <p>
+        O Geminux Custom ROM Creator permite que usuários e desenvolvedores criem versões personalizadas
+        do Geminux OS. Escolha pacotes de software modulares, presets prontos (Gamer, Desenvolvedor, Mídia, Minimal),
+        configure ajustes de kernel (ZRAM, baixa latência), personalize temas visuais e exporte imagens ISO inicializáveis
+        com teste em tempo real na Geminux Virtual Machine.
+      </p>
+    </description>
+    <launchable type="desktop-id">geminux-rom-creator.desktop</launchable>
+    <icon type="stock">geminux-rom-creator</icon>
+    <provides>
+      <binary>geminux-rom-creator</binary>
+    </provides>
+    <project_group>Geminux</project_group>
+    <compulsory_for_desktop>GNOME</compulsory_for_desktop>
+    <categories>
+      <category>System</category>
+      <category>Development</category>
+      <category>Utility</category>
+      <category>Settings</category>
+    </categories>
+    <keywords>
+      <keyword>rom</keyword>
+      <keyword>iso</keyword>
+      <keyword>creator</keyword>
+      <keyword>builder</keyword>
+      <keyword>custom</keyword>
+      <keyword>distro</keyword>
+      <keyword>geminux</keyword>
+    </keywords>
+    <content_rating type="oars-1.1" />
+    <releases>
+      <release version="1.0.0" date="2026-09-13">
+        <description>
+          <p>Lançamento inicial oficial do Geminux Custom ROM Creator para o Geminux OS.</p>
+        </description>
+      </release>
+    </releases>
+    <developer id="org.geminux.romcreator">
+      <name>Geminux OS Team</name>
+    </developer>
+    <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+    <url type="bugtracker">https://github.com/miguel7435987984/geminux/issues</url>
+    <url type="help">https://github.com/miguel7435987984/geminux</url>
+    <url type="vcs-browser">https://github.com/miguel7435987984/geminux</url>
+  </component>
+</components>

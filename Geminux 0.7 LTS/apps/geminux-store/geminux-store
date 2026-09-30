@@ -1,0 +1,1617 @@
+#!/usr/bin/env python3
+"""
+Geminux Store - Centro Oficial de Aplicativos do Geminux OS
+Gerenciador de software moderno, veloz e integrado com suporte a pacotes nativos Geminux, APT e Flatpak.
+"""
+
+import sys
+import os
+import json
+import subprocess
+import shutil
+import threading
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+gi.require_version('GLib', '2.0')
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gdk, GLib, Pango, GdkPixbuf, Gio
+
+GLib.set_prgname('geminux-store')
+GLib.set_application_name('Geminux Store')
+
+APP_NAME = "Geminux Store"
+APP_VERSION = "1.0.0"
+ACCENT_CYAN = "#00d2ff"
+ACCENT_CYAN_HOVER = "#33dcff"
+BG_DARK = "#0b0f17"
+BG_CARD = "#141a24"
+BG_CARD_HOVER = "#1c2533"
+BG_INPUT = "#0e131d"
+BORDER_COLOR = "#222d3d"
+TEXT_PRIMARY = "#f0f6fc"
+TEXT_MUTED = "#8b949e"
+SUCCESS_GREEN = "#2ea043"
+DANGER_RED = "#da3633"
+
+CSS_STYLE = f"""
+* {{
+    font-family: 'Ubuntu', sans-serif;
+}}
+
+window.background {{
+    background-color: {BG_DARK};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar {{
+    background-color: {BG_CARD};
+    border-bottom: 1px solid {BORDER_COLOR};
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .title {{
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+}}
+
+headerbar .subtitle {{
+    color: {ACCENT_CYAN};
+    font-size: 11px;
+}}
+
+entry.search-box {{
+    background-color: {BG_INPUT};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 6px 12px;
+}}
+
+entry.search-box:focus {{
+    border-color: {ACCENT_CYAN};
+}}
+
+.hero-banner {{
+    background-color: #0d1726;
+    border-bottom: 1px solid {BORDER_COLOR};
+    padding: 24px;
+}}
+
+.card {{
+    background-color: {BG_CARD};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 12px;
+    padding: 16px;
+}}
+
+.card:hover {{
+    background-color: {BG_CARD_HOVER};
+    border-color: {ACCENT_CYAN};
+}}
+
+.badge-geminux {{
+    background-color: rgba(0, 210, 255, 0.15);
+    color: {ACCENT_CYAN};
+    border: 1px solid rgba(0, 210, 255, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}}
+
+.badge-apt {{
+    background-color: rgba(163, 113, 247, 0.15);
+    color: #d2a8ff;
+    border: 1px solid rgba(163, 113, 247, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+.badge-flatpak {{
+    background-color: rgba(63, 185, 80, 0.15);
+    color: #7ee787;
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+.badge-verified {{
+    background-color: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+}}
+
+.btn-primary {{
+    background-color: {ACCENT_CYAN};
+    color: #000000;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 6px 16px;
+    border: none;
+}}
+
+.btn-primary:hover {{
+    background-color: {ACCENT_CYAN_HOVER};
+}}
+
+.btn-secondary {{
+    background-color: #1a2230;
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 600;
+}}
+
+.btn-secondary:hover {{
+    background-color: #242f42;
+    border-color: {ACCENT_CYAN};
+    color: {ACCENT_CYAN};
+}}
+
+.btn-danger {{
+    background-color: rgba(218, 54, 51, 0.15);
+    color: #ff7b72;
+    border: 1px solid rgba(218, 54, 51, 0.4);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 600;
+}}
+
+.btn-danger:hover {{
+    background-color: rgba(218, 54, 51, 0.3);
+    color: #ffffff;
+}}
+
+.btn-installing {{
+    background-color: #1a2f42;
+    color: {ACCENT_CYAN};
+    border: 1px solid {ACCENT_CYAN};
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 6px 14px;
+}}
+
+.status-banner {{
+    background-color: #0e1726;
+    border-top: 1px solid {ACCENT_CYAN};
+    padding: 10px 18px;
+}}
+
+progressbar progress {{
+    background-color: {ACCENT_CYAN};
+    border-radius: 4px;
+}}
+
+progressbar trough {{
+    background-color: #141a24;
+    border-radius: 4px;
+    min-height: 4px;
+}}
+
+.cat-button {{
+    background-color: #121924;
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER_COLOR};
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-weight: 600;
+    font-size: 12px;
+}}
+
+.cat-button:checked, .cat-button:active {{
+    background-color: #15324d;
+    border-color: {ACCENT_CYAN};
+    color: {ACCENT_CYAN};
+}}
+
+.cat-button:hover {{
+    border-color: {ACCENT_CYAN};
+}}
+"""
+
+# Catálogo Curado Oficial do Geminux OS
+BUILTIN_CATALOG = [
+    {
+        "id": "geminux-ai",
+        "name": "Geminux AI",
+        "category": "ai",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "geminux-ai",
+        "cmd": "geminux-ai",
+        "icon": "geminux-ai",
+        "icon_fallback": "🤖",
+        "summary": "Assistente inteligente nativo com suporte a Gemini 3.8, DeepSeek e Qwen e estúdio Codef.",
+        "description": "O Geminux AI é o assistente inteligente oficial integrado ao Geminux OS. Permite geração de comandos, diagnósticos de erros, automação de scripts, escrita de código e suporte a múltiplos provedores de ponta em tempo real.",
+        "author": "Geminux OS Team",
+        "rating": "5.0 ★★★★★",
+        "size": "15 MB",
+        "featured": True
+    },
+    {
+        "id": "flutter",
+        "name": "Flutter SDK",
+        "category": "ai",
+        "type": "Dev SDK / Snap",
+        "badge_class": "badge-geminux",
+        "package": "flutter",
+        "cmd": "flutter",
+        "icon": "flutter",
+        "icon_fallback": "🦋",
+        "summary": "SDK oficial do Google para criar aplicações multiplataforma modernas com Dart.",
+        "description": "O Flutter é o framework e SDK de código aberto do Google para desenvolvimento de interfaces multiplataforma com Dart. Conta com Hot Reload instantâneo, compilação AOT nativa para Linux desktop, rica biblioteca de widgets e integração de fábrica com o VS Code e Prius Terminal.",
+        "author": "Google LLC",
+        "verified": True,
+        "rating": "4.9 ★★★★★",
+        "size": "950 MB",
+        "featured": True
+    },
+    {
+        "id": "geminux-vm",
+        "name": "Geminux Virtual Machine",
+        "category": "tools",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "geminux-virtual-machine",
+        "cmd": "geminux-vm",
+        "icon": "geminux-vm",
+        "icon_fallback": "🖥️",
+        "summary": "Central de virtualização com tela 100% embutida e aceleração KVM para Windows, Linux e macOS.",
+        "description": "Execute sistemas operacionais completos dentro do Geminux sem janelas soltas e sem perda de desempenho. Conta com criação em 1 clique de máquinas virtuais, suporte a discos .qcow2/.vdi/.vmdk e reparenting de vídeo seguro.",
+        "author": "Geminux OS Team",
+        "rating": "5.0 ★★★★★",
+        "size": "25 MB",
+        "featured": True
+    },
+    {
+        "id": "prius-terminal",
+        "name": "Prius Terminal",
+        "category": "tools",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "prius-terminal",
+        "cmd": "prius",
+        "icon": "prius-terminal",
+        "icon_fallback": "⚡",
+        "summary": "Terminal ultrarrápido com atalhos exclusivos de diagnóstico de hardware e visual cyberpunk oficial.",
+        "description": "O terminal padrão do Geminux OS fixado na barra de tarefas. Apresenta inicialização instantânea, histórico persistente inteligente e comandos exclusivos de auditoria do sistema operacional.",
+        "author": "Geminux OS Team",
+        "rating": "4.9 ★★★★★",
+        "size": "8 MB",
+        "featured": True
+    },
+    {
+        "id": "geminux-welcome",
+        "name": "Geminux Welcome",
+        "category": "tools",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "geminux-welcome",
+        "cmd": "geminux-welcome",
+        "icon": "geminux-welcome",
+        "icon_fallback": "✨",
+        "summary": "Centro oficial de boas-vindas, tour de recursos e ajustes rápidos de personalização.",
+        "description": "Aplicativo de primeiro boot e guia interativo do Geminux OS. Permite explorar os pilares do sistema, alternar temas claro/escuro e acessar as configurações principais.",
+        "author": "Geminux OS Team",
+        "rating": "5.0 ★★★★★",
+        "size": "6 MB",
+        "featured": False
+    },
+    {
+        "id": "geminux-rom-creator",
+        "name": "Geminux Custom ROM Creator",
+        "category": "tools",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "geminux-rom-creator",
+        "cmd": "geminux-rom-creator",
+        "icon": "geminux-rom-creator",
+        "icon_fallback": "💿",
+        "summary": "Criador oficial de Custom ROMs e gerador de imagens ISO bootáveis do Geminux OS.",
+        "description": "Monte sua própria distribuição personalizada baseada no Geminux OS. Permite escolher presets (Gamer, Dev, Mídia, Minimal), selecionar pacotes modulares, ajustar parâmetros do kernel (ZRAM, baixa latência), gerar manifestos .grom e compilar imagens ISO com teste direto na Geminux VM.",
+        "author": "Geminux OS Team",
+        "rating": "5.0 ★★★★★",
+        "size": "12 MB",
+        "featured": True
+    },
+    {
+        "id": "sober",
+        "name": "Sober",
+        "category": "games",
+        "type": "Flatpak / Nativo",
+        "badge_class": "badge-flatpak",
+        "package": "org.vinegarhq.Sober",
+        "flatpak_id": "org.vinegarhq.Sober",
+        "cmd": "sober",
+        "icon": "sober",
+        "icon_fallback": "🎮",
+        "summary": "Execução nativa e de alta performance de Roblox no Linux.",
+        "description": "O Sober é um runtime avançado e independente criado pela VinegarHQ para executar o Roblox no Linux com Vulkan nativo, taxas de FPS desbloqueadas e baixíssima latência.",
+        "author": "VinegarHQ",
+        "rating": "4.9 ★★★★★",
+        "size": "85 MB",
+        "featured": True
+    },
+    {
+        "id": "vinegar",
+        "name": "Vinegar",
+        "category": "games",
+        "type": "Flatpak / Wine",
+        "badge_class": "badge-flatpak",
+        "package": "org.vinegarhq.Vinegar",
+        "flatpak_id": "org.vinegarhq.Vinegar",
+        "cmd": "vinegar",
+        "icon": "vinegar",
+        "icon_fallback": "🍇",
+        "summary": "Launcher otimizado para executar Roblox Studio e jogos no Linux.",
+        "description": "O Vinegar é um utilitário avançado para rodar o cliente e o Roblox Studio no Linux através do Wine/Proton com aceleração DXVK/Vulkan integrada e gestão simplificada.",
+        "author": "VinegarHQ",
+        "rating": "4.8 ★★★★★",
+        "size": "45 MB",
+        "featured": True
+    },
+    {
+        "id": "sober-fix",
+        "name": "Sober Fix",
+        "category": "games",
+        "type": "Nativo Geminux",
+        "badge_class": "badge-geminux",
+        "package": "sober-fix",
+        "cmd": "sober-fix",
+        "icon": "sober-fix",
+        "icon_fallback": "🎮",
+        "summary": "Otimizador e reparador de compatibilidade para execução fluida de Roblox no Linux.",
+        "description": "Diagnostica drivers Vulkan, aceleração OpenGL e bibliotecas essenciais para garantir taxas de quadros estáveis no Roblox através da plataforma Sober.",
+        "author": "Geminux Gaming Labs",
+        "rating": "4.8 ★★★★★",
+        "size": "10 MB",
+        "featured": True
+    },
+    {
+        "id": "code",
+        "name": "Visual Studio Code",
+        "category": "ai",
+        "type": "APT / Flatpak",
+        "badge_class": "badge-apt",
+        "package": "code",
+        "flatpak_id": "com.visualstudio.code",
+        "apt_package": "code",
+        "cmd": "code",
+        "icon": "com.visualstudio.code",
+        "icon_fallback": "💻",
+        "summary": "Editor de código fonte poderoso com suporte a extensões, depuração e Git integrado.",
+        "description": "O editor de código mais popular do mundo, com suporte nativo a centenas de linguagens, IA copilot, depuração avançada e terminal embutido.",
+        "author": "Microsoft",
+        "rating": "4.9 ★★★★★",
+        "size": "95 MB",
+        "featured": True
+    },
+    {
+        "id": "firefox",
+        "name": "Mozilla Firefox",
+        "category": "web",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "firefox",
+        "apt_package": "firefox",
+        "flatpak_id": "org.mozilla.firefox",
+        "cmd": "firefox",
+        "icon": "firefox",
+        "icon_fallback": "🦊",
+        "summary": "Navegador web veloz, seguro e com proteção avançada contra rastreadores.",
+        "description": "Navegador padrão com privacidade de ponta, suporte a extensões e renderização ultra rápida.",
+        "author": "Mozilla",
+        "rating": "4.8 ★★★★★",
+        "size": "80 MB",
+        "featured": False
+    },
+    {
+        "id": "discord",
+        "name": "Discord",
+        "category": "web",
+        "type": "Flatpak",
+        "badge_class": "badge-flatpak",
+        "package": "com.discordapp.Discord",
+        "flatpak_id": "com.discordapp.Discord",
+        "cmd": "discord",
+        "icon": "com.discordapp.Discord",
+        "icon_fallback": "💬",
+        "summary": "Plataforma de voz, vídeo e mensagens de texto para amigos e comunidades.",
+        "description": "Comunique-se em canais de voz com baixa latência, compartilhe sua tela em alta definição e converse com seus amigos em grupos e servidores.",
+        "author": "Discord Inc.",
+        "rating": "4.7 ★★★★☆",
+        "size": "85 MB",
+        "featured": True
+    },
+    {
+        "id": "steam",
+        "name": "Steam",
+        "category": "games",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "steam",
+        "cmd": "steam",
+        "icon": "steam",
+        "icon_fallback": "🎮",
+        "summary": "A maior plataforma de jogos para PC com compatibilidade nativa via Proton.",
+        "description": "Jogue milhares de títulos no Linux através da tecnologia Proton/Vulkan da Valve com excelente desempenho.",
+        "author": "Valve Software",
+        "rating": "4.9 ★★★★★",
+        "size": "120 MB",
+        "featured": True
+    },
+    {
+        "id": "vlc",
+        "name": "VLC Media Player",
+        "category": "media",
+        "type": "APT / Flatpak",
+        "badge_class": "badge-apt",
+        "package": "vlc",
+        "apt_package": "vlc",
+        "flatpak_id": "org.videolan.VLC",
+        "cmd": "vlc",
+        "icon": "vlc",
+        "icon_fallback": "🎬",
+        "summary": "Reprodutor multimídia completo compatível com praticamente todos os formatos de áudio e vídeo.",
+        "description": "Toca arquivos locais, discos, streams e dispositivos sem necessidade de codecs externos.",
+        "author": "VideoLAN",
+        "rating": "4.9 ★★★★★",
+        "size": "35 MB",
+        "featured": False
+    },
+    {
+        "id": "gimp",
+        "name": "GIMP",
+        "category": "media",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "gimp",
+        "cmd": "gimp",
+        "icon": "gimp",
+        "icon_fallback": "🖌️",
+        "summary": "Editor de imagens profissional avançado para retoque, pintura e composição.",
+        "description": "Alternativa de código aberto poderosa para manipulação gráfica, camadas, canais e plugins.",
+        "author": "The GIMP Team",
+        "rating": "4.6 ★★★★☆",
+        "size": "45 MB",
+        "featured": False
+    },
+    {
+        "id": "blender",
+        "name": "Blender",
+        "category": "media",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "blender",
+        "cmd": "blender",
+        "icon": "blender",
+        "icon_fallback": "🎨",
+        "summary": "Suíte 3D completa de modelagem, animação, simulação, renderização e edição de vídeo.",
+        "description": "Ferramenta padrão da indústria open-source para criação de games, efeitos visuais e filmes 3D.",
+        "author": "Blender Foundation",
+        "rating": "4.9 ★★★★★",
+        "size": "210 MB",
+        "featured": True
+    },
+    {
+        "id": "spotify",
+        "name": "Spotify Client",
+        "category": "media",
+        "type": "Flatpak",
+        "badge_class": "badge-flatpak",
+        "package": "com.spotify.Client",
+        "flatpak_id": "com.spotify.Client",
+        "apt_package": "spotify-client",
+        "cmd": "spotify",
+        "icon": "com.spotify.Client",
+        "icon_fallback": "🎵",
+        "summary": "Milhões de músicas, podcasts e playlists organizadas para ouvir onde quiser.",
+        "description": "Acesso oficial a todo o catálogo do Spotify com suporte a atalhos de mídia do teclado e notificações nativas.",
+        "author": "Spotify AB",
+        "rating": "4.7 ★★★★☆",
+        "size": "110 MB",
+        "featured": False
+    },
+    {
+        "id": "obs-studio",
+        "name": "OBS Studio",
+        "category": "media",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "obs-studio",
+        "cmd": "obs",
+        "icon": "obs-studio",
+        "icon_fallback": "📹",
+        "summary": "Software livre para gravação de vídeo e transmissões ao vivo de alta performance.",
+        "description": "Ideal para criadores de conteúdo, streamers e gravação de telas no YouTube e Twitch.",
+        "author": "OBS Project",
+        "rating": "4.9 ★★★★★",
+        "size": "75 MB",
+        "featured": False
+    },
+    {
+        "id": "libreoffice",
+        "name": "LibreOffice",
+        "category": "prod",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "libreoffice",
+        "cmd": "libreoffice",
+        "icon": "libreoffice-startcenter",
+        "icon_fallback": "📄",
+        "summary": "Suíte de escritório completa com editor de texto, planilhas, apresentações e fórmulas.",
+        "description": "Compatível com arquivos do Microsoft Office (.docx, .xlsx, .pptx) com total autonomia.",
+        "author": "The Document Foundation",
+        "rating": "4.7 ★★★★☆",
+        "size": "180 MB",
+        "featured": False
+    },
+    {
+        "id": "gparted",
+        "name": "GParted",
+        "category": "tools",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "gparted",
+        "cmd": "gparted",
+        "icon": "gparted",
+        "icon_fallback": "💾",
+        "summary": "Editor gráfico de partições de disco para criar, redimensionar e formatar sistemas de arquivos.",
+        "description": "Gerenciamento seguro de partições ext4, btrfs, ntfs e vfat com verificação de integridade.",
+        "author": "Curtis Gedak",
+        "rating": "4.8 ★★★★★",
+        "size": "5 MB",
+        "featured": False
+    },
+    {
+        "id": "btop",
+        "name": "Btop++ Monitor",
+        "category": "tools",
+        "type": "APT / DEB",
+        "badge_class": "badge-apt",
+        "package": "btop",
+        "cmd": "btop",
+        "icon": "utilities-system-monitor",
+        "icon_fallback": "📊",
+        "summary": "Monitor visual de recursos do sistema com gráficos de CPU, memória, discos e processos.",
+        "description": "Monitor moderno em terminal com gráficos em tempo real e visualização de consumo de hardware.",
+        "author": "Aristocratos",
+        "rating": "4.9 ★★★★★",
+        "size": "2 MB",
+        "featured": False
+    },
+    {
+        "id": "gnome-boxes",
+        "name": "GNOME Boxes",
+        "category": "tools",
+        "type": "APT / Flatpak",
+        "badge_class": "badge-apt",
+        "package": "gnome-boxes",
+        "flatpak_id": "org.gnome.Boxes",
+        "apt_package": "gnome-boxes",
+        "cmd": "gnome-boxes",
+        "icon": "org.gnome.Boxes",
+        "icon_fallback": "📦",
+        "summary": "Gerenciador simples e elegante de máquinas virtuais e sistemas remotos via QEMU/KVM.",
+        "description": "Visualize e execute outros sistemas operacionais (Windows, Linux, BSD) com facilidade. O GNOME Boxes oferece download com 1 clique de ISOs populares, compartilhamento de pastas e aceleração por hardware nativa.",
+        "author": "The GNOME Project",
+        "rating": "4.8 ★★★★★",
+        "size": "40 MB",
+        "featured": True
+    }
+]
+
+
+def is_app_installed(app):
+    """Verifica se um aplicativo está instalado no sistema"""
+    # 1. Verifica binário no PATH e locais comuns
+    cmd = app.get("cmd")
+    if cmd:
+        if shutil.which(cmd):
+            return True
+        for extra_p in [f"/snap/bin/{cmd}", f"/opt/{cmd}/bin/{cmd}", f"/usr/local/bin/{cmd}"]:
+            if os.path.exists(extra_p):
+                return True
+
+    # 2. Verifica se está instalado via Flatpak
+    flatpak_id = app.get("flatpak_id") or (app.get("package") if "." in (app.get("package") or "") else None)
+    if flatpak_id:
+        try:
+            res = subprocess.run(
+                ["flatpak", "info", flatpak_id],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True
+            )
+            if res.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+    # 3. Verifica pacote deb via dpkg-query
+    deb_pkg = app.get("apt_package") or app.get("package")
+    if deb_pkg and "." not in deb_pkg:
+        try:
+            res = subprocess.run(
+                ["dpkg-query", "-W", "-f=${Status}", deb_pkg],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True
+            )
+            if "install ok installed" in res.stdout:
+                return True
+        except Exception:
+            pass
+
+    return False
+
+
+def run_command_async(cmd, on_done=None):
+    """Executa comandos em thread separada com callback na thread principal"""
+    def _worker():
+        try:
+            p = subprocess.Popen(cmd, shell=True)
+            p.wait()
+        except Exception as e:
+            print(f"[GeminuxStore] Erro ao executar {cmd}: {e}", file=sys.stderr)
+        if on_done:
+            GLib.idle_add(on_done)
+    threading.Thread(target=_worker, daemon=True).start()
+
+
+class GeminuxStoreApp(Gtk.Window):
+    def __init__(self):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.set_title(APP_NAME)
+        self.set_wmclass("geminux-store", "geminux-store")
+        self.set_role("geminux-store")
+        self.set_default_size(1024, 680)
+        self.set_position(Gtk.WindowPosition.CENTER)
+
+        # Registra o diretório de ícones oficial no tema do GTK
+        repo_icons = os.path.normpath(os.path.join(os.path.dirname(__file__), "../../branding/icons"))
+        if os.path.isdir(repo_icons):
+            Gtk.IconTheme.get_default().prepend_search_path(repo_icons)
+
+        # Ícone da Janela em múltiplas resoluções
+        icon_paths = [
+            os.path.join(repo_icons, "geminux-store.svg"),
+            os.path.join(repo_icons, "geminux-store.png"),
+            "/usr/share/icons/hicolor/scalable/apps/geminux-store.svg",
+            "/usr/share/pixmaps/geminux-store.svg"
+        ]
+        pixbufs = []
+        for p in icon_paths:
+            if os.path.isfile(p):
+                try:
+                    for s in [16, 24, 32, 48, 64, 128, 256]:
+                        pixbufs.append(GdkPixbuf.Pixbuf.new_from_file_at_scale(p, s, s, True))
+                    break
+                except Exception:
+                    pass
+        if pixbufs:
+            Gtk.Window.set_default_icon_list(pixbufs)
+            self.set_icon_list(pixbufs)
+            self.set_icon(pixbufs[-1])
+        self.set_icon_name("geminux-store")
+
+        # Estado da Store
+        self.current_category = "all"
+        self.search_query = ""
+        self.view_mode = "explore"  # 'explore', 'installed', 'updates'
+        self.installed_cache = {}
+
+        # HeaderBar Oficial
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.set_title("Geminux Store")
+        self.set_titlebar(header)
+
+        # Barra de Pesquisa no Cabeçalho
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Buscar aplicativos, ferramentas, jogos...")
+        self.search_entry.set_width_chars(32)
+        self.search_entry.get_style_context().add_class("search-box")
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        header.pack_start(self.search_entry)
+
+        # Seletor de visualização (Explorar / Instalados / Atualizações)
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+
+        self.btn_nav_explore = Gtk.RadioButton.new_with_label_from_widget(None, "🛍️ Explorar")
+        self.btn_nav_explore.set_mode(False)
+        self.btn_nav_explore.get_style_context().add_class("btn-secondary")
+        self.btn_nav_explore.connect("toggled", lambda b: self.set_view_mode("explore") if b.get_active() else None)
+        btn_box.pack_start(self.btn_nav_explore, False, False, 0)
+
+        self.btn_nav_installed = Gtk.RadioButton.new_with_label_from_widget(self.btn_nav_explore, "📦 Instalados")
+        self.btn_nav_installed.set_mode(False)
+        self.btn_nav_installed.get_style_context().add_class("btn-secondary")
+        self.btn_nav_installed.connect("toggled", lambda b: self.set_view_mode("installed") if b.get_active() else None)
+        btn_box.pack_start(self.btn_nav_installed, False, False, 0)
+
+        self.btn_nav_updates = Gtk.RadioButton.new_with_label_from_widget(self.btn_nav_explore, "🔄 Atualizações")
+        self.btn_nav_updates.set_mode(False)
+        self.btn_nav_updates.get_style_context().add_class("btn-secondary")
+        self.btn_nav_updates.connect("toggled", lambda b: self.set_view_mode("updates") if b.get_active() else None)
+        btn_box.pack_start(self.btn_nav_updates, False, False, 0)
+
+        header.pack_end(btn_box)
+
+        # Container Principal
+        main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.add(main_vbox)
+
+        # Stack de Telas
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.stack.set_transition_duration(200)
+
+        self.stack.add_named(self.create_explore_view(), "explore")
+        self.stack.add_named(self.create_installed_view(), "installed")
+        self.stack.add_named(self.create_updates_view(), "updates")
+
+        main_vbox.pack_start(self.stack, True, True, 0)
+
+        # Banner Inferior de Progresso / Notificação de Instalação
+        self.pulse_timer = None
+        self.installing_apps = {}
+
+        self.status_banner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.status_banner.get_style_context().add_class("status-banner")
+        self.status_banner.set_no_show_all(True)
+
+        status_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.status_spinner = Gtk.Spinner()
+        status_h.pack_start(self.status_spinner, False, False, 0)
+
+        self.status_label = Gtk.Label()
+        self.status_label.set_halign(Gtk.Align.START)
+        status_h.pack_start(self.status_label, True, True, 0)
+        self.status_banner.pack_start(status_h, False, False, 0)
+
+        self.status_progress = Gtk.ProgressBar()
+        self.status_banner.pack_start(self.status_progress, False, False, 0)
+
+        main_vbox.pack_end(self.status_banner, False, False, 0)
+
+        # Atualiza o status dos apps em segundo plano
+        self.refresh_installed_status()
+
+    def _pulse_progress(self):
+        if hasattr(self, "status_progress") and self.status_progress.get_visible():
+            self.status_progress.pulse()
+            return True
+        return False
+
+    def show_status_banner(self, text, in_progress=True):
+        self.status_label.set_markup(f"<span size='10500' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(text)}</span>")
+        self.status_banner.show()
+        self.status_label.show()
+        if in_progress:
+            self.status_spinner.show()
+            self.status_spinner.start()
+            self.status_progress.show()
+            if not self.pulse_timer:
+                self.pulse_timer = GLib.timeout_add(100, self._pulse_progress)
+        else:
+            self.status_spinner.stop()
+            self.status_spinner.hide()
+            self.status_progress.hide()
+            if self.pulse_timer:
+                GLib.source_remove(self.pulse_timer)
+                self.pulse_timer = None
+
+    def hide_status_banner(self):
+        if hasattr(self, "status_banner"):
+            self.status_banner.hide()
+        if self.pulse_timer:
+            GLib.source_remove(self.pulse_timer)
+            self.pulse_timer = None
+        return False
+
+    def set_view_mode(self, mode):
+        self.view_mode = mode
+        self.stack.set_visible_child_name(mode)
+        if mode == "installed":
+            self.refresh_installed_view()
+        elif mode == "updates":
+            self.refresh_updates_view()
+        else:
+            self.filter_apps()
+
+    def refresh_installed_status(self):
+        """Atualiza cache de status instalados em background"""
+        def _check():
+            new_cache = {}
+            for app in BUILTIN_CATALOG:
+                new_cache[app["id"]] = is_app_installed(app)
+            def _apply():
+                self.installed_cache = new_cache
+                self.filter_apps()
+                if self.view_mode == "installed":
+                    self.refresh_installed_view()
+            GLib.idle_add(_apply)
+        threading.Thread(target=_check, daemon=True).start()
+
+    # -------------------------------------------------------------------------
+    # Aba 1: Explorar (Catálogo, Categorias e Grade de Apps)
+    # -------------------------------------------------------------------------
+    def create_explore_view(self):
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+
+        # Hero Banner de Destaque
+        hero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+        hero.get_style_context().add_class("hero-banner")
+
+        hero_text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        h_title = Gtk.Label()
+        h_title.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Descubra e Instale Aplicativos para o Geminux OS</span>")
+        h_title.set_halign(Gtk.Align.START)
+        hero_text.pack_start(h_title, False, False, 0)
+
+        h_desc = Gtk.Label()
+        h_desc.set_text("Milhares de softwares nativos, inteligência artificial, ferramentas para desenvolvedores, jogos e produtividade prontos com 1 clique.")
+        h_desc.set_line_wrap(True)
+        h_desc.set_halign(Gtk.Align.START)
+        hero_text.pack_start(h_desc, False, False, 0)
+        hero.pack_start(hero_text, True, True, 0)
+
+        vbox.pack_start(hero, False, False, 0)
+
+        # Barra de Categorias (Chips arredondados)
+        cat_scroll = Gtk.ScrolledWindow()
+        cat_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+        cat_scroll.set_min_content_height(54)
+        cat_scroll.set_margin_start(16)
+        cat_scroll.set_margin_end(16)
+        cat_scroll.set_margin_top(12)
+        cat_scroll.set_margin_bottom(6)
+
+        cat_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        categories = [
+            ("all", "✨ Todos"),
+            ("featured", "🔥 Em Destaque"),
+            ("ai", "🤖 IA & Desenvolvimento"),
+            ("games", "🎮 Jogos"),
+            ("tools", "⚡ Sistema & Ferramentas"),
+            ("media", "🎨 Mídia & Criação"),
+            ("web", "🌐 Internet & Mensagens"),
+            ("prod", "📄 Produtividade")
+        ]
+
+        self.cat_radios = []
+        group = None
+        for cat_id, cat_label in categories:
+            rb = Gtk.RadioButton.new_with_label_from_widget(group, cat_label)
+            rb.set_mode(False)
+            rb.get_style_context().add_class("cat-button")
+            rb.cat_id = cat_id
+            rb.connect("toggled", self.on_category_toggled)
+            cat_box.pack_start(rb, False, False, 0)
+            if group is None:
+                group = rb
+            self.cat_radios.append(rb)
+
+        cat_scroll.add(cat_box)
+        vbox.pack_start(cat_scroll, False, False, 0)
+
+        # Grade com Scroll de Aplicativos
+        self.scrolled_grid = Gtk.ScrolledWindow()
+        self.scrolled_grid.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scrolled_grid.set_margin_start(16)
+        self.scrolled_grid.set_margin_end(16)
+        self.scrolled_grid.set_margin_top(8)
+        self.scrolled_grid.set_margin_bottom(16)
+
+        self.apps_flow = Gtk.FlowBox()
+        self.apps_flow.set_valign(Gtk.Align.START)
+        self.apps_flow.set_max_children_per_line(3)
+        self.apps_flow.set_min_children_per_line(1)
+        self.apps_flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.apps_flow.set_column_spacing(16)
+        self.apps_flow.set_row_spacing(16)
+
+        self.scrolled_grid.add(self.apps_flow)
+        vbox.pack_start(self.scrolled_grid, True, True, 0)
+
+        return vbox
+
+    def on_category_toggled(self, button):
+        if button.get_active() and hasattr(button, "cat_id"):
+            self.current_category = button.cat_id
+            self.filter_apps()
+
+    def on_search_changed(self, entry):
+        self.search_query = entry.get_text().strip().lower()
+        if self.view_mode != "explore":
+            self.set_view_mode("explore")
+            self.btn_nav_explore.set_active(True)
+        else:
+            self.filter_apps()
+
+    def filter_apps(self):
+        """Filtra o catálogo de acordo com busca e categoria ativa"""
+        for child in self.apps_flow.get_children():
+            self.apps_flow.remove(child)
+
+        matched = []
+        for app in BUILTIN_CATALOG:
+            # Filtro por busca
+            if self.search_query:
+                q = self.search_query
+                in_name = q in app["name"].lower()
+                in_desc = q in app["description"].lower()
+                in_pkg = q in app["package"].lower()
+                if not (in_name or in_desc or in_pkg):
+                    continue
+
+            # Filtro por categoria
+            if self.current_category == "featured":
+                if not app.get("featured", False):
+                    continue
+            elif self.current_category != "all":
+                if app.get("category") != self.current_category:
+                    continue
+
+            matched.append(app)
+
+        if not matched:
+            empty_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            empty_box.set_halign(Gtk.Align.CENTER)
+            empty_box.set_margin_top(48)
+            empty_lbl = Gtk.Label()
+            empty_lbl.set_markup("<span size='16000' color='#8b949e'>Nenhum aplicativo encontrado</span>")
+            empty_box.pack_start(empty_lbl, False, False, 0)
+            self.apps_flow.add(empty_box)
+            self.apps_flow.show_all()
+            return
+
+        for app in matched:
+            card = self.create_app_card(app)
+            self.apps_flow.add(card)
+
+        self.apps_flow.show_all()
+
+    def create_app_card(self, app):
+        """Cria o cartão interativo de um aplicativo"""
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        card.get_style_context().add_class("card")
+        card.set_size_request(290, 195)
+
+        # Topo do cartão: Ícone + Título + Categoria/Badge
+        top_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+
+        # Ícone do aplicativo
+        icon_widget = self.get_icon_widget(app)
+        top_h.pack_start(icon_widget, False, False, 0)
+
+        # Título e Autor
+        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        t_lbl = Gtk.Label()
+        t_lbl.set_markup(f"<span weight='bold' size='13000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(app['name'])}</span>")
+        t_lbl.set_halign(Gtk.Align.START)
+        t_lbl.set_ellipsize(Pango.EllipsizeMode.END)
+
+        author_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        author_name = app.get("author", "")
+        a_lbl = Gtk.Label()
+        a_lbl.set_markup(f"<span size='9500' color='{TEXT_MUTED}'>{GLib.markup_escape_text(author_name)}</span>")
+        a_lbl.set_halign(Gtk.Align.START)
+        a_lbl.set_ellipsize(Pango.EllipsizeMode.END)
+        author_h.pack_start(a_lbl, False, False, 0)
+
+        if app.get("verified", False):
+            v_badge = Gtk.Label()
+            v_badge.set_markup("<span size='8500' weight='bold' color='#38bdf8'>✓</span>")
+            v_badge.get_style_context().add_class("badge-verified")
+            v_badge.set_tooltip_text(f"Desenvolvedor Verificado Oficial ({author_name})")
+            author_h.pack_start(v_badge, False, False, 0)
+
+        badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        b_lbl = Gtk.Label(label=app.get("type", "APT"))
+        b_lbl.get_style_context().add_class(app.get("badge_class", "badge-apt"))
+        badge_box.pack_start(b_lbl, False, False, 0)
+
+        r_lbl = Gtk.Label(label=app.get("rating", "★★★★★"))
+        r_lbl.set_markup(f"<span size='9000' color='#e3b341'>{app.get('rating', '')}</span>")
+        badge_box.pack_start(r_lbl, False, False, 0)
+
+        title_box.pack_start(t_lbl, False, False, 0)
+        title_box.pack_start(author_h, False, False, 0)
+        title_box.pack_start(badge_box, False, False, 0)
+        top_h.pack_start(title_box, True, True, 0)
+        card.pack_start(top_h, False, False, 0)
+
+        # Resumo do aplicativo
+        desc_lbl = Gtk.Label(label=app.get("summary", ""))
+        desc_lbl.set_line_wrap(True)
+        desc_lbl.set_max_width_chars(32)
+        desc_lbl.set_ellipsize(Pango.EllipsizeMode.END)
+        desc_lbl.set_lines(2)
+        desc_lbl.set_halign(Gtk.Align.START)
+        desc_lbl.set_markup(f"<span size='10500' color='{TEXT_MUTED}'>{GLib.markup_escape_text(app.get('summary', ''))}</span>")
+        card.pack_start(desc_lbl, True, True, 0)
+
+        # Rodapé: Tamanho + Botão de Ação (Instalar / Abrir)
+        bottom_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        size_lbl = Gtk.Label()
+        size_lbl.set_markup(f"<span size='9500' color='#6e7681'>{app.get('size', '')}</span>")
+        size_lbl.set_valign(Gtk.Align.CENTER)
+        bottom_h.pack_start(size_lbl, False, False, 0)
+
+        # Botão de Detalhes
+        btn_details = Gtk.Button(label="Ver")
+        btn_details.get_style_context().add_class("btn-secondary")
+        btn_details.connect("clicked", lambda b, a=app: self.show_app_details(a))
+        bottom_h.pack_end(btn_details, False, False, 0)
+
+        # Botão Principal (Instalar ou Abrir)
+        is_installed = self.installed_cache.get(app["id"], False)
+        is_installing = app["id"] in self.installing_apps
+
+        if is_installing:
+            btn_action = Gtk.Button(label="⏳ Instalando...")
+            btn_action.get_style_context().add_class("btn-installing")
+            btn_action.set_sensitive(False)
+        elif is_installed:
+            btn_action = Gtk.Button(label="Abrir ➔")
+            btn_action.get_style_context().add_class("btn-primary")
+            btn_action.connect("clicked", lambda b, a=app: self.open_app(a))
+        else:
+            btn_action = Gtk.Button(label="Instalar")
+            btn_action.get_style_context().add_class("btn-primary")
+            btn_action.connect("clicked", lambda b, a=app: self.install_app(a, button=b))
+
+        bottom_h.pack_end(btn_action, False, False, 0)
+        card.pack_start(bottom_h, False, False, 0)
+
+        return card
+
+    def get_icon_widget(self, app):
+        """Retorna o widget de ícone do aplicativo ou fallback estilizado"""
+        icon_name = app.get("icon")
+        if not icon_name:
+            return self._fallback_icon_widget(app)
+
+        # 1. Prioridade Máxima: Ícones oficiais do branding Geminux (SVG / PNG vetorizados)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        branding_candidates = [
+            os.path.join(base_dir, f"../../branding/icons/{icon_name}.svg"),
+            os.path.join(base_dir, f"../../branding/icons/{icon_name}.png"),
+            os.path.join(base_dir, f"../branding/icons/{icon_name}.svg"),
+            os.path.join(base_dir, f"branding/icons/{icon_name}.svg"),
+            f"/usr/share/geminux/branding/icons/{icon_name}.svg",
+            f"/usr/share/geminux/branding/icons/{icon_name}.png",
+            f"/usr/share/icons/hicolor/scalable/apps/{icon_name}.svg",
+            f"/usr/share/icons/Yaru/scalable/apps/{icon_name}.svg",
+            f"/usr/share/pixmaps/{icon_name}.svg",
+        ]
+        for p in branding_candidates:
+            if os.path.isfile(p):
+                try:
+                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(p, 48, 48, True)
+                    return Gtk.Image.new_from_pixbuf(pb)
+                except Exception:
+                    pass
+
+        # 2. Ícone do tema do sistema (Gtk.IconTheme)
+        theme = Gtk.IconTheme.get_default()
+        if theme.has_icon(icon_name):
+            try:
+                info = theme.lookup_icon(icon_name, 48, 0)
+                if info:
+                    pb = info.load_icon()
+                    return Gtk.Image.new_from_pixbuf(pb)
+                return Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
+            except Exception:
+                pass
+
+        # 3. Fallbacks em /usr/share/pixmaps
+        system_pixmaps = [
+            f"/usr/share/pixmaps/{icon_name}.png",
+            f"/usr/share/icons/hicolor/48x48/apps/{icon_name}.png"
+        ]
+        for p in system_pixmaps:
+            if os.path.isfile(p):
+                try:
+                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(p, 48, 48, True)
+                    return Gtk.Image.new_from_pixbuf(pb)
+                except Exception:
+                    pass
+
+        # 4. Fallback para Emoji / Símbolo
+        return self._fallback_icon_widget(app)
+
+    def _fallback_icon_widget(self, app):
+        box = Gtk.Box()
+        box.set_size_request(48, 48)
+        lbl = Gtk.Label()
+        lbl.set_markup(f"<span size='24000'>{app.get('icon_fallback', '📦')}</span>")
+        box.pack_start(lbl, True, True, 0)
+        return box
+
+    # -------------------------------------------------------------------------
+    # Aba 2: Aplicativos Instalados
+    # -------------------------------------------------------------------------
+    def create_installed_view(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.installed_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.installed_box.set_margin_start(24)
+        self.installed_box.set_margin_end(24)
+        self.installed_box.set_margin_top(20)
+        self.installed_box.set_margin_bottom(24)
+        scrolled.add(self.installed_box)
+        return scrolled
+
+    def refresh_installed_view(self):
+        """Atualiza a lista de aplicativos instalados"""
+        for child in self.installed_box.get_children():
+            self.installed_box.remove(child)
+
+        header_lbl = Gtk.Label()
+        header_lbl.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Aplicativos Instalados no Geminux OS</span>")
+        header_lbl.set_halign(Gtk.Align.START)
+        self.installed_box.pack_start(header_lbl, False, False, 8)
+
+        installed_list = [app for app in BUILTIN_CATALOG if self.installed_cache.get(app["id"], False)]
+
+        if not installed_list:
+            empty_lbl = Gtk.Label()
+            empty_lbl.set_markup("<span size='13000' color='#8b949e'>Nenhum aplicativo do catálogo detectado como instalado.</span>")
+            empty_lbl.set_margin_top(24)
+            self.installed_box.pack_start(empty_lbl, False, False, 0)
+            self.installed_box.show_all()
+            return
+
+        for app in installed_list:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+            row.get_style_context().add_class("card")
+
+            icon_w = self.get_icon_widget(app)
+            row.pack_start(icon_w, False, False, 0)
+
+            info_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            title_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            t_lbl = Gtk.Label()
+            t_lbl.set_markup(f"<span weight='bold' size='13000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(app['name'])}</span>")
+            t_lbl.set_halign(Gtk.Align.START)
+            title_h.pack_start(t_lbl, False, False, 0)
+
+            if app.get("verified", False):
+                v_badge = Gtk.Label()
+                v_badge.set_markup("<span size='8500' weight='bold' color='#38bdf8'>✓ Verificado</span>")
+                v_badge.get_style_context().add_class("badge-verified")
+                title_h.pack_start(v_badge, False, False, 0)
+
+            d_lbl = Gtk.Label(label=app.get("summary", ""))
+            d_lbl.set_markup(f"<span size='10500' color='{TEXT_MUTED}'>{GLib.markup_escape_text(app.get('summary', ''))}</span>")
+            d_lbl.set_halign(Gtk.Align.START)
+            info_v.pack_start(title_h, False, False, 0)
+            info_v.pack_start(d_lbl, False, False, 0)
+            row.pack_start(info_v, True, True, 0)
+
+            btn_open = Gtk.Button(label="Abrir ➔")
+            btn_open.get_style_context().add_class("btn-primary")
+            btn_open.connect("clicked", lambda b, a=app: self.open_app(a))
+            row.pack_end(btn_open, False, False, 0)
+
+            # Para apps que não sejam os pilares do sistema, disponibiliza desinstalação
+            if app["id"] not in ["geminux-ai", "geminux-vm", "prius-terminal", "geminux-welcome"]:
+                is_installing = app["id"] in self.installing_apps
+                if is_installing:
+                    btn_remove = Gtk.Button(label="⏳ Processando...")
+                    btn_remove.set_sensitive(False)
+                    btn_remove.get_style_context().add_class("btn-installing")
+                else:
+                    btn_remove = Gtk.Button(label="Desinstalar")
+                    btn_remove.get_style_context().add_class("btn-danger")
+                    btn_remove.connect("clicked", lambda b, a=app: self.uninstall_app(a, button=b))
+                row.pack_end(btn_remove, False, False, 0)
+
+            self.installed_box.pack_start(row, False, False, 0)
+
+        self.installed_box.show_all()
+
+    # -------------------------------------------------------------------------
+    # Aba 3: Atualizações do Sistema
+    # -------------------------------------------------------------------------
+    def create_updates_view(self):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.updates_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.updates_box.set_margin_start(24)
+        self.updates_box.set_margin_end(24)
+        self.updates_box.set_margin_top(20)
+        self.updates_box.set_margin_bottom(24)
+        scrolled.add(self.updates_box)
+        return scrolled
+
+    def refresh_updates_view(self):
+        """Verifica se há atualizações do sistema disponíveis"""
+        for child in self.updates_box.get_children():
+            self.updates_box.remove(child)
+
+        header_lbl = Gtk.Label()
+        header_lbl.set_markup("<span weight='heavy' size='18000' color='#ffffff'>Atualizações de Software</span>")
+        header_lbl.set_halign(Gtk.Align.START)
+        self.updates_box.pack_start(header_lbl, False, False, 0)
+
+        status_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        status_card.get_style_context().add_class("card")
+
+        ic_lbl = Gtk.Label()
+        ic_lbl.set_markup("<span size='32000'>🛡️</span>")
+        status_card.pack_start(ic_lbl, False, False, 0)
+
+        text_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        t_lbl = Gtk.Label()
+        t_lbl.set_markup("<span weight='bold' size='13000' color='#f0f6fc'>O Geminux OS está seguro e atualizado</span>")
+        t_lbl.set_halign(Gtk.Align.START)
+        d_lbl = Gtk.Label()
+        d_lbl.set_text("Todos os pacotes essenciais do sistema, drivers e ferramentas nativas estão em suas versões oficiais mais recentes.")
+        d_lbl.set_markup(f"<span size='11000' color='{TEXT_MUTED}'>{d_lbl.get_text()}</span>")
+        d_lbl.set_line_wrap(True)
+        d_lbl.set_halign(Gtk.Align.START)
+        text_v.pack_start(t_lbl, False, False, 0)
+        text_v.pack_start(d_lbl, False, False, 0)
+        status_card.pack_start(text_v, True, True, 0)
+
+        btn_check = Gtk.Button(label="Verificar Agora")
+        btn_check.get_style_context().add_class("btn-secondary")
+        btn_check.connect("clicked", lambda b: self.on_check_updates_clicked(b))
+        status_card.pack_end(btn_check, False, False, 0)
+
+        self.updates_box.pack_start(status_card, False, False, 0)
+        self.updates_box.show_all()
+
+    def on_check_updates_clicked(self, button):
+        button.set_sensitive(False)
+        button.set_label("Verificando...")
+        def _done():
+            button.set_sensitive(True)
+            button.set_label("Verificar Agora")
+        GLib.timeout_add(1500, lambda: (_done(), False)[1])
+
+    # -------------------------------------------------------------------------
+    # Modal / Diálogo de Detalhes do Aplicativo
+    # -------------------------------------------------------------------------
+    def show_app_details(self, app):
+        dlg = Gtk.Dialog(
+            title=f"{app['name']} - Detalhes",
+            parent=self,
+            modal=True,
+            destroy_with_parent=True
+        )
+        dlg.set_default_size(520, 380)
+
+        content = dlg.get_content_area()
+        content.set_spacing(16)
+        content.set_margin_start(20)
+        content.set_margin_end(20)
+        content.set_margin_top(16)
+        content.set_margin_bottom(16)
+
+        # Header do App
+        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        icon_w = self.get_icon_widget(app)
+        top.pack_start(icon_w, False, False, 0)
+
+        t_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        t_lbl = Gtk.Label()
+        t_lbl.set_markup(f"<span weight='bold' size='16000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(app['name'])}</span>")
+        t_lbl.set_halign(Gtk.Align.START)
+
+        author_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        a_lbl = Gtk.Label()
+        a_lbl.set_markup(f"<span size='11000' color='{TEXT_MUTED}'>Desenvolvido por: <b color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(app.get('author', ''))}</b></span>")
+        a_lbl.set_halign(Gtk.Align.START)
+        author_box.pack_start(a_lbl, False, False, 0)
+
+        if app.get("verified", False):
+            v_badge = Gtk.Label()
+            v_badge.set_markup("<span size='9500' weight='bold' color='#38bdf8'>✓ Verificado</span>")
+            v_badge.get_style_context().add_class("badge-verified")
+            v_badge.set_tooltip_text(f"Desenvolvedor Oficial Verificado ({app.get('author', '')})")
+            author_box.pack_start(v_badge, False, False, 0)
+
+        t_v.pack_start(t_lbl, False, False, 0)
+        t_v.pack_start(author_box, False, False, 0)
+        top.pack_start(t_v, True, True, 0)
+        content.pack_start(top, False, False, 0)
+
+        # Descrição Detalhada
+        desc_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        desc_lbl = Gtk.Label(label=app.get("description", ""))
+        desc_lbl.set_markup(f"<span size='11000' color='{TEXT_PRIMARY}'>{GLib.markup_escape_text(app.get('description', ''))}</span>")
+        desc_lbl.set_line_wrap(True)
+        desc_lbl.set_halign(Gtk.Align.START)
+        desc_box.pack_start(desc_lbl, False, False, 0)
+        content.pack_start(desc_box, True, True, 0)
+
+        # Informações Técnicas (Tabela / Grid)
+        info_grid = Gtk.Grid()
+        info_grid.set_column_spacing(24)
+        info_grid.set_row_spacing(8)
+
+        v_str = " (✓ Verificado)" if app.get("verified") else ""
+        info_rows = [
+            ("Desenvolvedor:", f"{app.get('author', '')}{v_str}"),
+            ("Formato do Pacote:", app.get("type", "APT")),
+            ("Nome do Pacote:", app.get("package", "")),
+            ("Tamanho do Download:", app.get("size", "")),
+            ("Avaliação Média:", app.get("rating", "★★★★★"))
+        ]
+
+        for idx, (k, v) in enumerate(info_rows):
+            k_lbl = Gtk.Label()
+            k_lbl.set_markup(f"<span weight='bold' size='10500' color='{TEXT_MUTED}'>{k}</span>")
+            k_lbl.set_halign(Gtk.Align.START)
+            v_lbl = Gtk.Label()
+            v_lbl.set_markup(f"<span size='10500' color='{TEXT_PRIMARY}'>{v}</span>")
+            v_lbl.set_halign(Gtk.Align.START)
+            info_grid.attach(k_lbl, 0, idx, 1, 1)
+            info_grid.attach(v_lbl, 1, idx, 1, 1)
+
+        content.pack_start(info_grid, False, False, 0)
+
+        # Botão de Ação contextual (Instalar / Abrir / Desinstalar) no modal
+        is_installed = self.installed_cache.get(app["id"], False)
+        is_installing = app["id"] in self.installing_apps
+
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        action_box.set_halign(Gtk.Align.END)
+        action_box.set_margin_top(14)
+
+        if is_installing:
+            btn_act = Gtk.Button(label="⏳ Em Andamento...")
+            btn_act.get_style_context().add_class("btn-installing")
+            btn_act.set_sensitive(False)
+            action_box.pack_start(btn_act, False, False, 0)
+        elif is_installed:
+            btn_open = Gtk.Button(label="Abrir Aplicativo ➔")
+            btn_open.get_style_context().add_class("btn-primary")
+            btn_open.connect("clicked", lambda b: (self.open_app(app), dlg.response(Gtk.ResponseType.CLOSE)))
+            action_box.pack_start(btn_open, False, False, 0)
+
+            if app["id"] not in ["geminux-ai", "geminux-vm", "prius-terminal", "geminux-welcome"]:
+                btn_del = Gtk.Button(label="Desinstalar")
+                btn_del.get_style_context().add_class("btn-danger")
+                def _do_del(b):
+                    dlg.response(Gtk.ResponseType.CLOSE)
+                    self.uninstall_app(app)
+                btn_del.connect("clicked", _do_del)
+                action_box.pack_start(btn_del, False, False, 0)
+        else:
+            btn_install = Gtk.Button(label="Instalar Agora")
+            btn_install.get_style_context().add_class("btn-primary")
+            def _do_install(b):
+                dlg.response(Gtk.ResponseType.CLOSE)
+                self.install_app(app)
+            btn_install.connect("clicked", _do_install)
+            action_box.pack_start(btn_install, False, False, 0)
+
+        content.pack_start(action_box, False, False, 0)
+
+        # Botão Fechar no rodapé do diálogo
+        dlg.add_button("Fechar", Gtk.ResponseType.CLOSE)
+        dlg.show_all()
+        dlg.run()
+        dlg.destroy()
+
+    # -------------------------------------------------------------------------
+    # Ações de Instalação, Abertura e Remoção
+    # -------------------------------------------------------------------------
+    def open_app(self, app):
+        cmd = app.get("cmd")
+        flatpak_id = app.get("flatpak_id") or (app.get("package") if "." in (app.get("package") or "") else None)
+        try:
+            if app.get("id") == "flutter":
+                term_cmd = "prius -e 'flutter doctor; exec bash' 2>/dev/null || x-terminal-emulator -e 'bash -c \"flutter doctor; exec bash\"' || gnome-terminal -- bash -c 'flutter doctor; exec bash'"
+                subprocess.Popen(term_cmd, shell=True)
+            elif cmd and shutil.which(cmd):
+                subprocess.Popen(cmd, shell=True)
+            elif flatpak_id:
+                subprocess.Popen(f"flatpak run {flatpak_id}", shell=True)
+            elif cmd:
+                subprocess.Popen(cmd, shell=True)
+        except Exception as e:
+            print(f"[GeminuxStore] Erro ao abrir {cmd}: {e}", file=sys.stderr)
+
+    def run_install_task(self, app, cmd, action_type="install", button=None):
+        """Executa processo de instalação/remoção com feedback visual em tempo real"""
+        app_id = app["id"]
+        app_name = app["name"]
+
+        # 1. Registra estado no dicionário de instalações ativas
+        self.installing_apps[app_id] = action_type
+
+        # 2. Atualiza o botão da UI imediatamente
+        if button:
+            button.set_sensitive(False)
+            if action_type == "install":
+                button.set_label("⏳ Instalando...")
+            else:
+                button.set_label("⏳ Removendo...")
+            ctx = button.get_style_context()
+            ctx.remove_class("btn-primary")
+            ctx.remove_class("btn-danger")
+            ctx.add_class("btn-installing")
+
+        # 3. Exibe o banner inferior com spinner e barra pulsante
+        initial_msg = (
+            f"Instalando {app_name}... Baixando e configurando arquivos."
+            if action_type == "install"
+            else f"Removendo {app_name}... Desinstalando arquivos."
+        )
+        self.show_status_banner(initial_msg, in_progress=True)
+
+        # 4. Executa em background com streaming de saída
+        def _worker():
+            success = False
+            last_line = ""
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                if proc.stdout:
+                    for line in iter(proc.stdout.readline, ''):
+                        if not line:
+                            break
+                        clean_line = line.strip()
+                        if clean_line:
+                            last_line = clean_line
+                            line_msg = clean_line
+                            if len(line_msg) > 65:
+                                line_msg = line_msg[:62] + "..."
+                            def _update_ui(msg=line_msg):
+                                if app_id in self.installing_apps:
+                                    verb = "Instalando" if action_type == "install" else "Removendo"
+                                    self.show_status_banner(f"{verb} {app_name}: {msg}", in_progress=True)
+                            GLib.idle_add(_update_ui)
+                proc.wait()
+                success = (proc.returncode == 0)
+            except Exception as e:
+                print(f"[GeminuxStore] Erro ao executar tarefa {action_type} para {app_name}: {e}", file=sys.stderr)
+                last_line = str(e)
+                success = False
+
+            def _on_finish():
+                if app_id in self.installing_apps:
+                    del self.installing_apps[app_id]
+
+                self.installed_cache[app_id] = is_app_installed(app)
+
+                if success:
+                    verb_ok = "instalado com sucesso!" if action_type == "install" else "removido com sucesso!"
+                    self.show_status_banner(f"✅ {app_name} {verb_ok}", in_progress=False)
+                    GLib.timeout_add_seconds(4, self.hide_status_banner)
+                else:
+                    verb_fail = "Falha ao instalar" if action_type == "install" else "Falha ao remover"
+                    err_hint = f" ({last_line})" if last_line else ""
+                    self.show_status_banner(f"❌ {verb_fail} {app_name}{err_hint}", in_progress=False)
+                    GLib.timeout_add_seconds(6, self.hide_status_banner)
+
+                if self.view_mode == "installed":
+                    self.refresh_installed_view()
+                else:
+                    self.filter_apps()
+
+            GLib.idle_add(_on_finish)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def install_app(self, app, button=None):
+        pkg = app.get("package")
+        flatpak_id = app.get("flatpak_id") or (pkg if pkg and ("." in pkg or pkg.startswith("org.") or pkg.startswith("com.")) else None)
+        apt_pkg = app.get("apt_package") or (pkg if pkg and "." not in pkg else None)
+
+        # Se for o Flutter SDK
+        if app.get("id") == "flutter":
+            cmd = (
+                "pkexec snap install flutter --classic || "
+                "(pkexec git clone -b stable https://github.com/flutter/flutter.git /opt/flutter && "
+                "pkexec ln -sf /opt/flutter/bin/flutter /usr/local/bin/flutter)"
+            )
+            self.run_install_task(app, cmd, action_type="install", button=button)
+            return
+
+        # Se for um pacote nativo Geminux deb na pasta do repo
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        deb_candidates = [
+            os.path.join(root_dir, f"apps/{app['id']}/{app['package']}_1.0.0_all.deb"),
+            os.path.join(root_dir, f"apps/{app['id']}/{app['id']}_1.0.0_all.deb")
+        ]
+        deb_file = None
+        for cand in deb_candidates:
+            if os.path.exists(cand):
+                deb_file = cand
+                break
+
+        if deb_file:
+            cmd = f"pkexec apt-get install -y --allow-downgrades '{deb_file}' || pkexec dpkg -i '{deb_file}'"
+        elif flatpak_id:
+            if flatpak_id == "org.vinegarhq.Sober":
+                cmd = (
+                    f"flatpak install -y --noninteractive --from https://sober.vinegarhq.org/sober.flatpakref || "
+                    f"flatpak install --user -y --noninteractive --from https://sober.vinegarhq.org/sober.flatpakref || "
+                    f"flatpak install -y --noninteractive flathub {flatpak_id} || "
+                    f"flatpak install --user -y --noninteractive flathub {flatpak_id}"
+                )
+            else:
+                flatpak_cmd = (
+                    f"flatpak install -y --noninteractive flathub {flatpak_id} || "
+                    f"flatpak install --user -y --noninteractive flathub {flatpak_id}"
+                )
+                if apt_pkg:
+                    cmd = f"{flatpak_cmd} || pkexec env DEBIAN_FRONTEND=noninteractive apt-get install -y {apt_pkg}"
+                else:
+                    cmd = flatpak_cmd
+        elif apt_pkg:
+            cmd = f"pkexec env DEBIAN_FRONTEND=noninteractive apt-get install -y {apt_pkg}"
+        else:
+            cmd = f"flatpak install -y --noninteractive flathub {pkg} || flatpak install --user -y --noninteractive flathub {pkg}"
+
+        self.run_install_task(app, cmd, action_type="install", button=button)
+
+    def uninstall_app(self, app, button=None):
+        # Se for o Flutter SDK
+        if app.get("id") == "flutter":
+            cmd = "pkexec snap remove flutter || pkexec rm -rf /opt/flutter /usr/local/bin/flutter"
+            self.run_install_task(app, cmd, action_type="uninstall", button=button)
+            return
+
+        pkg = app.get("package")
+        flatpak_id = app.get("flatpak_id") or (pkg if pkg and ("." in pkg or pkg.startswith("org.") or pkg.startswith("com.")) else None)
+        apt_pkg = app.get("apt_package") or (pkg if pkg and "." not in pkg else None)
+
+        cmds = []
+        if flatpak_id:
+            cmds.append(f"flatpak uninstall -y --noninteractive {flatpak_id}")
+        if apt_pkg:
+            if apt_pkg == "vlc" or app.get("id") == "vlc":
+                cmds.append("pkexec env DEBIAN_FRONTEND=noninteractive sh -c 'apt-get remove -y --purge vlc vlc-bin vlc-data vlc-plugin-* ; apt-get autoremove -y'")
+            else:
+                cmds.append(f"pkexec env DEBIAN_FRONTEND=noninteractive sh -c 'apt-get remove -y --purge {apt_pkg} ; apt-get autoremove -y'")
+        if not cmds:
+            cmds.append(f"flatpak uninstall -y --noninteractive {pkg}")
+
+        cmd = " || ".join(cmds)
+        self.run_install_task(app, cmd, action_type="uninstall", button=button)
+
+
+def main():
+    # Carrega CSS do Geminux Store
+    screen = Gdk.Screen.get_default()
+    if screen:
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS_STYLE.encode())
+        Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    app = GeminuxStoreApp()
+    app.connect("destroy", Gtk.main_quit)
+    app.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

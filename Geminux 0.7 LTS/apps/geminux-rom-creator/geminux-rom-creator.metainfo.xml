@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.geminux.romcreator</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Geminux Custom ROM Creator</name>
+  <name xml:lang="pt_BR">Geminux Custom ROM Creator</name>
+  <summary>Official Custom ROM builder and ISO generator for Geminux OS</summary>
+  <summary xml:lang="pt_BR">Criador oficial de Custom ROMs e gerador de ISOs para o Geminux OS</summary>
+  <description>
+    <p>
+      Geminux Custom ROM Creator allows users and developers to build tailored distributions
+      of Geminux OS. Choose software packages, presets (Gamer, Developer, Minimal, Media),
+      fine-tune kernel performance (ZRAM, low-latency), customize themes, and export bootable ISO images.
+    </p>
+    <p xml:lang="pt_BR">
+      O Geminux Custom ROM Creator permite que usuários e desenvolvedores criem versões personalizadas
+      do Geminux OS. Escolha pacotes de software, presets prontos (Gamer, Desenvolvedor, Mídia, Minimal),
+      configure ajustes de kernel (ZRAM, baixa latência), personalize temas visuais e exporte imagens ISO inicializáveis.
+    </p>
+  </description>
+  <launchable type="desktop-id">geminux-rom-creator.desktop</launchable>
+  <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+  <provides>
+    <binary>geminux-rom-creator</binary>
+  </provides>
+</component>

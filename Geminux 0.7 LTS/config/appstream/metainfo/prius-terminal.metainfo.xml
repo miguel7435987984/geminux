@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>prius-terminal.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Prius Terminal</name>
+  <summary>Terminal ultrarrápido oficial do Geminux OS</summary>
+  <description>
+    <p>
+      O Prius Terminal é o emulador de terminal padrão e oficial do Geminux OS.
+      Desenvolvido com foco em máxima velocidade de renderização, visual cyberpunk neon,
+      atalhos integrados de auditoria de hardware e histórico persistente.
+    </p>
+  </description>
+  <launchable type="desktop-id">prius-terminal.desktop</launchable>
+  <icon type="stock">prius-terminal</icon>
+  <provides>
+    <binary>prius</binary>
+  </provides>
+  <categories>
+    <category>System</category>
+    <category>TerminalEmulator</category>
+    <category>Utility</category>
+  </categories>
+  <developer id="org.geminux.prius">
+    <name>Geminux OS Team</name>
+  </developer>
+  <url type="homepage">https://github.com/miguel7435987984/geminux</url>
+</component>
