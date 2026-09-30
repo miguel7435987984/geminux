@@ -63,7 +63,7 @@ if [ ! -f "${ROOTFS_DIR}/bin/bash" ]; then
         log "Criando script debootstrap para ${CODENAME} -> gutsy..."
         ln -sf gutsy "/usr/share/debootstrap/scripts/${CODENAME}" || true
     fi
-    if ! debootstrap --arch=amd64 --variant=minbase --keyring="${KEYRING}" "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"; then
+    if ! debootstrap --arch=amd64 --keyring="${KEYRING}" "${CODENAME}" "${ROOTFS_DIR}" "${MIRROR}"; then
         log_err "Falha no debootstrap! Exibindo logs de erro:"
         cat "${ROOTFS_DIR}/debootstrap/debootstrap.log" 2>/dev/null | tail -n 60 || true
         exit 1
