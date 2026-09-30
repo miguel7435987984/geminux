@@ -84,7 +84,7 @@ gir1.2-vte-2.91
 
 # Instalador do Sistema (Calamares) & Ferramentas de Disco
 calamares
-calamares-settings-ubuntu
+calamares-settings-ubuntu-common
 libopengl0
 gparted
 polkitd
