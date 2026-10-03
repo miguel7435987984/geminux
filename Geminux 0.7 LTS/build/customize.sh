@@ -26,6 +26,21 @@ fi
 ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
 echo "America/Sao_Paulo" > /etc/timezone
 
+# Configuração do Netplan para NetworkManager gerenciar todas as interfaces
+mkdir -p /etc/netplan
+cat << 'EOF_NETPLAN' > /etc/netplan/01-network-manager-all.yaml
+network:
+  version: 2
+  renderer: NetworkManager
+EOF_NETPLAN
+chmod 600 /etc/netplan/01-network-manager-all.yaml
+
+# Variáveis globais de compatibilidade para VMs e Calamares
+cat << 'EOF_ENV' >> /etc/environment
+QT_X11_NO_MITSHM=1
+NO_AT_BRIDGE=1
+EOF_ENV
+
 # Silencia aviso legado do casper no boot (install-keymap)
 mkdir -p /usr/sbin
 cat << 'EOF' > /usr/sbin/install-keymap
@@ -462,6 +477,12 @@ EOF_DESK_CALA
 chmod 644 /usr/share/applications/calamares.desktop
 cp /usr/share/applications/calamares.desktop /etc/skel/Desktop/calamares.desktop
 chmod +x /etc/skel/Desktop/calamares.desktop || true
+if [ -d /home/geminux ]; then
+    mkdir -p /home/geminux/Desktop
+    cp /usr/share/applications/calamares.desktop /home/geminux/Desktop/calamares.desktop
+    chmod +x /home/geminux/Desktop/calamares.desktop || true
+    chown -R geminux:geminux /home/geminux
+fi
 
 # Atualizar caches do sistema
 if [ -x "$(command -v update-desktop-database)" ]; then
