@@ -34,10 +34,24 @@ exit 0
 EOF
 chmod +x /usr/sbin/install-keymap
 
-# Desativa casper-md5check.service para evitar falhas ou travamentos no boot
+# Desativa casper-md5check.service e serviços de espera de rede para acelerar o boot
 if [ -x "$(command -v systemctl)" ]; then
     systemctl mask casper-md5check.service 2>/dev/null || true
+    systemctl mask NetworkManager-wait-online.service 2>/dev/null || true
+    systemctl mask systemd-networkd-wait-online.service 2>/dev/null || true
+    systemctl mask apt-daily.timer apt-daily.service 2>/dev/null || true
+    systemctl mask apt-daily-upgrade.timer apt-daily-upgrade.service 2>/dev/null || true
+    systemctl mask man-db.timer 2>/dev/null || true
 fi
+
+# Configura timeouts curtos no systemd para evitar esperas longas no boot
+mkdir -p /etc/systemd/system.conf.d
+cat << 'EOF_SYSCONF' > /etc/systemd/system.conf.d/10-fast-boot.conf
+[Manager]
+DefaultTimeoutStartSec=10s
+DefaultTimeoutStopSec=10s
+DefaultDeviceTimeoutSec=10s
+EOF_SYSCONF
 
 # Desativa o script do casper que executa apt-cdrom gerando erro de Debian Disc
 if [ -f /usr/share/initramfs-tools/scripts/casper-bottom/20apt_sources ]; then

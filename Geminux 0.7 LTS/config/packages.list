@@ -70,6 +70,7 @@ qemu-utils
 pciutils
 usbutils
 htop
+haveged
 neofetch
 git
 dpkg-dev
