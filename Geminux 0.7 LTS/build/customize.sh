@@ -39,6 +39,20 @@ if [ -x "$(command -v systemctl)" ]; then
     systemctl mask casper-md5check.service 2>/dev/null || true
 fi
 
+# Desativa o script do casper que executa apt-cdrom gerando erro de Debian Disc
+if [ -f /usr/share/initramfs-tools/scripts/casper-bottom/20apt_sources ]; then
+    cat << 'EOF' > /usr/share/initramfs-tools/scripts/casper-bottom/20apt_sources
+#!/bin/sh
+exit 0
+EOF
+    chmod +x /usr/share/initramfs-tools/scripts/casper-bottom/20apt_sources
+fi
+
+# Remove qualquer entrada de cdrom do apt e desativa busca automática
+sed -i '/cdrom/d' /etc/apt/sources.list 2>/dev/null || true
+mkdir -p /etc/apt/apt.conf.d
+echo 'APT::CDROM::NoMount "true";' > /etc/apt/apt.conf.d/00no-cdrom
+
 # Configuração Oficial do Casper para a Sessão Live do Geminux 0.7 LTS
 cat << 'EOF_CASPER' > /etc/casper.conf
 # Configuração do usuário Live do Geminux OS 0.7 LTS
