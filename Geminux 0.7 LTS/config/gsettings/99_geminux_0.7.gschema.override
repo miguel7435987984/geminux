@@ -34,7 +34,6 @@ theme='Adwaita-dark'
 
 [com.ubuntu.update-notifier]
 no-show-notifications=true
-show-updates-status-icon=false
 regular-auto-launch-interval=999999
 show-apport-crashes=false
 
