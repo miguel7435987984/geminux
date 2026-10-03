@@ -67,6 +67,13 @@ sed -i '/cdrom/d' /etc/apt/sources.list 2>/dev/null || true
 mkdir -p /etc/apt/apt.conf.d
 echo 'APT::CDROM::NoMount "true";' > /etc/apt/apt.conf.d/00no-cdrom
 
+# Silencia busca do casper por unattended-upgrades no boot criando arquivo desativado
+cat << 'EOF_UNATTENDED' > /etc/apt/apt.conf.d/50unattended-upgrades
+// Unattended-Upgrade disabled for Geminux live session
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Unattended-Upgrade "0";
+EOF_UNATTENDED
+
 # Silencia busca do casper por apport no boot criando arquivo padrão desativado
 mkdir -p /etc/default /var/crash
 chmod 1777 /var/crash
