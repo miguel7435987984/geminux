@@ -189,13 +189,13 @@ fi
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.7 LTS" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip loglevel=3 quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.7 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip nomodeset quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip loglevel=3 nomodeset quiet splash ---
     initrd /casper/initrd
 }
 EOF
@@ -206,13 +206,13 @@ set timeout=5
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.7 LTS (Live)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip loglevel=3 iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.7 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip nomodeset iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip loglevel=3 nomodeset iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 EOF
