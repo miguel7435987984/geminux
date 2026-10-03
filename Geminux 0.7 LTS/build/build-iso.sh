@@ -189,13 +189,13 @@ fi
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.7 LTS" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.7 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux nomodeset quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip nomodeset quiet splash ---
     initrd /casper/initrd
 }
 EOF
@@ -206,13 +206,13 @@ set timeout=5
 
 menuentry "Experimentar ou Instalar o Geminux OS 0.7 LTS (Live)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "Geminux OS 0.7 LTS (Modo Seguro de Gráficos)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux nomodeset iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=geminux user-fullname="Geminux OS" hostname=geminux fsck.mode=skip nomodeset iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 EOF
@@ -253,6 +253,13 @@ grub-mkimage \
     --output="${IMAGE_DIR}/boot/grub/bios.img" \
     --prefix=/boot/grub \
     iso9660 biosdisk search search_label search_fs_file normal test linux
+
+log "Gerando somas de verificação md5sum.txt para o Casper..."
+(
+    cd "${IMAGE_DIR}"
+    rm -f md5sum.txt
+    find . -type f ! -path './md5sum.txt' ! -path './boot/*' ! -path './EFI/*' -exec md5sum {} + > "${IMAGE_DIR}/md5sum.txt"
+)
 
 log "Gerando imagem ISO híbrida oficial com xorriso..."
 xorriso -as mkisofs \

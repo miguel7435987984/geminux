@@ -34,6 +34,11 @@ exit 0
 EOF
 chmod +x /usr/sbin/install-keymap
 
+# Desativa casper-md5check.service para evitar falhas ou travamentos no boot
+if [ -x "$(command -v systemctl)" ]; then
+    systemctl mask casper-md5check.service 2>/dev/null || true
+fi
+
 # Configuração Oficial do Casper para a Sessão Live do Geminux 0.7 LTS
 cat << 'EOF_CASPER' > /etc/casper.conf
 # Configuração do usuário Live do Geminux OS 0.7 LTS
