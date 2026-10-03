@@ -53,6 +53,13 @@ sed -i '/cdrom/d' /etc/apt/sources.list 2>/dev/null || true
 mkdir -p /etc/apt/apt.conf.d
 echo 'APT::CDROM::NoMount "true";' > /etc/apt/apt.conf.d/00no-cdrom
 
+# Silencia busca do casper por apport no boot criando arquivo padrão desativado
+mkdir -p /etc/default
+cat << 'EOF_APPORT' > /etc/default/apport
+# set this to 0 to disable apport, or to 1 to enable it
+enabled=0
+EOF_APPORT
+
 # Configuração Oficial do Casper para a Sessão Live do Geminux 0.7 LTS
 cat << 'EOF_CASPER' > /etc/casper.conf
 # Configuração do usuário Live do Geminux OS 0.7 LTS
