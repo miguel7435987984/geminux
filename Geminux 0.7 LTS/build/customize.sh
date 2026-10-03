@@ -77,6 +77,9 @@ EOF
     chmod +x /usr/share/initramfs-tools/scripts/casper-bottom/20apt_sources
 fi
 
+# Corrige sintaxe obsoleta de chown (substitui ponto por dois-pontos) nos scripts do casper
+find /usr/share/initramfs-tools/scripts/casper-bottom /usr/share/casper 2>/dev/null -type f -exec sed -i 's/\$USERNAME\.\$USERNAME/\$USERNAME:\$USERNAME/g; s/\$USERNAME\.\$USERGROUP/\$USERNAME:\$USERGROUP/g' {} + 2>/dev/null || true
+
 # Remove qualquer entrada de cdrom do apt e desativa busca automática
 sed -i '/cdrom/d' /etc/apt/sources.list 2>/dev/null || true
 mkdir -p /etc/apt/apt.conf.d
