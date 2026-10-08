@@ -164,7 +164,13 @@ umount -lf "${ROOTFS_DIR}/proc" 2>/dev/null || true
 umount -lf "${ROOTFS_DIR}/sys" 2>/dev/null || true
 
 log "==> [6/6] Criando squashfs e gerando imagem ISO híbrida ${OUT_ISO}..."
-mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -comp xz -noappend -b 1M
+mksquashfs "${ROOTFS_DIR}" "${IMAGE_DIR}/casper/filesystem.squashfs" -comp xz -noappend -b 1M -all-root \
+    -p "usr/bin/sudo.ws m 4755 0 0" \
+    -p "usr/bin/sudo m 4755 0 0" \
+    -p "usr/bin/pkexec m 4755 0 0" \
+    -p "usr/lib/polkit-1/polkit-agent-helper-1 m 4755 0 0" \
+    -p "etc/sudo.conf m 0644 0 0" \
+    -p "etc/sudoers.d/99-geminux-installer m 0440 0 0"
 
 # Configuração do GRUB de Inicialização da ISO
 mkdir -p "${IMAGE_DIR}/boot/grub" "${IMAGE_DIR}/EFI/BOOT"

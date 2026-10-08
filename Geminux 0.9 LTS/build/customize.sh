@@ -363,6 +363,10 @@ chmod 440 /etc/sudoers.d/99-geminux-installer
 chmod 4755 /usr/bin/pkexec /usr/bin/sudo /usr/bin/sudo.ws 2>/dev/null || true
 chown root:root /usr/bin/pkexec /usr/bin/sudo /usr/bin/sudo.ws /etc/sudo.conf 2>/dev/null || true
 
+# Pre-cria /var/log/calamares.log com permissões de escrita para o usuário live
+touch /var/log/calamares.log
+chmod 666 /var/log/calamares.log
+
 # Atalho do Calamares no menu e na área de trabalho
 mkdir -p /usr/share/applications /etc/skel/Desktop
 cat <<'EOF_DESK_CALA' > /usr/share/applications/calamares.desktop
