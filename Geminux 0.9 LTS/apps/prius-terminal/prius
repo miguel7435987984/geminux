@@ -6,6 +6,7 @@ Built with GTK 3, VTE and custom Geminux branding.
 
 import sys
 import os
+import urllib.parse
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -55,6 +56,16 @@ class PriusTab(Gtk.Box):
         self.terminal.connect("child-exited", self.on_child_exited)
         self.terminal.connect("window-title-changed", self.on_title_changed)
         self.terminal.connect("button-press-event", self.on_button_press)
+
+        # Drag and Drop support
+        self.terminal.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [],
+            Gdk.DragAction.COPY | Gdk.DragAction.DEFAULT
+        )
+        self.terminal.drag_dest_add_uri_targets()
+        self.terminal.drag_dest_add_text_targets()
+        self.terminal.connect("drag-data-received", self.on_drag_data_received)
 
         # Scrolled window
         scrolled = Gtk.ScrolledWindow()
@@ -128,6 +139,34 @@ class PriusTab(Gtk.Box):
             menu.popup_at_pointer(event)
             return True
         return False
+
+    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        uris = data.get_uris()
+        if uris:
+            paths = []
+            for uri in uris:
+                try:
+                    filename, _ = GLib.filename_from_uri(uri)
+                    paths.append(GLib.shell_quote(filename))
+                except Exception:
+                    if uri.startswith("file://"):
+                        unquoted = urllib.parse.unquote(uri[7:])
+                        paths.append(GLib.shell_quote(unquoted))
+                    else:
+                        paths.append(GLib.shell_quote(uri))
+            if paths:
+                text = " ".join(paths) + " "
+                self.terminal.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        text = data.get_text()
+        if text:
+            self.terminal.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        Gtk.drag_finish(drag_context, False, False, time)
 
 
 class PriusWindow(Gtk.Window):

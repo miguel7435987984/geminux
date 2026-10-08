@@ -3,6 +3,7 @@ Terminal Widget wrapper around Vte.Terminal with customization support
 """
 import os
 import re
+import urllib.parse
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Vte', '2.91')
@@ -72,6 +73,16 @@ class TerminalWidget(Gtk.Box):
         self.vte.connect('window-title-changed', self._on_title_changed)
         self.vte.connect('button-press-event', self._on_button_press)
         self.vte.connect('child-exited', self._on_child_exited)
+
+        # Drag and Drop support
+        self.vte.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [],
+            Gdk.DragAction.COPY | Gdk.DragAction.DEFAULT
+        )
+        self.vte.drag_dest_add_uri_targets()
+        self.vte.drag_dest_add_text_targets()
+        self.vte.connect('drag-data-received', self._on_drag_data_received)
 
         # Apply settings and spawn shell
         self.apply_config()
@@ -315,3 +326,31 @@ class TerminalWidget(Gtk.Box):
 
     def _on_search_prev(self, *args):
         self.vte.search_find_previous()
+
+    def _on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        uris = data.get_uris()
+        if uris:
+            paths = []
+            for uri in uris:
+                try:
+                    filename, _ = GLib.filename_from_uri(uri)
+                    paths.append(GLib.shell_quote(filename))
+                except Exception:
+                    if uri.startswith("file://"):
+                        unquoted = urllib.parse.unquote(uri[7:])
+                        paths.append(GLib.shell_quote(unquoted))
+                    else:
+                        paths.append(GLib.shell_quote(uri))
+            if paths:
+                text = " ".join(paths) + " "
+                self.vte.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        text = data.get_text()
+        if text:
+            self.vte.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        Gtk.drag_finish(drag_context, False, False, time)
