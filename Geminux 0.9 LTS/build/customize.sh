@@ -61,6 +61,7 @@ fi
 if [ -d /tmp/geminux-build/branding/icons ]; then
     cp /tmp/geminux-build/branding/icons/*.svg /usr/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
     cp /tmp/geminux-build/branding/icons/*.png /usr/share/icons/hicolor/256x256/apps/ 2>/dev/null || true
+    cp /tmp/geminux-build/branding/icons/*.png /usr/share/pixmaps/ 2>/dev/null || true
     cp /tmp/geminux-build/branding/icons/prius-terminal.* /usr/share/pixmaps/ 2>/dev/null || true
     cp /tmp/geminux-build/branding/icons/geminux-logo.* /usr/share/pixmaps/ 2>/dev/null || true
 fi

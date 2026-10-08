@@ -1120,9 +1120,11 @@ class GeminuxStoreApp(Gtk.Window):
             except Exception:
                 pass
 
-        # 3. Fallbacks em /usr/share/pixmaps
+        # 3. Fallbacks em /usr/share/pixmaps e hicolor
         system_pixmaps = [
             f"/usr/share/pixmaps/{icon_name}.png",
+            f"/usr/share/icons/hicolor/256x256/apps/{icon_name}.png",
+            f"/usr/share/icons/hicolor/128x128/apps/{icon_name}.png",
             f"/usr/share/icons/hicolor/48x48/apps/{icon_name}.png"
         ]
         for p in system_pixmaps:
